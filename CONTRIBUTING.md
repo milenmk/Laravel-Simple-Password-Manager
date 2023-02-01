@@ -4,7 +4,7 @@ How to contribute
 Bug reports and feature requests
 --------------------------------
 
-Issues are managed on [GitHub](https://github.com/milenmk/Simple-Password-Manager/issues).
+Issues are managed on [GitHub](https://github.com/milenmk/Laravel-Simple-Password-Manager/issues).
 Default **language is english**. So please prepare your contributions in english.
 
 1. Please [use the search engine](https://help.github.com/articles/searching-issues) to check if nobody's already reported your problem.
@@ -19,7 +19,7 @@ Default **language is english**. So please prepare your contributions in english
 
 ### Basic workflow
 
-1. [Fork](https://help.github.com/articles/fork-a-repo) the [GitHub repository](https://github.com/milenmk/Simple-Password-Manager).
+1. [Fork](https://help.github.com/articles/fork-a-repo) the [GitHub repository](https://github.com/milenmk/Laravel-Simple-Password-Manager).
 2. Clone your fork.
 3. Choose a branch(See the [Branches](#branches) section below).
 4. Commit and push your changes.
