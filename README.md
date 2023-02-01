@@ -32,8 +32,10 @@ For working version of this application, go to https://github.com/milenmk/simple
 
 ### From your browser:
 
+<b>Database must be created before starting the install!</b>
+
 * Open your browser and go to `http"//your_url/install`
-* Complete the installation steps. <b>Database must be created!!!</b>
+* Complete the installation steps.
 
 ### Final steps
 
