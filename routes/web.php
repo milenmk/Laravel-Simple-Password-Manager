@@ -34,7 +34,7 @@ Route::middleware('auth')->group(
         Route::get('/{domain}/edit', [DomainController::class, 'edit']);
         Route::post('{domain}/update', [DomainController::class, 'update'])->name('domains.update');
         // Delete domain
-        Route::delete('{domain}/delete', [DomainController::class, 'destroy'])->name('domains.destroy');
+        Route::get('{domain}/delete', [DomainController::class, 'destroy'])->name('domains.destroy');
 
         /**
          * Records
@@ -51,10 +51,10 @@ Route::middleware('auth')->group(
         Route::get('/create_record', [RecordController::class, 'create']);
         Route::post('/store_record', [RecordController::class, 'store'])->name('records.store');
         // Edit record
-        Route::get('/{record}/edit', [RecordController::class, 'edit']);
-        Route::post('{record}/update', [RecordController::class, 'update'])->name('records.update');
+        Route::get('/{record}/edit_record', [RecordController::class, 'edit']);
+        Route::post('{record}/update_record', [RecordController::class, 'update'])->name('records.update');
         // Delete record
-        Route::delete('{record}/delete', [RecordController::class, 'destroy'])->name('records.destroy');
+        Route::get('{record}/delete_record', [RecordController::class, 'destroy'])->name('records.destroy');
 
         /**
          * Profile
@@ -79,3 +79,5 @@ Route::get(
 );
 
 require __DIR__ . '/auth.php';
+
+

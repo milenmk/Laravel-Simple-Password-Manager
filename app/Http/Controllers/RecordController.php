@@ -73,7 +73,7 @@ class RecordController extends Controller
     public function edit(Record $record)
     {
 
-        return view('domains.edit', ['record' => $record]);
+        return view('records.edit', ['record' => $record]);
     }
 
     /**
@@ -99,7 +99,7 @@ class RecordController extends Controller
 
         $record->update($formFields);
 
-        return redirect('/');
+        return redirect('/records');
     }
 
     /**
@@ -114,7 +114,7 @@ class RecordController extends Controller
 
         $record->delete();
 
-        return redirect('/');
+        return redirect('/records');
     }
 
 }
