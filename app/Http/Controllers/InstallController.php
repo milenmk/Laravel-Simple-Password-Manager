@@ -30,11 +30,12 @@ class InstallController extends Controller
      *
      * @return Application|Factory|View|RedirectResponse|Redirector
      */
-    public function index()
+    public function index(): View|Factory|Redirector|RedirectResponse|Application
     {
 
         if (File::exists(config_path('install.lock'))) {
             config(['app.installed' => true]);
+
             return redirect('/');
         }
 
@@ -56,13 +57,14 @@ class InstallController extends Controller
      *
      * @return bool
      */
-    private function checkDatabaseConnection()
+    private function checkDatabaseConnection(): bool
     {
+
         if (DB::connection()->getPdo()) {
             return true;
-        } else {
-            return false;
         }
+
+        return false;
     }
 
     /**
@@ -71,14 +73,14 @@ class InstallController extends Controller
      * @return void
      *
      */
-    private function createOptions()
+    private function createOptions(): void
     {
 
         DB::table('options')->insert(
             [
                 ['name' => 'DISABLE_SYSLOG', 'value' => 0, 'description' => ''],
                 ['name' => 'PAGINATION_NUM', 'value' => 10, 'description' => ''],
-                ['name' => 'NUM_LIMIT_ADMIN_DASHBOARD', 'value' => 10, 'description' => '']
+                ['name' => 'NUM_LIMIT_ADMIN_DASHBOARD', 'value' => 10, 'description' => ''],
             ]
         );
     }
@@ -90,7 +92,7 @@ class InstallController extends Controller
      *
      * @return Application|RedirectResponse|Redirector
      */
-    public function store(Request $request)
+    public function store(Request $request): Redirector|RedirectResponse|Application
     {
 
         // Validate the form data
@@ -110,7 +112,7 @@ class InstallController extends Controller
         // Update the .env file with the form data
         $this->updateEnvFile($request->all());
 
-        // Check if database connection can be estabilished
+        // Check if database connection can be established
         // If not, call a method to create the database with the root user data provided in the form
         if (!$this->checkDatabaseConnection()) {
             // Create database with root user data
@@ -138,11 +140,11 @@ class InstallController extends Controller
     /**
      * Update the .env file with the data provided in the form
      *
-     * @param $data
+     * @param array $data
      *
      * @return void
      */
-    private function updateEnvFile($data)
+    private function updateEnvFile(array $data): void
     {
 
         $envFile = file_get_contents(base_path('.env'));
@@ -169,11 +171,11 @@ class InstallController extends Controller
     /**
      * Create database using root user
      *
-     * @param $data
+     * @param array $data
      *
      * @return RedirectResponse|void
      */
-    private function createDatabase($data)
+    private function createDatabase(array $data)
     {
 
         try {

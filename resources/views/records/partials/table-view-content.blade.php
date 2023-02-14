@@ -18,9 +18,7 @@
         <tr class="<?=($c++%2==1) ? 'odd' : 'even' ?> border-b">
             <td class="text-sm text-gray-900 font-light px-6 py-4 whitespace-nowrap">{{ $record->domain->name }}</td>
             <td class="text-sm text-gray-900 font-light px-6 py-4 whitespace-nowrap">{{ $record->type }}</td>
-            <td class="text-sm text-gray-900 font-light px-6 py-4 whitespace-nowrap">
-                <a href="{{ $record->url }}" target="_blank">{{ $record->url }}</a>
-            </td>
+            <td class="text-sm text-gray-900 font-light px-6 py-4 whitespace-nowrap">{{ $record->url }}</td>
             <td class="text-sm text-gray-900 font-light px-6 py-4 whitespace-nowrap">{{ $record->username }}</td>
             <td class="text-sm text-gray-900 font-light px-6 py-4">{{ substr($record->password, 0, 10) }}</td>
             <td class="text-sm text-gray-900 font-light px-6 py-4 whitespace-nowrap">

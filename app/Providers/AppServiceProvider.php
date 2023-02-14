@@ -5,8 +5,8 @@ declare(strict_types = 1);
 namespace App\Providers;
 
 use Exception;
-use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -15,7 +15,7 @@ class AppServiceProvider extends ServiceProvider
      *
      * @return void
      */
-    public function register()
+    public function register(): void
     {
         //
     }
@@ -26,7 +26,7 @@ class AppServiceProvider extends ServiceProvider
      * @return void
      * @throws Exception
      */
-    public function boot()
+    public function boot(): void
     {
 
         if (!env('APP_IV')) {
@@ -38,9 +38,12 @@ class AppServiceProvider extends ServiceProvider
             config([$result->name => $result->value]);
         }
 
-        view()->composer('layouts.partials.language_switcher', function ($view) {
+        view()->composer(
+            'layouts.partials.language_switcher', static function ($view) {
+
             $view->with('current_locale', app()->getLocale());
             $view->with('available_locales', config('app.available_locales'));
-        });
+        }
+        );
     }
 }

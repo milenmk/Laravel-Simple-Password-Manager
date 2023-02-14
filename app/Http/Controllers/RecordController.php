@@ -11,6 +11,7 @@ use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use function strlen;
 
 /**
  * Controller to manage user records
@@ -23,7 +24,7 @@ class RecordController extends Controller
      *
      * @return Application|Factory|View
      */
-    public static function index()
+    public static function index(): View|Factory|Application
     {
 
         $records = Record::filter(request(['domain_id']))->where('user_id', auth()->id())->paginate(config('PAGINATION_NUM'));
@@ -31,10 +32,26 @@ class RecordController extends Controller
         // Decrypt password for each record
         foreach ($records as $record) {
             //$record->password = $record->decryptPassword($record->password);
-            $record->password = (new RecordController())->decryptPassword($record->password);
+            $record->password = (new self())->decryptPassword($record->password);
         }
 
         return view('records', compact('records'));
+    }
+
+    /**
+     * Decrypt password using OpenSSL library
+     *
+     * @param string $password
+     *
+     * @return string
+     */
+    private function decryptPassword(string $password): string
+    {
+
+        $iv = base64_decode(env('APP_IV'));
+        $key = substr(env('APP_KEY'), 7, 16);
+
+        return openssl_decrypt($password, 'AES-128-CBC', $key, 0, $iv);
     }
 
     /**
@@ -45,7 +62,7 @@ class RecordController extends Controller
      * @return RedirectResponse
      * @throws Exception
      */
-    public function store(Request $request)
+    public function store(Request $request): RedirectResponse
     {
 
         // Encrypt the password
@@ -67,6 +84,29 @@ class RecordController extends Controller
     }
 
     /**
+     * Encrypt password using OpenSSL library
+     *
+     * @param string $password
+     *
+     * @return string
+     * @throws Exception
+     */
+    public function encryptPassword(string $password): string
+    {
+
+        $key = env('APP_KEY');
+        if (!$key || strlen($key) < 24) {
+            exec('php artisan key:generate');
+            $key = env('APP_KEY');
+        }
+        $key = substr($key, 7, 16);
+
+        $iv = base64_decode(env('APP_IV'));
+
+        return openssl_encrypt($password, 'AES-128-CBC', $key, 0, $iv);
+    }
+
+    /**
      * Display the records creation view.
      */
     public function create(): \Illuminate\View\View
@@ -82,10 +122,10 @@ class RecordController extends Controller
      *
      * @return Application|Factory|View
      */
-    public function edit(Record $record)
+    public function edit(Record $record): View|Factory|Application
     {
 
-        return view('records.edit', ['record' => $record]);
+        return view('records.edit', compact('record'));
     }
 
     /**
@@ -97,7 +137,7 @@ class RecordController extends Controller
      * @return RedirectResponse
      * @throws Exception
      */
-    public function update(Request $request, Record $record)
+    public function update(Request $request, Record $record): RedirectResponse
     {
 
         $formFields = $request->validate(
@@ -126,49 +166,12 @@ class RecordController extends Controller
      *
      * @return RedirectResponse
      */
-    public function destroy(Record $record)
+    public function destroy(Record $record): RedirectResponse
     {
 
         $record->delete();
 
         return redirect('/records');
-    }
-
-    /**
-     * Encrypt password using OpenSSL library
-     *
-     * @param $passsword
-     *
-     * @return false|string
-     * @throws Exception
-     */
-    public function encryptPassword($passsword)
-    {
-        $key = env('APP_KEY');
-        if (!$key || strlen($key) < 24) {
-            exec('php artisan key:generate');
-            $key = env('APP_KEY');
-        }
-        $key = substr($key, 7, 16);
-
-        $iv = base64_decode(env('APP_IV'));
-
-        return openssl_encrypt($passsword, 'AES-128-CBC', $key, 0, $iv);
-    }
-
-    /**
-     * Decrypt password using OpenSSL library
-     *
-     * @param $passsword
-     *
-     * @return false|string
-     */
-    private function decryptPassword($passsword)
-    {
-        $iv = base64_decode(env('APP_IV'));
-        $key = substr(env('APP_KEY'), 7, 16);
-
-        return openssl_decrypt($passsword, 'AES-128-CBC', $key, 0, $iv);
     }
 
 }

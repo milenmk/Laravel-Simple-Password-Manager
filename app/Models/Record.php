@@ -24,11 +24,9 @@ class Record extends Model
     /**
      * @return BelongsTo
      */
-    /**
-     * @return BelongsTo
-     */
-    public function domain()
+    public function domain(): BelongsTo
     {
+
         return $this->belongsTo(Domain::class, 'domain_id');
     }
 
@@ -38,14 +36,9 @@ class Record extends Model
      *
      * @return void
      */
-    /**
-     * @param       $query
-     * @param array $filters
-     *
-     * @return void
-     */
-    public function scopeFilter($query, array $filters)
+    public function scopeFilter($query, array $filters): void
     {
+
         if ($filters['domain_id'] ?? false) {
             $query->where('domain_id', '=', request('domain_id'));
         }

@@ -22,12 +22,12 @@ class DomainController extends Controller
      *
      * @return Application|Factory|View
      */
-    public static function index()
+    public static function index(): View|Factory|Application
     {
 
         $domains = Domain::where('user_id', auth()->id())->paginate(config('PAGINATION_NUM'));
 
-        return view('domains', ['domains' => $domains]);
+        return view('domains', compact('domains'));
     }
 
     /**
@@ -37,7 +37,7 @@ class DomainController extends Controller
      *
      * @return RedirectResponse
      */
-    public function store(Request $request)
+    public function store(Request $request): RedirectResponse
     {
 
         Domain::create(
@@ -55,7 +55,7 @@ class DomainController extends Controller
      *
      * @return Application|Factory|View
      */
-    public function create()
+    public function create(): View|Factory|Application
     {
 
         return view('domains.create');
@@ -68,10 +68,10 @@ class DomainController extends Controller
      *
      * @return Application|Factory|View
      */
-    public function edit(Domain $domain)
+    public function edit(Domain $domain): View|Factory|Application
     {
 
-        return view('domains.edit', ['domain' => $domain]);
+        return view('domains.edit', compact('domain'));
     }
 
     /**
@@ -82,7 +82,7 @@ class DomainController extends Controller
      *
      * @return RedirectResponse
      */
-    public function update(Request $request, Domain $domain)
+    public function update(Request $request, Domain $domain): RedirectResponse
     {
 
         $formFields = $request->validate(
@@ -103,7 +103,7 @@ class DomainController extends Controller
      *
      * @return RedirectResponse
      */
-    public function destroy(Domain $domain)
+    public function destroy(Domain $domain): RedirectResponse
     {
 
         $domain->delete();

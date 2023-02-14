@@ -54,11 +54,9 @@ class User extends Authenticatable
     /**
      * @return HasMany
      */
-    /**
-     * @return HasMany
-     */
-    public function domains()
+    public function domains(): HasMany
     {
+
         return $this->hasMany(Domain::class, 'user_id');
     }
 }

@@ -21,27 +21,21 @@ class Domain extends Model
         'user_id',
     ];
 
-    //Relationship to user
-
     /**
      * @return BelongsTo
      */
-    /**
-     * @return BelongsTo
-     */
-    public function user()
+    public function user(): BelongsTo
     {
+
         return $this->belongsTo(User::class, 'user_id');
     }
 
     /**
      * @return HasMany
      */
-    /**
-     * @return HasMany
-     */
-    public function records()
+    public function records(): HasMany
     {
+
         return $this->hasMany(Record::class, 'domain_id');
     }
 }

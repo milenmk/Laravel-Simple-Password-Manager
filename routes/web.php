@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::middleware('auth')->group(
-    function () {
+    static function () {
 
         /**
          * Domains
@@ -43,9 +43,10 @@ Route::middleware('auth')->group(
         Route::get('/records', [RecordController::class, 'index'])->name('records');
         // Records for given domain
         Route::get(
-            'records?domain={id}', function (Record $id) {
-                return view('records', ['records' => Record::showForDomain($id),]);
-            }
+            'records?domain={id}', static function (Record $id) {
+
+            return view('records', ['records' => Record::showForDomain($id),]);
+        }
         );
         // Create record
         Route::get('/create_record', [RecordController::class, 'create']);
@@ -69,7 +70,7 @@ Route::middleware('auth')->group(
 );
 
 Route::get(
-    'language/{locale}', function ($locale) {
+    'language/{locale}', static function ($locale) {
 
     app()->setLocale($locale);
     session()->put('locale', $locale);
