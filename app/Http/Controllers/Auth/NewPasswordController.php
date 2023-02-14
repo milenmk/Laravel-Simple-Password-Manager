@@ -17,11 +17,13 @@ use Illuminate\View\View;
 
 class NewPasswordController extends Controller
 {
+
     /**
      * Display the password reset view.
      */
     public function create(Request $request): View
     {
+
         return view('auth.reset-password', compact('request'));
     }
 
@@ -32,11 +34,14 @@ class NewPasswordController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
-        $request->validate([
-            'token' => ['required'],
-            'email' => ['required', 'email'],
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
-        ]);
+
+        $request->validate(
+            [
+                'token'    => ['required'],
+                'email'    => ['required', 'email'],
+                'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            ]
+        );
 
         // Here we will attempt to reset the user's password. If it is successful we
         // will update the password on an actual user model and persist it to the
@@ -66,4 +71,5 @@ class NewPasswordController extends Controller
         return back()->withInput($request->only('email'))
             ->withErrors(['email' => __($status)]);
     }
+
 }

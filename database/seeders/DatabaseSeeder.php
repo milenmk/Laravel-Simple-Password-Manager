@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Hash;
  */
 class DatabaseSeeder extends Seeder
 {
+
     /**
      * Seed the application's database.
      *
@@ -27,16 +28,17 @@ class DatabaseSeeder extends Seeder
      */
     public function run()
     {
+
         $user = User::factory(5)->create(
             [
-                'password' => Hash::make('123456')
+                'password' => Hash::make('123456'),
             ]
         );
 
         foreach ($user as $usrtmp) {
             $domain = Domain::factory(5)->create(
                 [
-                    'user_id' => $usrtmp->id
+                    'user_id' => $usrtmp->id,
                 ]
             );
 
@@ -44,10 +46,11 @@ class DatabaseSeeder extends Seeder
                 Record::factory(5)->create(
                     [
                         'domain_id' => $domaintmp->id,
-                        'user_id' => $usrtmp->id
+                        'user_id'   => $usrtmp->id,
                     ]
                 );
             }
         }
     }
+
 }

@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class DomainFactory extends Factory
 {
+
     /**
      * Define the model's default state.
      *
@@ -19,8 +20,10 @@ class DomainFactory extends Factory
      */
     public function definition()
     {
+
         return [
-            'name' => fake()->domainName()
+            'name' => fake()->domainName(),
         ];
     }
+
 }

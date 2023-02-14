@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Record extends Model
 {
+
     use HasFactory;
 
     protected $fillable = [
@@ -43,4 +44,5 @@ class Record extends Model
             $query->where('domain_id', '=', request('domain_id'));
         }
     }
+
 }

@@ -43,7 +43,7 @@ return [
     |
     */
 
-    'debug' => (bool) env('APP_DEBUG', false),
+    'debug' => (bool)env('APP_DEBUG', false),
 
     /*
     |--------------------------------------------------------------------------
@@ -97,7 +97,7 @@ return [
     |
     */
 
-    'fallback_locale' => 'en',
+    'fallback_locale'   => 'en',
 
     /*
 |--------------------------------------------------------------------------
@@ -108,7 +108,7 @@ return [
 |
 */
     'available_locales' => [
-        'English' => 'en',
+        'English'   => 'en',
         'Български' => 'bg',
     ],
 
@@ -223,8 +223,10 @@ return [
     |
     */
 
-    'aliases' => Facade::defaultAliases()->merge([
-        // 'ExampleClass' => App\Example\ExampleClass::class,
-    ])->toArray(),
+    'aliases' => Facade::defaultAliases()->merge(
+        [
+            // 'ExampleClass' => App\Example\ExampleClass::class,
+        ]
+    )->toArray(),
 
 ];

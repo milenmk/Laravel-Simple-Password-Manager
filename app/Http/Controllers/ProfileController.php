@@ -16,14 +16,18 @@ use Illuminate\View\View;
  */
 class ProfileController extends Controller
 {
+
     /**
      * Display the user's profile form.
      */
     public function edit(Request $request): View
     {
-        return view('profile.edit', [
-            'user' => $request->user(),
-        ]);
+
+        return view(
+            'profile.edit', [
+                              'user' => $request->user(),
+                          ]
+        );
     }
 
     /**
@@ -31,6 +35,7 @@ class ProfileController extends Controller
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
+
         $request->user()->fill($request->validated());
 
         if ($request->user()->isDirty('email')) {
@@ -47,9 +52,12 @@ class ProfileController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
-        $request->validateWithBag('userDeletion', [
-            'password' => ['required', 'current-password'],
-        ]);
+
+        $request->validateWithBag(
+            'userDeletion', [
+                              'password' => ['required', 'current-password'],
+                          ]
+        );
 
         $user = $request->user();
 
@@ -62,4 +70,5 @@ class ProfileController extends Controller
 
         return Redirect::to('/');
     }
+
 }

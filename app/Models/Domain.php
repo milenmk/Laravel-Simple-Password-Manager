@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Domain extends Model
 {
+
     use HasFactory;
 
     protected $fillable = [
@@ -38,4 +39,5 @@ class Domain extends Model
 
         return $this->hasMany(Record::class, 'domain_id');
     }
+
 }

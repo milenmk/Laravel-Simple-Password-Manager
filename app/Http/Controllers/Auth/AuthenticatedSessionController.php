@@ -15,11 +15,13 @@ use Illuminate\View\View;
 
 class AuthenticatedSessionController extends Controller
 {
+
     /**
      * Display the login view.
      */
     public function create(): View
     {
+
         return view('auth.login');
     }
 
@@ -30,6 +32,7 @@ class AuthenticatedSessionController extends Controller
      */
     public function store(LoginRequest $request): RedirectResponse
     {
+
         $request->authenticate();
 
         $request->session()->regenerate();
@@ -42,6 +45,7 @@ class AuthenticatedSessionController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
+
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();
@@ -50,4 +54,5 @@ class AuthenticatedSessionController extends Controller
 
         return redirect('/');
     }
+
 }

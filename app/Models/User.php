@@ -59,4 +59,5 @@ class User extends Authenticatable
 
         return $this->hasMany(Domain::class, 'user_id');
     }
+
 }

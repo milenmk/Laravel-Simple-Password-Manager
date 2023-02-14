@@ -9,6 +9,7 @@ use Symfony\Component\HttpFoundation\Request as RequestAlias;
 
 class TrustProxies extends Middleware
 {
+
     /**
      * The trusted proxies for this application.
      *
@@ -27,4 +28,5 @@ class TrustProxies extends Middleware
         RequestAlias::HEADER_X_FORWARDED_PORT |
         RequestAlias::HEADER_X_FORWARDED_PROTO |
         RequestAlias::HEADER_X_FORWARDED_AWS_ELB;
+
 }

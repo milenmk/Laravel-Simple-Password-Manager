@@ -11,18 +11,23 @@ use Illuminate\Support\Facades\Session;
 
 class Localization
 {
+
     /**
      * Handle an incoming request.
      *
      * @param Request $request
      * @param Closure $next
+     *
      * @return mixed
      */
     public function handle(Request $request, Closure $next)
     {
+
         if (Session::has('locale')) {
             App::setLocale(Session::get('locale'));
         }
+
         return $next($request);
     }
+
 }
