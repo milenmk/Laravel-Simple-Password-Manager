@@ -1,9 +1,12 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Record extends Model
 {
@@ -18,11 +21,29 @@ class Record extends Model
         'user_id',
     ];
 
+    /**
+     * @return BelongsTo
+     */
+    /**
+     * @return BelongsTo
+     */
     public function domain()
     {
         return $this->belongsTo(Domain::class, 'domain_id');
     }
 
+    /**
+     * @param       $query
+     * @param array $filters
+     *
+     * @return void
+     */
+    /**
+     * @param       $query
+     * @param array $filters
+     *
+     * @return void
+     */
     public function scopeFilter($query, array $filters)
     {
         if ($filters['domain_id'] ?? false) {
