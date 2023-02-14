@@ -2,20 +2,22 @@
 
 namespace Database\Factories;
 
-use App\Http\Controllers\RecordController;
+use App\Models\Record;
+use Exception;
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Record>
+ * @extends Factory<Record>
  */
 class RecordFactory extends Factory
 {
+
     /**
      * Define the model's default state.
      *
      * @return array<string, mixed>
+     * @throws Exception
      */
     public function definition()
     {
@@ -25,7 +27,7 @@ class RecordFactory extends Factory
             'type' => $array[rand(0,2)],
             'url' => fake()->domainName(),
             'username' => fake()->userName(),
-            'password' => (new \App\Http\Controllers\RecordController())->encryptPassword(Str::random())
+            'password' => (new RecordController())->encryptPassword(Str::random())
         ];
     }
 }

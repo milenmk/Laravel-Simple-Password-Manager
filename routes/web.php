@@ -1,10 +1,8 @@
 <?php
 
 use App\Http\Controllers\DomainController;
-use App\Http\Controllers\InstallController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RecordController;
-use App\Models\Domain;
 use App\Models\Record;
 use Illuminate\Support\Facades\Route;
 

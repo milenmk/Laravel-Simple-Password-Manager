@@ -11,7 +11,6 @@ use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 
 /**
  * Controller to manage user records
@@ -32,7 +31,7 @@ class RecordController extends Controller
         // Decrypt password for each record
         foreach ($records as $record) {
             //$record->password = $record->decryptPassword($record->password);
-            $record->password = (new \App\Http\Controllers\RecordController())->decryptPassword($record->password);
+            $record->password = (new RecordController())->decryptPassword($record->password);
         }
 
         return view('records', compact('records'));
@@ -44,6 +43,7 @@ class RecordController extends Controller
      * @param Request $request
      *
      * @return RedirectResponse
+     * @throws Exception
      */
     public function store(Request $request)
     {
@@ -95,6 +95,7 @@ class RecordController extends Controller
      * @param Record  $record
      *
      * @return RedirectResponse
+     * @throws Exception
      */
     public function update(Request $request, Record $record)
     {

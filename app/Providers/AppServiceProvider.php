@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use Exception;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\DB;
 
@@ -21,6 +22,7 @@ class AppServiceProvider extends ServiceProvider
      * Bootstrap any application services.
      *
      * @return void
+     * @throws Exception
      */
     public function boot()
     {
