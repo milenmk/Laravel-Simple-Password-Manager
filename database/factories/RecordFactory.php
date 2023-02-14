@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Http\Controllers\RecordController;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -24,7 +25,7 @@ class RecordFactory extends Factory
             'type' => $array[rand(0,2)],
             'url' => fake()->domainName(),
             'username' => fake()->userName(),
-            'password' => Hash::make(Str::random())
+            'password' => (new \App\Http\Controllers\RecordController())->encryptPassword(Str::random())
         ];
     }
 }
