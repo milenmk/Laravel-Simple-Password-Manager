@@ -28,7 +28,7 @@
             </p>
 
             <div class="mt-6">
-                <x-input-label for="password" value="Password" class="sr-only" />
+                <x-input-label for="password" value="Password" class="sr-only"/>
 
                 <x-text-input
                     id="password"
@@ -38,7 +38,7 @@
                     placeholder="Password"
                 />
 
-                <x-input-error :messages="$errors->userDeletion->get('password')" class="mt-2" />
+                <x-input-error :messages="$errors->userDeletion->get('password')" class="mt-2"/>
             </div>
 
             <div class="mt-6 flex justify-end">

@@ -12,9 +12,9 @@
                     <form action="update" method="post">
                         @csrf
                         <div>
-                            <x-input-label for="name" :value="__('Name')" />
-                            <x-text-input id="name" name="name" type="text" class="mt-1 block w-full" :value="old('name', $domain->name)" required autofocus autocomplete="name" />
-                            <x-input-error class="mt-2" :messages="$errors->get('name')" />
+                            <x-input-label for="name" :value="__('Name')"/>
+                            <x-text-input id="name" name="name" type="text" class="mt-1 block w-full" :value="old('name', $domain->name)" required autofocus autocomplete="name"/>
+                            <x-input-error class="mt-2" :messages="$errors->get('name')"/>
                         </div>
                         <div class="flex items-center gap-4 mt-4">
                             <x-primary-button>{{ __('Save') }}</x-primary-button>

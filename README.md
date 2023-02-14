@@ -1,6 +1,6 @@
 # Simple-Password-Manager
 
-Simple password manager written on Laravel 
+Simple password manager written on Laravel
 
 STILL IN DEVELOPMENT!!!
 
