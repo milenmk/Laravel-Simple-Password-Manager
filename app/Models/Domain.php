@@ -8,12 +8,21 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Kyslik\ColumnSortable\Sortable;
 
 class Domain extends Model
 {
 
     use HasFactory;
+    use Sortable;
 
+    public    $sortable = [
+        'id',
+        'name',
+        'database',
+        'ftp',
+        'website',
+    ];
     protected $fillable = [
         'name',
         'database',

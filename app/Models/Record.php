@@ -7,11 +7,20 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Kyslik\ColumnSortable\Sortable;
 
 class Record extends Model
 {
 
     use HasFactory;
+    use Sortable;
+
+    public $sortable = [
+        'type',
+        'url',
+        'username',
+        'domain_id',
+    ];
 
     protected $fillable = [
         'type',

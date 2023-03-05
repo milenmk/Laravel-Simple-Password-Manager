@@ -22,7 +22,7 @@ return new class extends Migration {
 
             $table->id();
             $table->string('name', 128);
-            $table->string('value', 10);
+            $table->string('value', 128);
             $table->longText('description')->nullable();
             $table->timestamps();
         }

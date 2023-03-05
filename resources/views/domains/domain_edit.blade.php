@@ -9,7 +9,7 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="container mx-auto p-6 font-mono">
-                    <form action="update" method="post">
+                    <form action="domain_update" method="post">
                         @csrf
                         <div>
                             <x-input-label for="name" :value="__('Name')"/>

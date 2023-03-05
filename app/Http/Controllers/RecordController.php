@@ -11,6 +11,7 @@ use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use function strlen;
 
 /**
@@ -27,7 +28,7 @@ class RecordController extends Controller
     public static function index(): View|Factory|Application
     {
 
-        $records = Record::filter(request(['domain_id']))->where('user_id', auth()->id())->paginate(config('PAGINATION_NUM'));
+        $records = Record::filter(request(['domain_id']))->where('records.user_id', auth()->id())->sortable()->paginate(config('PAGINATION_NUM'));
 
         // Decrypt password for each record
         foreach ($records as $record) {
@@ -71,11 +72,11 @@ class RecordController extends Controller
         // Create record
         Record::create(
             [
-                'type'      => $request->name,
+                'type'      => $request->type,
                 'url'       => $request->url,
                 'username'  => $request->username,
                 'password'  => $password,
-                'domain_id' => $request->domain_id,
+                'domain_id' => $request->domain,
                 'user_id'   => auth()->id(),
             ]
         );
@@ -112,7 +113,11 @@ class RecordController extends Controller
     public function create(): \Illuminate\View\View
     {
 
-        return view('records.create');
+        return view(
+            'records.create', [
+                                'domains' => DB::table('domains')->where('domains.user_id', auth()->id())->get(),
+                            ]
+        );
     }
 
     /**
@@ -124,6 +129,8 @@ class RecordController extends Controller
      */
     public function edit(Record $record): View|Factory|Application
     {
+
+        $record->password = (new self())->decryptPassword($record->password);
 
         return view('records.edit', compact('record'));
     }
@@ -142,19 +149,19 @@ class RecordController extends Controller
 
         $formFields = $request->validate(
             [
-                'type'      => 'required',
-                'url'       => 'required',
-                'username'  => 'required',
-                'password'  => 'required',
-                'domain_id' => 'required',
+                'type'     => 'required',
+                'url'      => 'required',
+                'username' => 'required',
+                'password' => 'required',
             ]
         );
 
         // Encrypt the password
-        $record->password = $this->encryptPassword($formFields['password']);
+        $formFields['password'] = $this->encryptPassword($formFields['password']);
 
         // Save
-        $record->save();
+        //$record->save();
+        $record->update($formFields);
 
         return redirect('/records');
     }

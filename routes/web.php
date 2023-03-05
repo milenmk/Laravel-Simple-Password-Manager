@@ -28,13 +28,13 @@ Route::middleware('auth')->group(
         // All domains
         Route::get('/', [DomainController::class, 'index'])->name('index');
         // Create domain
-        Route::get('/create', [DomainController::class, 'create']);
-        Route::post('/store', [DomainController::class, 'store'])->name('domains.store');
+        Route::get('/domain_create', [DomainController::class, 'create']);
+        Route::post('/domain_store', [DomainController::class, 'store'])->name('domains.store');
         // Edit domain
-        Route::get('/{domain}/edit', [DomainController::class, 'edit']);
-        Route::post('{domain}/update', [DomainController::class, 'update'])->name('domains.update');
+        Route::get('{domain}/domain_edit', [DomainController::class, 'edit']);
+        Route::post('{domain}/domain_update', [DomainController::class, 'update'])->name('domains.update');
         // Delete domain
-        Route::get('{domain}/delete', [DomainController::class, 'destroy'])->name('domains.destroy');
+        Route::get('{domain}/domain_delete', [DomainController::class, 'destroy'])->name('domains.destroy');
 
         /**
          * Records
@@ -49,13 +49,13 @@ Route::middleware('auth')->group(
         }
         );
         // Create record
-        Route::get('/create_record', [RecordController::class, 'create']);
-        Route::post('/store_record', [RecordController::class, 'store'])->name('records.store');
+        Route::get('/record_create', [RecordController::class, 'create']);
+        Route::post('/record_store', [RecordController::class, 'store'])->name('records.store');
         // Edit record
-        Route::get('/{record}/edit_record', [RecordController::class, 'edit']);
-        Route::post('{record}/update_record', [RecordController::class, 'update'])->name('records.update');
+        Route::get('{record}/record_edit', [RecordController::class, 'edit']);
+        Route::post('{record}/record_update', [RecordController::class, 'update'])->name('records.update');
         // Delete record
-        Route::get('{record}/delete_record', [RecordController::class, 'destroy'])->name('records.destroy');
+        Route::get('{record}/record_delete', [RecordController::class, 'destroy'])->name('records.destroy');
 
         /**
          * Profile

@@ -25,7 +25,7 @@ class DomainController extends Controller
     public static function index(): View|Factory|Application
     {
 
-        $domains = Domain::where('user_id', auth()->id())->paginate(config('PAGINATION_NUM'));
+        $domains = Domain::where('user_id', auth()->id())->sortable()->paginate(config('PAGINATION_NUM'));
 
         return view('domains', compact('domains'));
     }
@@ -58,7 +58,7 @@ class DomainController extends Controller
     public function create(): View|Factory|Application
     {
 
-        return view('domains.create');
+        return view('domains.domain_create');
     }
 
     /**
@@ -71,7 +71,7 @@ class DomainController extends Controller
     public function edit(Domain $domain): View|Factory|Application
     {
 
-        return view('domains.edit', compact('domain'));
+        return view('domains.domain_edit', compact('domain'));
     }
 
     /**
