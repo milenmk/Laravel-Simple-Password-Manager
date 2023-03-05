@@ -78,9 +78,10 @@ class InstallController extends Controller
 
         DB::table('options')->insert(
             [
-                ['name' => 'DISABLE_SYSLOG', 'value' => 0, 'description' => ''],
-                ['name' => 'PAGINATION_NUM', 'value' => 10, 'description' => ''],
-                ['name' => 'NUM_LIMIT_ADMIN_DASHBOARD', 'value' => 10, 'description' => ''],
+                ['name' => 'DISABLE_SYSLOG', 'value' => 0, 'description' => 'Disable application log'],
+                ['name' => 'PAGINATION_NUM', 'value' => 10, 'description' => 'Number of records for pagination in front-end'],
+                ['name' => 'NUM_LIMIT_ADMIN_DASHBOARD', 'value' => 10, 'description' => 'Number of records for pagination in admin dashbord'],
+                ['name' => 'RECORDS_TYPES', 'value' => 'website,ftp,database', 'description' => 'Comma-separated list of available records types'],
             ]
         );
     }
