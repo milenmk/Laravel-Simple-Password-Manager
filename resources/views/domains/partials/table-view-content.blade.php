@@ -15,9 +15,9 @@
 @foreach ($domains as $domain)
     <tr class="<?=($c++%2==1) ? 'odd' : 'even' ?> border-b">
         <td class="text-sm text-gray-900 font-light px-2 py-4 whitespace-nowrap">{{ $domain->name }}</td>
-        <td class="text-sm text-gray-900 font-light px-2 py-4 whitespace-nowrap">{{ $domain->database }}</td>
-        <td class="text-sm text-gray-900 font-light px-2 py-4 whitespace-nowrap">{{ $domain->ftp }}</td>
-        <td class="text-sm text-gray-900 font-light px-2 py-4 whitespace-nowrap">{{ $domain->website }}</td>
+        @foreach ($types as $type)
+            <td class="text-sm text-gray-900 text-center font-light px-2 py-4 whitespace-nowrap">{{ $domain->records()->where('type', 'LIKE', '%' . $type . '%')->count() }}</td>
+        @endforeach
         <td class="text-sm text-gray-900 font-light px-2 py-4 whitespace-nowrap">
             <button type="submit"
                     class="inline-flex items-center px-2 py-1 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest

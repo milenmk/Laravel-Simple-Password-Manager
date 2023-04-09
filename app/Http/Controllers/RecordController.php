@@ -49,8 +49,8 @@ class RecordController extends Controller
     private function decryptPassword(string $password): string
     {
 
-        $iv = base64_decode(env('APP_IV'));
-        $key = substr(env('APP_KEY'), 7, 16);
+        $iv = base64_decode(config('app.APP_IV'));
+        $key = substr(config('app.APP_KEY'), 7, 16);
 
         return openssl_decrypt($password, 'AES-128-CBC', $key, 0, $iv);
     }
@@ -95,14 +95,14 @@ class RecordController extends Controller
     public function encryptPassword(string $password): string
     {
 
-        $key = env('APP_KEY');
+        $key = config('app.APP_KEY');
         if (!$key || strlen($key) < 24) {
             exec('php artisan key:generate');
-            $key = env('APP_KEY');
+            $key = config('app.APP_KEY');
         }
         $key = substr($key, 7, 16);
 
-        $iv = base64_decode(env('APP_IV'));
+        $iv = base64_decode(config('app.APP_IV'));
 
         return openssl_encrypt($password, 'AES-128-CBC', $key, 0, $iv);
     }

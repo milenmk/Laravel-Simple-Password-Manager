@@ -19,8 +19,20 @@
                         </div>
 
                         <div>
-                            <x-input-label for="type" :value="__('Type')"/>
-                            <x-text-input id="type" name="type" type="text" class="mt-1 block w-full" :value="old('type', $record->type)" required autofocus autocomplete="type"/>
+                            <label for="type">{{__('Type')}}</label>
+                            <select name="type" id="type" class="bg-white mt-1 border rounded-lg w-full" required>
+                                <option value=""></option>
+                                @php
+                                    $types = explode(',', config('RECORDS_TYPES'));
+                                @endphp
+                                @foreach($types as $type)
+                                    @if($type == $record->type)
+                                        <option value="{{ $type }}" selected>{{ $type }}</option>
+                                    @else
+                                        <option value="{{ $type }}">{{ $type }}</option>
+                                    @endif
+                                @endforeach
+                            </select>
                             <x-input-error class="mt-2" :messages="$errors->get('type')"/>
                         </div>
 

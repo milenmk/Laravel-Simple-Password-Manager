@@ -27,7 +27,9 @@ class DomainController extends Controller
 
         $domains = Domain::where('user_id', auth()->id())->sortable()->paginate(config('PAGINATION_NUM'));
 
-        return view('domains', compact('domains'));
+        $types = explode(',', config('RECORDS_TYPES'));
+
+        return view('domains', compact('domains'))->with('types', $types);
     }
 
     /**

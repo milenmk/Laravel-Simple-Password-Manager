@@ -2,7 +2,6 @@
     @if($available_locale === $current_locale)
         <x-dropdown-link><b>{{ $locale_name }}</b></x-dropdown-link>
     @else
-        <x-dropdown-link href="language/{{ $available_locale }}">{{ $locale_name }}</x-dropdown-link>
+        <x-dropdown-link href="{{ route('language.switch', ['locale' => $available_locale]) }}">{{ $locale_name }}</x-dropdown-link>
     @endif
 @endforeach
-

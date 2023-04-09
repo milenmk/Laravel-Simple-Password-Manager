@@ -38,6 +38,10 @@ return new class extends Migration {
                     'name'  => 'NUM_LIMIT_ADMIN_DASHBOARD',
                     'value' => 10,
                 ],
+                [
+                    'name'  => 'RECORDS_TYPES',
+                    'value' => 'database,ftp,website',
+                ],
             ]
         );
     }

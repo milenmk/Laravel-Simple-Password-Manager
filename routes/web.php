@@ -2,6 +2,7 @@
 
 declare(strict_types = 1);
 
+use App\Http\Controllers\AdminController;
 use App\Http\Controllers\DomainController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RecordController;
@@ -66,18 +67,22 @@ Route::middleware('auth')->group(
         Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
         // Delete
         Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+        /**
+         * Administration
+         */
+        Route::get('/adminboard', [AdminController::class, 'index'])->name('adminboard');
     }
 );
 
 Route::get(
-    'language/{locale}', static function ($locale) {
+    'language/{locale}', function ($locale) {
 
-    app()->setLocale($locale);
     session()->put('locale', $locale);
 
     return redirect()->back();
 }
-);
+)->name('language.switch');
 
 require __DIR__ . '/auth.php';
 

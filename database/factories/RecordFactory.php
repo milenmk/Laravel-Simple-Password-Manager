@@ -4,6 +4,7 @@ declare(strict_types = 1);
 
 namespace Database\Factories;
 
+use App\Http\Controllers\RecordController;
 use App\Models\Record;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;

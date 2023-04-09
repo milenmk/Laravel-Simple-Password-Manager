@@ -32,6 +32,10 @@ return [
 
     'env' => env('APP_ENV', 'production'),
 
+    'APP_IV' => env('APP_IV'),
+
+    'APP_KEY' => env('APP_KEY'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Debug Mode
