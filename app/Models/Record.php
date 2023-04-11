@@ -41,6 +41,15 @@ class Record extends Model
     }
 
     /**
+     * @return BelongsTo
+     */
+    public function user(): BelongsTo
+    {
+
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    /**
      * @param       $query
      * @param array $filters
      *

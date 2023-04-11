@@ -165,9 +165,16 @@
                     {{ __('Register') }}
                 </x-responsive-nav-link>
             @endif
-            <div class="mt-3 space-y-1">
-                @include('layouts.partials.language_switcher')
-            </div>
         </div>
+
+            <div class="pt-4 pb-1 border-t border-gray-200">
+                @foreach (Config::get('languages') as $lang => $language)
+                    <x-responsive-nav-link :href="route('lang.switch', $lang)">
+                        <span class="flag-icon flag-icon-{{$language['flag-icon']}}"></span> {{$language['display']}}
+                    </x-responsive-nav-link>
+                @endforeach
+            </div>
+
+
     </div>
 </nav>

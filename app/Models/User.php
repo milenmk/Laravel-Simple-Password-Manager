@@ -60,4 +60,13 @@ class User extends Authenticatable
         return $this->hasMany(Domain::class, 'user_id');
     }
 
+    /**
+     * @return HasMany
+     */
+    public function records(): HasMany
+    {
+
+        return $this->hasMany(Record::class, 'user_id');
+    }
+
 }

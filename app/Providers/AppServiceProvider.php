@@ -43,14 +43,6 @@ class AppServiceProvider extends ServiceProvider
         foreach ($row as $result) {
             config([$result->name => $result->value]);
         }
-
-        view()->composer(
-            'layouts.partials.language_switcher', static function ($view) {
-
-            $view->with('current_locale', app()->getLocale());
-            $view->with('available_locales', config('app.available_locales'));
-        }
-        );
     }
 
 }
