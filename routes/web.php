@@ -4,6 +4,7 @@ declare(strict_types = 1);
 
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\DomainController;
+use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RecordController;
 use App\Models\Record;
@@ -71,18 +72,13 @@ Route::middleware('auth')->group(
         /**
          * Administration
          */
-        Route::get('/adminboard', [AdminController::class, 'index'])->name('adminboard');
+        Route::get('/pm-admin', [AdminController::class, 'index'])->name('adminboard');
+        Route::get('/pm-admin/users', [AdminController::class, 'users'])->name('admin.users');
+        Route::get('/pm-admin/options', [AdminController::class, 'options'])->name('admin.options');
     }
 );
 
-Route::get(
-    'language/{locale}', function ($locale) {
-
-    session()->put('locale', $locale);
-
-    return redirect()->back();
-}
-)->name('language.switch');
+Route::get('lang/{lang}', [LanguageController::class, 'switchLang'])->name('lang.switch');
 
 require __DIR__ . '/auth.php';
 

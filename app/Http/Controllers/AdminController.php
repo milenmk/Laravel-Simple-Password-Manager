@@ -10,14 +10,36 @@ class AdminController extends Controller
 {
 
     /**
-     * Show all domains
+     * Admin main dashboard
      *
-     * @return Application|Factory|View
+     * @return View|Factory|Application
      */
     public static function index(): View|Factory|Application
     {
 
         return view('adminboard');
+    }
+
+    /**
+     * Users view
+     *
+     * @return View|Factory|Application
+     */
+    public static function users(): View|Factory|Application
+    {
+
+        return view('admin.users');
+    }
+
+    /**
+     * Options view
+     *
+     * @return View|Factory|Application
+     */
+    public static function options(): View|Factory|Application
+    {
+
+        return view('admin.options');
     }
 
 }

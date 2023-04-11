@@ -92,5 +92,6 @@
     "View Records": "View Records",
     "ViewRecords": "View Records",
     "Website": "Website",
-    "Your email address is unverified.": "Your email address is unverified."
+    "Your email address is unverified.": "Your email address is unverified.",
+    "auth.failed": "Wrong username OR password"
 }
