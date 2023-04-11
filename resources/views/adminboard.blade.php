@@ -1,5 +1,17 @@
 <x-app-layout>
+    @php
+        $c = 0;
+    @endphp
 
+    <style>
+        .even {
+            background-color: #FFF;
+        }
+
+        .odd {
+            background-color: #f3f4f6;
+        }
+    </style>
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="grid grid-cols-4 gap-4">
@@ -63,20 +75,6 @@
                                 <h3>{{__('Top :attribute users by domain number',['attribute' => config('NUM_LIMIT_ADMIN_DASHBOARD')])}}</h3>
                             </section>
 
-                            @php
-                                $c = 0;
-                            @endphp
-
-                            <style>
-                                .even {
-                                    background-color: #FFF;
-                                }
-
-                                .odd {
-                                    background-color: #f3f4f6;
-                                }
-                            </style>
-
                             <div class="m-5 overflow-hidden rounded-lg shadow-lg">
                                 <div class="w-full">
                                     <table class="w-full">
@@ -103,20 +101,6 @@
                                 <h3>{{__('Top :attribute users by records number',['attribute' => config('NUM_LIMIT_ADMIN_DASHBOARD')])}}</h3>
                             </section>
 
-                            @php
-                                $c = 0;
-                            @endphp
-
-                            <style>
-                                .even {
-                                    background-color: #FFF;
-                                }
-
-                                .odd {
-                                    background-color: #f3f4f6;
-                                }
-                            </style>
-
                             <div class="m-5 overflow-hidden rounded-lg shadow-lg">
                                 <div class="w-full">
                                     <table class="w-full">
@@ -142,20 +126,6 @@
                             <section class="container mx-auto p-6 font-mono">
                                 <h3>{{__('Last :attribute users',['attribute' => config('NUM_LIMIT_ADMIN_DASHBOARD')])}}</h3>
                             </section>
-
-                            @php
-                                $c = 0;
-                            @endphp
-
-                            <style>
-                                .even {
-                                    background-color: #FFF;
-                                }
-
-                                .odd {
-                                    background-color: #f3f4f6;
-                                }
-                            </style>
 
                             <div class="m-5 overflow-hidden rounded-lg shadow-lg">
                                 <div class="w-full">
