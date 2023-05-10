@@ -38,6 +38,12 @@ class RegisteredUserController extends Controller
             ]
         );
 
+        if (User::exists()) {
+            $admin = 0;
+        } else {
+            $admin = 1;
+        }
+
         $user = User::create(
             [
                 'name'     => $request->name,
@@ -45,6 +51,7 @@ class RegisteredUserController extends Controller
                 'password' => Hash::make($request->password),
                 'language' => 'en',
                 'theme'    => 'light',
+                'is_admin' => $admin,
             ]
         );
 

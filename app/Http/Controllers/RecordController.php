@@ -81,7 +81,7 @@ class RecordController extends Controller
             ]
         );
 
-        return redirect('/');
+        return redirect('/records');
     }
 
     /**

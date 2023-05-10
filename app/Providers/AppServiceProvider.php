@@ -7,6 +7,7 @@ namespace App\Providers;
 use Exception;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -39,9 +40,11 @@ class AppServiceProvider extends ServiceProvider
             Artisan::call('config:cache');
         }
 
-        $row = DB::select('select * from options');
-        foreach ($row as $result) {
-            config([$result->name => $result->value]);
+        if (Schema::hasTable('options')) {
+            $row = DB::select('select * from options');
+            foreach ($row as $result) {
+                config([$result->name => $result->value]);
+            }
         }
     }
 

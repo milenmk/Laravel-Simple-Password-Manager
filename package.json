@@ -16,6 +16,7 @@
         "vite": "^4.0.0"
     },
     "dependencies": {
-        "flag-icon-css": "^4.1.7"
+        "flag-icon-css": "^4.1.7",
+        "font-awesome": "^4.7.0"
     }
 }
