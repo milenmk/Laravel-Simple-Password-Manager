@@ -5,6 +5,7 @@ declare(strict_types = 1);
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\DomainController;
 use App\Http\Controllers\LanguageController;
+use App\Http\Controllers\OptionsController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RecordController;
 use App\Models\Record;
@@ -72,9 +73,13 @@ Route::middleware('auth')->group(
         /**
          * Administration
          */
+        // Main navigation
         Route::get('/pm-admin', [AdminController::class, 'index'])->name('adminboard');
         Route::get('/pm-admin/users', [AdminController::class, 'users'])->name('admin.users');
         Route::get('/pm-admin/options', [AdminController::class, 'options'])->name('admin.options');
+        // Options
+        Route::get('/pm-admin/{option}/option_edit', [OptionsController::class, 'edit']);
+        Route::post('/pm-admin/{option}/option_update', [OptionsController::class, 'update'])->name('options.update');
     }
 );
 

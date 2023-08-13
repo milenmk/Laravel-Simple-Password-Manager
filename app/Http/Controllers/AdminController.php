@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Domain;
+use App\Models\Options;
 use App\Models\Record;
 use App\Models\User;
 use Illuminate\Contracts\Foundation\Application;
@@ -40,7 +41,11 @@ class AdminController extends Controller
     public static function users(): View|Factory|Application
     {
 
-        return view('admin.users');
+        $users = User::sortable()->paginate(config('PAGINATION_NUM'));
+
+        //$users = User::sortable()->paginate(10);
+
+        return view('admin.users', compact('users'));
     }
 
     /**
@@ -51,7 +56,9 @@ class AdminController extends Controller
     public static function options(): View|Factory|Application
     {
 
-        return view('admin.options');
+        $options = Options::sortable()->paginate(config('PAGINATION_NUM'));
+
+        return view('admin.options', compact('options'));
     }
 
 }

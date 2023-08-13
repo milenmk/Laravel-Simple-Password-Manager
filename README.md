@@ -2,10 +2,6 @@
 
 Simple password manager written on Laravel
 
-STILL IN DEVELOPMENT!!!
-
-For working version of this application, go to https://github.com/milenmk/simple-password-manager
-
 ## Requirements
 
 * PHP > 8

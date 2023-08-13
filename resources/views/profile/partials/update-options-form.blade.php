@@ -14,16 +14,26 @@
         @method('patch')
 
         <div>
-            <x-input-label for="name" :value="__('Language')"/>
-            <x-text-input id="language" name="language" type="text" class="mt-1 block w-full" :value="old('language', $user->language)" autocomplete="language"/>
-            <x-input-error class="mt-2" :messages="$errors->get('language')"/>
+            <label for="language">{{__('Language')}}</label>
+            <select name="language" id="language" class="bg-white mt-1 border rounded-lg w-full" required>
+                @foreach (Config::get('languages') as $lang => $language)
+                    @if ($lang === session()->get('applocale'))
+                        <option value="{{$lang}}" selected>{{$language['display']}}</option>
+                    @else
+                        <option value="{{$lang}}">{{$language['display']}}</option>
+                    @endif
+                @endforeach
+            </select>
+            <x-input-error class="mt-2" :messages="$errors->get('type')"/>
         </div>
 
+        <!---
         <div>
             <x-input-label for="name" :value="__('Theme')"/>
             <x-text-input id="theme" name="theme" type="text" class="mt-1 block w-full" :value="old('theme', $user->theme)" autocomplete="theme"/>
             <x-input-error class="mt-2" :messages="$errors->get('theme')"/>
         </div>
+        -->
 
         <div class="flex items-center gap-4">
             <x-primary-button>{{ __('Save') }}</x-primary-button>

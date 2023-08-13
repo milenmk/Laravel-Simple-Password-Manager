@@ -14,10 +14,10 @@
                 @if (!empty(Auth::user()) && Auth::user()->id > 0)
                     <!-- Navigation Links -->
                     <div class="hidden space-x-8 sm:-my-px sm:ml-10 sm:flex">
-                        <x-nav-link :href="url('/')">
+                        <x-nav-link :href="url('/')" class="{{ (Request::route()->getName() === 'index') ? 'active' : '' }}">
                             {{ __('Domains') }}
                         </x-nav-link>
-                        <x-nav-link :href="route('records')">
+                        <x-nav-link :href="route('records')" class="{{ (Request::route()->getName() === 'records') ? 'active' : '' }}">
                             {{ __('Records') }}
                         </x-nav-link>
                     </div>
@@ -167,13 +167,13 @@
             @endif
         </div>
 
-            <div class="pt-4 pb-1 border-t border-gray-200">
-                @foreach (Config::get('languages') as $lang => $language)
-                    <x-responsive-nav-link :href="route('lang.switch', $lang)">
-                        <span class="flag-icon flag-icon-{{$language['flag-icon']}}"></span> {{$language['display']}}
-                    </x-responsive-nav-link>
-                @endforeach
-            </div>
+        <div class="pt-4 pb-1 border-t border-gray-200">
+            @foreach (Config::get('languages') as $lang => $language)
+                <x-responsive-nav-link :href="route('lang.switch', $lang)">
+                    <span class="flag-icon flag-icon-{{$language['flag-icon']}}"></span> {{$language['display']}}
+                </x-responsive-nav-link>
+            @endforeach
+        </div>
 
 
     </div>

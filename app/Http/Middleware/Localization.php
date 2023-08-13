@@ -7,6 +7,8 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Session;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use function array_key_exists;
@@ -30,9 +32,14 @@ class Localization
     public function handle(Request $request, Closure $next): mixed
     {
 
+        if (isset(auth()->user()->language) && auth()->user()->language && array_key_exists(auth()->user()->language, Config::get('languages'))) {
+            Session::put('applocale', auth()->user()->language);
+        }
+
         if (session()->has('applocale') && array_key_exists(session()->get('applocale'), config('languages'))) {
             App::setLocale(session()->get('applocale'));
-        } else { // This is optional as Laravel will automatically set the fallback language if there is none specified
+        } else { // This is optional as Laravel will automatically set the fallback language if there is
+            // none specified
             App::setLocale(config('app.fallback_locale'));
         }
 
