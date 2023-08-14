@@ -23,7 +23,7 @@
         "laravel/pint": "^v1.6.0",
         "laravel/sail": "^v1.21.1",
         "mockery/mockery": "^1.5.1",
-        "nunomaduro/collision": "^v6.4.0",
+        "nunomaduro/collision": "^v7.8.1",
         "phpunit/phpunit": "^10.3.1",
         "spatie/laravel-ignition": "^1.6.4",
         "amirami/localizator": "^v0.11.1-alpha"
