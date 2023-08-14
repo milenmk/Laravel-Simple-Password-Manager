@@ -1,3 +1,5 @@
+/* jshint esversion: 6 */
+
 import './bootstrap';
 
 import Alpine from 'alpinejs';

@@ -1,3 +1,7 @@
+/* jshint esversion: 6 */
+
+/* jshint node: true */
+
 const defaultTheme = require('tailwindcss/defaultTheme');
 
 /** @type {import('tailwindcss').Config} */

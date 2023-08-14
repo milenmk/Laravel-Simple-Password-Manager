@@ -36,13 +36,15 @@
                                 </thead>
                                 <tbody>
                                 @foreach ($options as $option)
-                                    <tr class="<?=($c++%2==1) ? 'odd' : 'even' ?> border-b">
+                                    <tr class="<?=($c++%2===1) ? 'odd' : 'even' ?> border-b">
                                         <td class="text-sm text-gray-900 font-light px-2 py-4 whitespace-nowrap text-left">{{$option->name}}</td>
                                         <td class="text-sm text-gray-900 font-light px-2 py-4 whitespace-nowrap text-left">{{$option->value}}</td>
                                         <td class="text-sm text-gray-900 font-light px-2 py-4 whitespace text-left">{{$option->description}}</td>
                                         <td class="text-sm text-gray-900 font-light px-2 py-4 whitespace-nowrap text-center">
                                             <button type="submit"
-                                                    class="inline-flex items-center px-2 py-1 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-500 focus:bg-gray-500 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                                                    class="inline-flex items-center px-2 py-1 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white
+                                                    uppercase tracking-widest hover:bg-gray-500 focus:bg-gray-500 active:bg-gray-900 focus:outline-none focus:ring-2
+                                                    focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
                                                 <a href="{{ $option->id }}/option_edit" class="p-2 text-white text-xs">{{ __('Edit') }}</a>
                                             </button>
                                         </td>

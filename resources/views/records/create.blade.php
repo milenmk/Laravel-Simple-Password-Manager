@@ -13,7 +13,7 @@
                         @csrf
 
                         <div>
-                            <x-input-label for="domain" :value="__('Domain')"/>
+                            <label for="domain">{{ __('Domain') }}</label>
                             <select name="domain" id="domain" class="bg-white mt-1 border rounded-lg w-full" required>
                                 <option value=""></option>
                                 @foreach($domains as $domain)
@@ -23,7 +23,7 @@
                         </div>
 
                         <div>
-                            <x-input-label for="type" :value="__('Type')"/>
+                            <label for="type">{{ __('Type') }}</label>
                             <select name="type" id="type" class="bg-white mt-1 border rounded-lg w-full" required>
                                 <option value=""></option>
                                 @php

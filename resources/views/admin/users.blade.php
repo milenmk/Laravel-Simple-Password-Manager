@@ -31,18 +31,16 @@
                                     <th scope="col" class="text-sm font-medium text-gray-900 px-6 py-4 text-center">@sortablelink('name', __('Name'))</th>
                                     <th scope="col" class="text-sm font-medium text-gray-900 px-6 py-4 text-center">@sortablelink('email', __('Email'))</th>
                                     <th scope="col" class="text-sm font-medium text-gray-900 px-6 py-4 text-center">{{__('Language')}}</th>
-                                    <th scope="col" class="text-sm font-medium text-gray-900 px-6 py-4 text-center">{{__('Theme')}}</th>
                                     <th scope="col" class="text-sm font-medium text-gray-900 px-6 py-4 text-center">{{__('Registration date')}}</th>
                                     <th scope="col" class="text-sm font-medium text-gray-900 px-6 py-4 text-center">{{__('Last update')}}</th>
                                 </tr>
                                 </thead>
                                 <tbody>
                                 @foreach ($users as $user)
-                                    <tr class="<?=($c++%2==1) ? 'odd' : 'even' ?> border-b">
+                                    <tr class="<?=($c++%2===1) ? 'odd' : 'even' ?> border-b">
                                         <td class="text-sm text-gray-900 font-light px-2 py-4 whitespace-nowrap">{{$user->name}}</td>
                                         <td class="text-sm text-gray-900 font-light px-2 py-4 whitespace-nowrap">{{$user->email}}</td>
                                         <td class="text-sm text-gray-900 font-light px-2 py-4 whitespace-nowrap text-center">{{$user->language}}</td>
-                                        <td class="text-sm text-gray-900 font-light px-2 py-4 whitespace-nowrap text-center">{{$user->theme}}</td>
                                         <td class="text-sm text-gray-900 font-light px-2 py-4 whitespace-nowrap text-right">{{$user->created_at}}</td>
                                         <td class="text-sm text-gray-900 font-light px-2 py-4 whitespace-nowrap text-right">{{$user->updated_at}}</td>
                                     </tr>
@@ -58,7 +56,5 @@
                 </div>
             </div>
         </div>
-    </div>
-    </div>
     </div>
 </x-app-layout>

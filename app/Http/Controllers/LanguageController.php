@@ -16,19 +16,19 @@ use function array_key_exists;
 class LanguageController extends Controller
 {
 
-	/**
-	 * @param string $lang
-	 *
-	 * @return RedirectResponse
-	 */
-	public function switchLang(string $lang): RedirectResponse
-	{
+    /**
+     * @param string $lang
+     *
+     * @return RedirectResponse
+     */
+    public function switchLang(string $lang): RedirectResponse
+    {
 
-		if (array_key_exists($lang, Config::get('languages'))) {
-			Session::put('applocale', $lang);
-		}
+        if (array_key_exists($lang, Config::get('languages'))) {
+            Session::put('applocale', $lang);
+        }
 
-		return Redirect::back();
-	}
+        return Redirect::back();
+    }
 
 }

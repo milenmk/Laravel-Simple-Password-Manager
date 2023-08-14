@@ -8,7 +8,9 @@
                     <a href="{{ url('/') }}">
                         <img src="{{ asset('images/logo.png') }}" alt="logo"/>
                     </a>
-                    <span class="ml-4">{{ config('app.name') }}</span>
+                    <a href="{{ url('/') }}" class="ml-4">
+                        {{ config('app.name') }}
+                    </a>
                 </div>
 
                 @if (!empty(Auth::user()) && Auth::user()->id > 0)

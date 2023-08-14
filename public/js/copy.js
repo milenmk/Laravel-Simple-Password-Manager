@@ -1,5 +1,7 @@
 /* jshint esversion: 6 */
 
+/* global $:false, jQuery:false */
+
 function copyToClipboard(val) {
 
     'use strict';
@@ -14,6 +16,8 @@ function copyToClipboard(val) {
 }
 
 jQuery(document).ready(function () {
+
+    'use strict';
 
     $('.fa-clipboard').click(function () {
         $(this).removeClass('fa-clipboard').addClass('fa-check');
