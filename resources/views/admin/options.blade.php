@@ -24,7 +24,7 @@
                 </div>
                 <div class="col-span-3">
                     <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg w-full">
-                        <section class="container mx-auto p-6 font-mono">
+                        <section class="container mx-auto p-6 font-roboto">
                             <table class="w-full">
                                 <thead class="bg-white border-b">
                                 <tr class="text-md font-semibold tracking-wide text-center text-gray-900 bg-gray-100 uppercase border-b border-gray-600">
@@ -43,7 +43,7 @@
                                         <td class="text-sm text-gray-900 font-light px-2 py-4 whitespace-nowrap text-center">
                                             <button type="submit"
                                                     class="inline-flex items-center px-2 py-1 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-500 focus:bg-gray-500 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                                                <a href="{{ $option->id }}/option_edit" class="p-2 text-white text-xs font-thin">{{ __('Edit') }}</a>
+                                                <a href="{{ $option->id }}/option_edit" class="p-2 text-white text-xs">{{ __('Edit') }}</a>
                                             </button>
                                         </td>
                                     </tr>

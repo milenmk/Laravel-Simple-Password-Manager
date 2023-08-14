@@ -31,12 +31,12 @@
                 <button type="submit"
                         class="inline-flex items-center px-2 py-1 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest
                         hover:bg-gray-500 focus:bg-gray-500 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                    <a href="{{ $record->id }}/record_edit" class="p-2 text-white text-xs font-thin">{{ __('Edit') }}</a>
+                    <a href="{{ $record->id }}/record_edit" class="p-2 text-white text-xs">{{ __('Edit') }}</a>
                 </button>
                 <button type="submit"
                         class="inline-flex items-center px-2 py-1 bg-red-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest
                         hover:bg-red-500 active:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                    <a href="{{ $record->id }}/record_delete" class="p-2 text-white text-xs font-thin">{{ __('Delete') }}</a>
+                    <a href="{{ $record->id }}/record_delete" class="p-2 text-white text-xs">{{ __('Delete') }}</a>
                 </button>
             </td>
         </tr>

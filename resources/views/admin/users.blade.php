@@ -24,7 +24,7 @@
                 </div>
                 <div class="col-span-3">
                     <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg w-full">
-                        <section class="container mx-auto p-6 font-mono">
+                        <section class="container mx-auto p-6 font-roboto">
                             <table class="w-full">
                                 <thead class="bg-white border-b">
                                 <tr class="text-md font-semibold tracking-wide text-center text-gray-900 bg-gray-100 uppercase border-b border-gray-600">

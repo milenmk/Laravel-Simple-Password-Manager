@@ -1,4 +1,4 @@
-<section class="container mx-auto p-6 font-mono">
+<section class="container mx-auto p-6 font-roboto">
     <div class="mt-1 mb-4">
         <a href="{{ route('adminboard') }}" class="{{ (Request::route()->getName() === 'adminboard') ? 'active' : '' }}">{{__('Dashboard')}}</a>
     </div>

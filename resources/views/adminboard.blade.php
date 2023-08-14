@@ -25,19 +25,19 @@
                 <div class="col-span-3">
                     <div class="grid grid-cols-3 gap-4">
                         <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                            <section class="container mx-auto p-6 font-mono">
+                            <section class="container mx-auto p-6 font-roboto">
                                 {{__('Users')}}
                                 <span class="float-right">{{count($users)}}</span>
                             </section>
                         </div>
                         <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                            <section class="container mx-auto p-6 font-mono">
+                            <section class="container mx-auto p-6 font-roboto">
                                 {{__('Domains')}}
                                 <span class="float-right">{{count($domains)}}</span>
                             </section>
                         </div>
                         <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                            <section class="container mx-auto p-6 font-mono">
+                            <section class="container mx-auto p-6 font-roboto">
                                 {{__('Records')}}
                                 <span class="float-right">{{count($records)}}</span>
                             </section>
@@ -45,7 +45,7 @@
                     </div>
                     <div class="grid grid-cols-2 gap-4 mt-8">
                         <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                            <section class="container mx-auto p-6 font-mono">
+                            <section class="container mx-auto p-6 font-roboto">
                                 <h3>{{__('Top :attribute users by domain number',['attribute' => config('NUM_LIMIT_ADMIN_DASHBOARD')])}}</h3>
                             </section>
 
@@ -71,7 +71,7 @@
                             </div>
                         </div>
                         <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                            <section class="container mx-auto p-6 font-mono">
+                            <section class="container mx-auto p-6 font-roboto">
                                 <h3>{{__('Top :attribute users by records number',['attribute' => config('NUM_LIMIT_ADMIN_DASHBOARD')])}}</h3>
                             </section>
 
@@ -97,7 +97,7 @@
                             </div>
                         </div>
                         <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                            <section class="container mx-auto p-6 font-mono">
+                            <section class="container mx-auto p-6 font-roboto">
                                 <h3>{{__('Last :attribute users',['attribute' => config('NUM_LIMIT_ADMIN_DASHBOARD')])}}</h3>
                             </section>
 

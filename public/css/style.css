@@ -1,3 +1,7 @@
+html {
+    font-family: Roboto, serif !important;
+}
+
 .active {
     color: #013d85 !important;
     font-weight: bold !important;

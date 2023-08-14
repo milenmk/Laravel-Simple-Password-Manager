@@ -8,7 +8,7 @@
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="container mx-auto p-6 font-mono">
+                <div class="container mx-auto p-6 font-roboto">
                     <form action="{{ route('domains.store') }}" method="post">
                         @csrf
                         <div>
