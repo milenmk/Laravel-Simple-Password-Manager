@@ -1,0 +1,58 @@
+{
+    "name": "amirami/localizator",
+    "description": "Localizator is a small tool for Laravel that gives you the ability to extract untranslated strings from project files. It works using the artisan command line and the provided localize command.",
+    "homepage": "https://github.com/amiranagram/localizator",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Amir Rami",
+            "email": "me@amirrami.com",
+            "homepage": "https://amirrami.com",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": "^7.2.5|^8.0",
+        "ext-json": "*",
+        "illuminate/config": "^6.0|^8.0|^9.0",
+        "illuminate/console": "^6.0|^8.0|^9.0",
+        "illuminate/support": "^6.0|^8.0|^9.0",
+        "illuminate/filesystem": "^6.0|^8.0|^9.0",
+        "symfony/finder": "^4.4|^5.1|^6.0"
+    },
+    "require-dev": {
+        "mockery/mockery": "^1.3.3",
+        "orchestra/testbench": "^4.0|^6.6|^7.0",
+        "phpunit/phpunit": "^8.5|^9.5"
+    },
+    "autoload": {
+        "psr-4": {
+            "Amirami\\Localizator\\": "src"
+        },
+        "files": [
+            "src/helpers.php"
+        ]
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Amirami\\Localizator\\Tests\\": "tests"
+        }
+    },
+    "scripts": {
+        "test": "vendor/bin/phpunit --colors=always",
+        "test-coverage": "vendor/bin/phpunit --coverage-html coverage",
+        "act": "act -P ubuntu-latest=shivammathur/node:latest -j"
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Amirami\\Localizator\\ServiceProvider"
+            ]
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
