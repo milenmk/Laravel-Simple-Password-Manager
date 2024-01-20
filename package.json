@@ -13,7 +13,7 @@
         "lodash": "^4.17.19",
         "postcss": "^8.4.33",
         "tailwindcss": "^3.3.3",
-        "vite": "^4.4.9"
+        "vite": "^4.5.2"
     },
     "dependencies": {
         "flag-icon-css": "^4.1.7",
