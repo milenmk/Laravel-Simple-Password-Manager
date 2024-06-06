@@ -22,7 +22,6 @@ final class Facade
     private static ?self $instance = null;
     private Emitter $emitter;
     private ?TypeMap $typeMap                         = null;
-    private ?Emitter $suspended                       = null;
     private ?DeferringDispatcher $deferringDispatcher = null;
     private bool $sealed                              = false;
 
@@ -81,7 +80,11 @@ final class Facade
         $this->deferredDispatcher()->registerTracer($tracer);
     }
 
-    /** @noinspection PhpUnused */
+    /**
+     * @codeCoverageIgnore
+     *
+     * @noinspection PhpUnused
+     */
     public function initForIsolation(HRTime $offset, bool $exportObjects): CollectingDispatcher
     {
         $dispatcher = new CollectingDispatcher;
@@ -106,10 +109,6 @@ final class Facade
 
     public function forward(EventCollection $events): void
     {
-        if ($this->suspended !== null) {
-            return;
-        }
-
         $dispatcher = $this->deferredDispatcher();
 
         foreach ($events as $event) {
@@ -258,7 +257,9 @@ final class Facade
     private function garbageCollectorStatusProvider(): Telemetry\GarbageCollectorStatusProvider
     {
         if (!isset(gc_status()['running'])) {
+            // @codeCoverageIgnoreStart
             return new Php81GarbageCollectorStatusProvider;
+            // @codeCoverageIgnoreEnd
         }
 
         return new Php83GarbageCollectorStatusProvider;

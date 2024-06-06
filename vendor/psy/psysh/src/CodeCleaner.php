@@ -25,7 +25,6 @@ use Psy\CodeCleaner\FinalClassPass;
 use Psy\CodeCleaner\FunctionContextPass;
 use Psy\CodeCleaner\FunctionReturnInWriteContextPass;
 use Psy\CodeCleaner\ImplicitReturnPass;
-use Psy\CodeCleaner\InstanceOfPass;
 use Psy\CodeCleaner\IssetPass;
 use Psy\CodeCleaner\LabelContextPass;
 use Psy\CodeCleaner\LeavePsyshAlonePass;
@@ -66,17 +65,12 @@ class CodeCleaner
      * @param bool               $yolo        run without input validation
      * @param bool               $strictTypes enforce strict types by default
      */
-    public function __construct(Parser $parser = null, Printer $printer = null, NodeTraverser $traverser = null, bool $yolo = false, bool $strictTypes = false)
+    public function __construct(?Parser $parser = null, ?Printer $printer = null, ?NodeTraverser $traverser = null, bool $yolo = false, bool $strictTypes = false)
     {
         $this->yolo = $yolo;
         $this->strictTypes = $strictTypes;
 
-        if ($parser === null) {
-            $parserFactory = new ParserFactory();
-            $parser = $parserFactory->createParser();
-        }
-
-        $this->parser = $parser;
+        $this->parser = $parser ?? (new ParserFactory())->createParser();
         $this->printer = $printer ?: new Printer();
         $this->traverser = $traverser ?: new NodeTraverser();
 
@@ -120,7 +114,6 @@ class CodeCleaner
             new FinalClassPass(),
             new FunctionContextPass(),
             new FunctionReturnInWriteContextPass(),
-            new InstanceOfPass(),
             new IssetPass(),
             new LabelContextPass(),
             new LeavePsyshAlonePass(),
@@ -204,6 +197,7 @@ class CodeCleaner
             }
 
             // Set up a clean traverser for just these code cleaner passes
+            // @todo Pass visitors directly to once we drop support for PHP-Parser 4.x
             $traverser = new NodeTraverser();
             foreach ($passes as $pass) {
                 $traverser->addVisitor($pass);
@@ -290,7 +284,7 @@ class CodeCleaner
      *
      * @param array|null $namespace (default: null)
      */
-    public function setNamespace(array $namespace = null)
+    public function setNamespace(?array $namespace = null)
     {
         $this->namespace = $namespace;
     }

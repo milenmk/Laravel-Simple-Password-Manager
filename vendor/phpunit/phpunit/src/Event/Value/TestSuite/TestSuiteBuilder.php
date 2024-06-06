@@ -31,18 +31,6 @@ final class TestSuiteBuilder
      */
     public static function from(FrameworkTestSuite $testSuite): TestSuite
     {
-        $groups = [];
-
-        foreach ($testSuite->groupDetails() as $groupName => $tests) {
-            if (!isset($groups[$groupName])) {
-                $groups[$groupName] = [];
-            }
-
-            foreach ($tests as $test) {
-                $groups[$groupName][] = $test::class;
-            }
-        }
-
         $tests = [];
 
         self::process($testSuite, $tests);
@@ -105,9 +93,9 @@ final class TestSuiteBuilder
     /**
      * @psalm-param list<Test> $tests
      */
-    private static function process(FrameworkTestSuite $testSuite, &$tests): void
+    private static function process(FrameworkTestSuite $testSuite, array &$tests): void
     {
-        foreach ($testSuite->tests() as $test) {
+        foreach ($testSuite->getIterator() as $test) {
             if ($test instanceof FrameworkTestSuite) {
                 self::process($test, $tests);
 
