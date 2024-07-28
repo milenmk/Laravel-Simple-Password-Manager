@@ -5,6 +5,7 @@ namespace Illuminate\Notifications;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeEncrypted;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Contracts\Queue\ShouldQueueAfterCommit;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Queue\InteractsWithQueue;
@@ -13,7 +14,10 @@ use Illuminate\Support\Collection;
 
 class SendQueuedNotifications implements ShouldQueue
 {
-    use InteractsWithQueue, Queueable, SerializesModels;
+
+    use InteractsWithQueue;
+    use Queueable;
+    use SerializesModels;
 
     /**
      * The notifiable entities that should receive the notification.
@@ -72,7 +76,7 @@ class SendQueuedNotifications implements ShouldQueue
      * @param  array|null  $channels
      * @return void
      */
-    public function __construct($notifiables, $notification, array $channels = null)
+    public function __construct($notifiables, $notification, ?array $channels = null)
     {
         $this->channels = $channels;
         $this->notification = $notification;
@@ -80,7 +84,13 @@ class SendQueuedNotifications implements ShouldQueue
         $this->tries = property_exists($notification, 'tries') ? $notification->tries : null;
         $this->timeout = property_exists($notification, 'timeout') ? $notification->timeout : null;
         $this->maxExceptions = property_exists($notification, 'maxExceptions') ? $notification->maxExceptions : null;
-        $this->afterCommit = property_exists($notification, 'afterCommit') ? $notification->afterCommit : null;
+
+        if ($notification instanceof ShouldQueueAfterCommit) {
+            $this->afterCommit = true;
+        } else {
+            $this->afterCommit = property_exists($notification, 'afterCommit') ? $notification->afterCommit : null;
+        }
+
         $this->shouldBeEncrypted = $notification instanceof ShouldBeEncrypted;
     }
 

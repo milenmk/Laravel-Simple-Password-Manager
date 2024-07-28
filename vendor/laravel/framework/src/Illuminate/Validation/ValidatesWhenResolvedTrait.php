@@ -75,7 +75,9 @@ trait ValidatesWhenResolvedTrait
      */
     protected function failedValidation(Validator $validator)
     {
-        throw new ValidationException($validator);
+        $exception = $validator->getException();
+
+        throw new $exception($validator);
     }
 
     /**
@@ -101,6 +103,6 @@ trait ValidatesWhenResolvedTrait
      */
     protected function failedAuthorization()
     {
-        throw new UnauthorizedException;
+        throw new UnauthorizedException();
     }
 }

@@ -14,6 +14,8 @@ namespace Symfony\Component\Console\Output;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Formatter\OutputFormatterInterface;
 
+use const PHP_EOL;
+
 /**
  * A BufferedOutput that keeps only the last N chars.
  *
@@ -45,15 +47,12 @@ class TrimmedBufferOutput extends Output
         return $content;
     }
 
-    /**
-     * @return void
-     */
-    protected function doWrite(string $message, bool $newline)
+    protected function doWrite(string $message, bool $newline): void
     {
         $this->buffer .= $message;
 
         if ($newline) {
-            $this->buffer .= \PHP_EOL;
+            $this->buffer .= PHP_EOL;
         }
 
         $this->buffer = substr($this->buffer, 0 - $this->maxLength);

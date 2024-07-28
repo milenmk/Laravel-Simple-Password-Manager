@@ -9,14 +9,15 @@ use Illuminate\Contracts\Support\Renderable;
 use Illuminate\Support\Traits\Macroable;
 use InvalidArgumentException;
 use JsonSerializable;
+use Override;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 
 class Response extends SymfonyResponse
 {
-    use ResponseTrait, Macroable {
-        Macroable::__call as macroCall;
-    }
+
+    use Macroable;
+    use ResponseTrait;
 
     /**
      * Create a new HTTP response.
@@ -45,6 +46,7 @@ class Response extends SymfonyResponse
      *
      * @throws \InvalidArgumentException
      */
+    #[Override]
     public function setContent(mixed $content): static
     {
         $this->original = $content;
@@ -93,7 +95,7 @@ class Response extends SymfonyResponse
      * Morph the given content into JSON.
      *
      * @param  mixed  $content
-     * @return string
+     * @return string|false
      */
     protected function morphToJson($content)
     {

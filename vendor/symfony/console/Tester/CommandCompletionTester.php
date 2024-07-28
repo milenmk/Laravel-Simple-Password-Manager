@@ -15,6 +15,8 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Completion\CompletionInput;
 use Symfony\Component\Console\Completion\CompletionSuggestions;
 
+use function count;
+
 /**
  * Eases the testing of command completion.
  *
@@ -22,11 +24,9 @@ use Symfony\Component\Console\Completion\CompletionSuggestions;
  */
 class CommandCompletionTester
 {
-    private Command $command;
-
-    public function __construct(Command $command)
-    {
-        $this->command = $command;
+    public function __construct(
+        private Command $command,
+    ) {
     }
 
     /**
@@ -34,7 +34,7 @@ class CommandCompletionTester
      */
     public function complete(array $input): array
     {
-        $currentIndex = \count($input);
+        $currentIndex = count($input);
         if ('' === end($input)) {
             array_pop($input);
         }

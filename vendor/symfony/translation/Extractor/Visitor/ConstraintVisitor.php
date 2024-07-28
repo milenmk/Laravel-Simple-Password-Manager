@@ -14,6 +14,8 @@ namespace Symfony\Component\Translation\Extractor\Visitor;
 use PhpParser\Node;
 use PhpParser\NodeVisitor;
 
+use function in_array;
+
 /**
  * @author Mathieu Santostefano <msantostefano@protonmail.com>
  *
@@ -22,7 +24,7 @@ use PhpParser\NodeVisitor;
 final class ConstraintVisitor extends AbstractVisitor implements NodeVisitor
 {
     public function __construct(
-        private readonly array $constraintClassNames = []
+        private readonly array $constraintClassNames = [],
     ) {
     }
 
@@ -51,7 +53,7 @@ final class ConstraintVisitor extends AbstractVisitor implements NodeVisitor
         $isConstraintClass = false;
 
         foreach ($parts as $part) {
-            if (\in_array($part, $this->constraintClassNames, true)) {
+            if (in_array($part, $this->constraintClassNames, true)) {
                 $isConstraintClass = true;
 
                 break;

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * This file is part of the Carbon package.
  *
@@ -14,6 +16,10 @@ namespace Carbon\Exceptions;
 use InvalidArgumentException as BaseInvalidArgumentException;
 use Throwable;
 
+use function get_class;
+use function gettype;
+use function is_object;
+
 class NotLocaleAwareException extends BaseInvalidArgumentException implements InvalidArgumentException
 {
     /**
@@ -23,9 +29,9 @@ class NotLocaleAwareException extends BaseInvalidArgumentException implements In
      * @param int            $code
      * @param Throwable|null $previous
      */
-    public function __construct($object, $code = 0, Throwable $previous = null)
+    public function __construct($object, $code = 0, ?Throwable $previous = null)
     {
-        $dump = \is_object($object) ? \get_class($object) : \gettype($object);
+        $dump = is_object($object) ? get_class($object) : gettype($object);
 
         parent::__construct("$dump does neither implements Symfony\Contracts\Translation\LocaleAwareInterface nor getLocale() method.", $code, $previous);
     }

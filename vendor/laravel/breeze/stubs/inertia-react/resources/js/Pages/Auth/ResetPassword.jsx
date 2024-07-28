@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import GuestLayout from '@/Layouts/GuestLayout';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
@@ -14,20 +13,12 @@ export default function ResetPassword({ token, email }) {
         password_confirmation: '',
     });
 
-    useEffect(() => {
-        return () => {
-            reset('password', 'password_confirmation');
-        };
-    }, []);
-
-    const onHandleChange = (event) => {
-        setData(event.target.name, event.target.value);
-    };
-
     const submit = (e) => {
         e.preventDefault();
 
-        post(route('password.store'));
+        post(route('password.store'), {
+            onFinish: () => reset('password', 'password_confirmation'),
+        });
     };
 
     return (
@@ -45,7 +36,7 @@ export default function ResetPassword({ token, email }) {
                         value={data.email}
                         className="mt-1 block w-full"
                         autoComplete="username"
-                        onChange={onHandleChange}
+                        onChange={(e) => setData('email', e.target.value)}
                     />
 
                     <InputError message={errors.email} className="mt-2" />
@@ -62,7 +53,7 @@ export default function ResetPassword({ token, email }) {
                         className="mt-1 block w-full"
                         autoComplete="new-password"
                         isFocused={true}
-                        onChange={onHandleChange}
+                        onChange={(e) => setData('password', e.target.value)}
                     />
 
                     <InputError message={errors.password} className="mt-2" />
@@ -73,18 +64,19 @@ export default function ResetPassword({ token, email }) {
 
                     <TextInput
                         type="password"
+                        id="password_confirmation"
                         name="password_confirmation"
                         value={data.password_confirmation}
                         className="mt-1 block w-full"
                         autoComplete="new-password"
-                        onChange={onHandleChange}
+                        onChange={(e) => setData('password_confirmation', e.target.value)}
                     />
 
                     <InputError message={errors.password_confirmation} className="mt-2" />
                 </div>
 
                 <div className="flex items-center justify-end mt-4">
-                    <PrimaryButton className="ml-4" disabled={processing}>
+                    <PrimaryButton className="ms-4" disabled={processing}>
                         Reset Password
                     </PrimaryButton>
                 </div>

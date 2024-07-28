@@ -11,6 +11,7 @@
 
 namespace Symfony\Component\HttpKernel\EventListener;
 
+use SplObjectStorage;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestMatcherInterface;
@@ -23,6 +24,11 @@ use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\HttpKernel\Profiler\Profile;
 use Symfony\Component\HttpKernel\Profiler\Profiler;
 
+use Throwable;
+
+use const FILTER_VALIDATE_BOOL;
+use const PHP_INT_MIN;
+
 /**
  * ProfilerListener collects data for the current request by listening to the kernel events.
  *
@@ -32,32 +38,26 @@ use Symfony\Component\HttpKernel\Profiler\Profiler;
  */
 class ProfilerListener implements EventSubscriberInterface
 {
-    private Profiler $profiler;
-    private ?RequestMatcherInterface $matcher;
-    private bool $onlyException;
-    private bool $onlyMainRequests;
-    private ?\Throwable $exception = null;
+    private ?Throwable $exception = null;
     /** @var \SplObjectStorage<Request, Profile> */
-    private \SplObjectStorage $profiles;
-    private RequestStack $requestStack;
-    private ?string $collectParameter;
+    private SplObjectStorage $profiles;
     /** @var \SplObjectStorage<Request, Request|null> */
-    private \SplObjectStorage $parents;
+    private SplObjectStorage $parents;
 
     /**
      * @param bool $onlyException    True if the profiler only collects data when an exception occurs, false otherwise
      * @param bool $onlyMainRequests True if the profiler only collects data when the request is the main request, false otherwise
      */
-    public function __construct(Profiler $profiler, RequestStack $requestStack, ?RequestMatcherInterface $matcher = null, bool $onlyException = false, bool $onlyMainRequests = false, ?string $collectParameter = null)
-    {
-        $this->profiler = $profiler;
-        $this->matcher = $matcher;
-        $this->onlyException = $onlyException;
-        $this->onlyMainRequests = $onlyMainRequests;
-        $this->profiles = new \SplObjectStorage();
-        $this->parents = new \SplObjectStorage();
-        $this->requestStack = $requestStack;
-        $this->collectParameter = $collectParameter;
+    public function __construct(
+        private Profiler $profiler,
+        private RequestStack $requestStack,
+        private ?RequestMatcherInterface $matcher = null,
+        private bool $onlyException = false,
+        private bool $onlyMainRequests = false,
+        private ?string $collectParameter = null,
+    ) {
+        $this->profiles = new SplObjectStorage();
+        $this->parents = new SplObjectStorage();
     }
 
     /**
@@ -87,7 +87,7 @@ class ProfilerListener implements EventSubscriberInterface
 
         $request = $event->getRequest();
         if (null !== $this->collectParameter && null !== $collectParameterValue = $request->get($this->collectParameter)) {
-            true === $collectParameterValue || filter_var($collectParameterValue, \FILTER_VALIDATE_BOOL) ? $this->profiler->enable() : $this->profiler->disable();
+            true === $collectParameterValue || filter_var($collectParameterValue, FILTER_VALIDATE_BOOL) ? $this->profiler->enable() : $this->profiler->disable();
         }
 
         $exception = $this->exception;
@@ -97,11 +97,11 @@ class ProfilerListener implements EventSubscriberInterface
             return;
         }
 
-        $session = $request->hasPreviousSession() ? $request->getSession() : null;
+        $session = !$request->attributes->getBoolean('_stateless') && $request->hasPreviousSession() ? $request->getSession() : null;
 
         if ($session instanceof Session) {
             $usageIndexValue = $usageIndexReference = &$session->getUsageIndex();
-            $usageIndexReference = \PHP_INT_MIN;
+            $usageIndexReference = PHP_INT_MIN;
         }
 
         try {
@@ -135,8 +135,8 @@ class ProfilerListener implements EventSubscriberInterface
             $this->profiler->saveProfile($this->profiles[$request]);
         }
 
-        $this->profiles = new \SplObjectStorage();
-        $this->parents = new \SplObjectStorage();
+        $this->profiles = new SplObjectStorage();
+        $this->parents = new SplObjectStorage();
     }
 
     public static function getSubscribedEvents(): array

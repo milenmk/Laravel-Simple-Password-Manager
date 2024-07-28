@@ -11,12 +11,26 @@
 
 namespace Symfony\Component\HttpKernel\DataCollector;
 
+use DateTimeImmutable;
+use Locale;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Kernel;
 use Symfony\Component\HttpKernel\KernelInterface;
 use Symfony\Component\VarDumper\Caster\ClassStub;
 use Symfony\Component\VarDumper\Cloner\Data;
+
+use Throwable;
+
+use function extension_loaded;
+use function function_exists;
+
+use function ini_get;
+
+use const FILTER_VALIDATE_BOOL;
+use const PHP_INT_SIZE;
+use const PHP_SAPI;
+use const PHP_VERSION;
 
 /**
  * @author Fabien Potencier <fabien@symfony.com>
@@ -30,19 +44,15 @@ class ConfigDataCollector extends DataCollector implements LateDataCollectorInte
     /**
      * Sets the Kernel associated with this Request.
      */
-    public function setKernel(?KernelInterface $kernel = null): void
+    public function setKernel(KernelInterface $kernel): void
     {
-        if (1 > \func_num_args()) {
-            trigger_deprecation('symfony/http-kernel', '6.2', 'Calling "%s()" without any arguments is deprecated, pass null explicitly instead.', __METHOD__);
-        }
-
         $this->kernel = $kernel;
     }
 
-    public function collect(Request $request, Response $response, ?\Throwable $exception = null): void
+    public function collect(Request $request, Response $response, ?Throwable $exception = null): void
     {
-        $eom = \DateTimeImmutable::createFromFormat('d/m/Y', '01/'.Kernel::END_OF_MAINTENANCE);
-        $eol = \DateTimeImmutable::createFromFormat('d/m/Y', '01/'.Kernel::END_OF_LIFE);
+        $eom = DateTimeImmutable::createFromFormat('d/m/Y', '01/'.Kernel::END_OF_MAINTENANCE);
+        $eol = DateTimeImmutable::createFromFormat('d/m/Y', '01/'.Kernel::END_OF_LIFE);
 
         $this->data = [
             'token' => $response->headers->get('X-Debug-Token'),
@@ -54,15 +64,15 @@ class ConfigDataCollector extends DataCollector implements LateDataCollectorInte
             'symfony_eol' => $eol->format('F Y'),
             'env' => isset($this->kernel) ? $this->kernel->getEnvironment() : 'n/a',
             'debug' => isset($this->kernel) ? $this->kernel->isDebug() : 'n/a',
-            'php_version' => \PHP_VERSION,
-            'php_architecture' => \PHP_INT_SIZE * 8,
-            'php_intl_locale' => class_exists(\Locale::class, false) && \Locale::getDefault() ? \Locale::getDefault() : 'n/a',
+            'php_version' => PHP_VERSION,
+            'php_architecture' => PHP_INT_SIZE * 8,
+            'php_intl_locale' => class_exists(Locale::class, false) && Locale::getDefault() ? Locale::getDefault() : 'n/a',
             'php_timezone' => date_default_timezone_get(),
-            'xdebug_enabled' => \extension_loaded('xdebug'),
-            'apcu_enabled' => \extension_loaded('apcu') && filter_var(\ini_get('apc.enabled'), \FILTER_VALIDATE_BOOL),
-            'zend_opcache_enabled' => \extension_loaded('Zend OPcache') && filter_var(\ini_get('opcache.enable'), \FILTER_VALIDATE_BOOL),
+            'xdebug_enabled' => extension_loaded('xdebug'),
+            'apcu_enabled' => extension_loaded('apcu') && filter_var(ini_get('apc.enabled'), FILTER_VALIDATE_BOOL),
+            'zend_opcache_enabled' => extension_loaded('Zend OPcache') && filter_var(ini_get('opcache.enable'), FILTER_VALIDATE_BOOL),
             'bundles' => [],
-            'sapi_name' => \PHP_SAPI,
+            'sapi_name' => PHP_SAPI,
         ];
 
         if (isset($this->kernel)) {
@@ -201,7 +211,7 @@ class ConfigDataCollector extends DataCollector implements LateDataCollectorInte
      */
     public function hasXdebugInfo(): bool
     {
-        return \function_exists('xdebug_info');
+        return function_exists('xdebug_info');
     }
 
     /**
@@ -240,9 +250,9 @@ class ConfigDataCollector extends DataCollector implements LateDataCollectorInte
 
     private function determineSymfonyState(): string
     {
-        $now = new \DateTimeImmutable();
-        $eom = \DateTimeImmutable::createFromFormat('d/m/Y', '01/'.Kernel::END_OF_MAINTENANCE)->modify('last day of this month');
-        $eol = \DateTimeImmutable::createFromFormat('d/m/Y', '01/'.Kernel::END_OF_LIFE)->modify('last day of this month');
+        $now = new DateTimeImmutable();
+        $eom = DateTimeImmutable::createFromFormat('d/m/Y', '01/'.Kernel::END_OF_MAINTENANCE)->modify('last day of this month');
+        $eol = DateTimeImmutable::createFromFormat('d/m/Y', '01/'.Kernel::END_OF_LIFE)->modify('last day of this month');
 
         if ($now > $eol) {
             $versionState = 'eol';

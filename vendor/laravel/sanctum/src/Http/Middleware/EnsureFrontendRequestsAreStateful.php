@@ -2,7 +2,11 @@
 
 namespace Laravel\Sanctum\Http\Middleware;
 
+use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
+use Illuminate\Cookie\Middleware\EncryptCookies;
+use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Pipeline;
+use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
@@ -47,11 +51,10 @@ class EnsureFrontendRequestsAreStateful
     protected function frontendMiddleware()
     {
         $middleware = array_values(array_filter(array_unique([
-            config('sanctum.middleware.encrypt_cookies', \Illuminate\Cookie\Middleware\EncryptCookies::class),
-            \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
-            \Illuminate\Session\Middleware\StartSession::class,
-            config('sanctum.middleware.validate_csrf_token'),
-            config('sanctum.middleware.verify_csrf_token', \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class),
+            config('sanctum.middleware.encrypt_cookies', EncryptCookies::class),
+            AddQueuedCookiesToResponse::class,
+            StartSession::class,
+            config('sanctum.middleware.validate_csrf_token', config('sanctum.middleware.verify_csrf_token', VerifyCsrfToken::class)),
             config('sanctum.middleware.authenticate_session'),
         ])));
 

@@ -7,10 +7,6 @@
 
 Localizator is a small tool for Laravel that gives you the ability to extract untranslated string from your project files with one command.
 
-## Sponsors
-
-[![locale_ad](art/locale_ad.png)](https://uselocale.com?utm_source=localizator&utm_medium=ad1)
-
 ## Support
 
 <a href="https://www.buymeacoffee.com/amirami" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
@@ -21,9 +17,11 @@ Localizator is a small tool for Laravel that gives you the ability to extract un
 
 | Laravel | Localizator |
 |---------|-------------|
-| 6.x LTS | ^0.3        |
+| 6.x LTS | 0.3-0.12    |
 | 8.x     | *           |
 | 9.x     | ^0.8        |
+| 10.x    | ^0.12       |
+| 11.x    | ^0.13       |
 
 ## Installation
 
@@ -33,11 +31,9 @@ You can install the package via composer:
 composer require --dev amirami/localizator
 ```
 
-This package makes use of [Laravels package auto-discovery mechanism](https://medium.com/@taylorotwell/package-auto-discovery-in-laravel-5-5-ea9e3ab20518), which means if you don't
-install dev dependencies in production, it also won't be loaded.
+This package makes use of [Laravels package auto-discovery mechanism](https://medium.com/@taylorotwell/package-auto-discovery-in-laravel-5-5-ea9e3ab20518), which means if you don't install dev dependencies in production, it also won't be loaded.
 
 If for some reason you want manually control this:
-
 - add the package to the `extra.laravel.dont-discover` key in `composer.json`, e.g.
   ```json
   "extra": {
@@ -63,11 +59,9 @@ If for some reason you want manually control this:
   }
   ```
 
-> Note: Avoid caching the configuration in your development environment, it may cause issues after installing this package; respectively clear the cache beforehand
-> via `php artisan cache:clear` if you encounter problems when running the commands
+> Note: Avoid caching the configuration in your development environment, it may cause issues after installing this package; respectively clear the cache beforehand via `php artisan cache:clear` if you encounter problems when running the commands
 
 You can publish the config file with:
-
 ```bash
 php artisan vendor:publish --provider="Amirami\Localizator\ServiceProvider" --tag="config"
 ```
@@ -146,8 +140,7 @@ php artisan localize de,fr
 ```
 
 This command will create (if don't exist) `de.json` and `fr.json` files inside the `resources/lang` directory.
-If you have short keys enabled and used in your files (e.g. `pagination.next`) the localize command will create folders `de` and `fr` inside `resources/lang` directory and PHP
-files inside by the short key's prefix (e.g. `pagination.php`).
+If you have short keys enabled and used in your files (e.g. `pagination.next`) the localize command will create folders `de` and `fr` inside `resources/lang` directory and PHP files inside by the short key's prefix (e.g. `pagination.php`).
 
 You can also run the artisan command without the country code arguments.
 
@@ -163,11 +156,9 @@ In this case translation strings will be generated for the language specified in
 
 By default, the strings inside the locale files will be preserved even if they are not present the next time you run the localize command.
 If you want to remove those keys that are not present in your files anymore you can append the --remove-missing option to the localize command.
-
 ``` bash
 php artisan localize --remove-missing
 ```
-
 ### Key Sorting
 
 By default, the strings generated inside those JSON files will be sorted alphabetically by their keys.
@@ -178,8 +169,8 @@ If you wanna turn off this feature just set `sort => false` in the config file.
 The way the strings are being extracted is simple.
 
 We are looking inside the directories defined in `search.dirs` config, we match the files using patterns defined in `search.patterns`, and finally we look to extract strings
-which are the first argument of the functions defined in `search.functions`.
-
+ which are the first argument of the functions defined in `search.functions`.
+ 
 You are free to change any of these values inside the config file to suit you own needs.
 
 ## Testing

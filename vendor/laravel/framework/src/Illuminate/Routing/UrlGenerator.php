@@ -17,7 +17,9 @@ use Symfony\Component\Routing\Exception\RouteNotFoundException;
 
 class UrlGenerator implements UrlGeneratorContract
 {
-    use InteractsWithTime, Macroable;
+
+    use InteractsWithTime;
+    use Macroable;
 
     /**
      * The route collection.
@@ -88,6 +90,13 @@ class UrlGenerator implements UrlGeneratorContract
      * @var callable
      */
     protected $keyResolver;
+
+    /**
+     * The missing named route resolver callable.
+     *
+     * @var callable
+     */
+    protected $missingNamedRouteResolver;
 
     /**
      * The callback to use to format hosts.
@@ -187,9 +196,7 @@ class UrlGenerator implements UrlGeneratorContract
      */
     protected function getPreviousUrlFromSession()
     {
-        $session = $this->getSession();
-
-        return $session ? $session->previousUrl() : null;
+        return $this->getSession()?->previousUrl();
     }
 
     /**
@@ -226,6 +233,26 @@ class UrlGenerator implements UrlGeneratorContract
     }
 
     /**
+     * Generate an absolute URL with the given query parameters.
+     *
+     * @param  string  $path
+     * @param  array  $query
+     * @param  mixed  $extra
+     * @param  bool|null  $secure
+     * @return string
+     */
+    public function query($path, $query = [], $extra = [], $secure = null)
+    {
+        [$path, $existingQueryString] = $this->extractQueryString($path);
+
+        parse_str(Str::after($existingQueryString, '?'), $existingQueryArray);
+
+        return rtrim($this->to($path.'?'.Arr::query(
+            array_merge($existingQueryArray, $query)
+        ), $extra, $secure), '?');
+    }
+
+    /**
      * Generate a secure, absolute URL to the given path.
      *
      * @param  string  $path
@@ -255,7 +282,7 @@ class UrlGenerator implements UrlGeneratorContract
         // for asset paths, but only for routes to endpoints in the application.
         $root = $this->assetRoot ?: $this->formatRoot($this->formatScheme($secure));
 
-        return $this->removeIndex($root).'/'.trim($path, '/');
+        return Str::finish($this->removeIndex($root), '/').trim($path, '/');
     }
 
     /**
@@ -345,7 +372,11 @@ class UrlGenerator implements UrlGeneratorContract
         $key = call_user_func($this->keyResolver);
 
         return $this->route($name, $parameters + [
-            'signature' => hash_hmac('sha256', $this->route($name, $parameters, $absolute), $key),
+            'signature' => hash_hmac(
+                'sha256',
+                $this->route($name, $parameters, $absolute),
+                is_array($key) ? $key[0] : $key
+            ),
         ], $absolute);
     }
 
@@ -430,9 +461,20 @@ class UrlGenerator implements UrlGeneratorContract
 
         $original = rtrim($url.'?'.$queryString, '?');
 
-        $signature = hash_hmac('sha256', $original, call_user_func($this->keyResolver));
+        $keys = call_user_func($this->keyResolver);
 
-        return hash_equals($signature, (string) $request->query('signature', ''));
+        $keys = is_array($keys) ? $keys : [$keys];
+
+        foreach ($keys as $key) {
+            if (hash_equals(
+                hash_hmac('sha256', $original, $key),
+                (string) $request->query('signature', '')
+            )) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -464,6 +506,11 @@ class UrlGenerator implements UrlGeneratorContract
             return $this->toRoute($route, $parameters, $absolute);
         }
 
+        if (! is_null($this->missingNamedRouteResolver) &&
+            ! is_null($url = call_user_func($this->missingNamedRouteResolver, $name, $parameters, $absolute))) {
+            return $url;
+        }
+
         throw new RouteNotFoundException("Route [{$name}] not defined.");
     }
 
@@ -480,14 +527,16 @@ class UrlGenerator implements UrlGeneratorContract
     public function toRoute($route, $parameters, $absolute)
     {
         $parameters = collect(Arr::wrap($parameters))->map(function ($value, $key) use ($route) {
-            $value = $value instanceof UrlRoutable && $route->bindingFieldFor($key)
+            return $value instanceof UrlRoutable && $route->bindingFieldFor($key)
                     ? $value->{$route->bindingFieldFor($key)}
                     : $value;
-
-            return function_exists('enum_exists') && $value instanceof BackedEnum
-                ? $value->value
-                : $value;
         })->all();
+
+        array_walk_recursive($parameters, function (&$item) {
+            if ($item instanceof BackedEnum) {
+                $item = $item->value;
+            }
+        });
 
         return $this->routeUrl()->to(
             $route, $this->formatParameters($parameters), $absolute
@@ -527,9 +576,9 @@ class UrlGenerator implements UrlGeneratorContract
 
         if ($this->rootNamespace && ! str_starts_with($action, '\\')) {
             return $this->rootNamespace.'\\'.$action;
-        } else {
-            return trim($action, '\\');
         }
+
+        return trim($action, '\\');
     }
 
     /**
@@ -820,6 +869,19 @@ class UrlGenerator implements UrlGeneratorContract
     public function withKeyResolver(callable $keyResolver)
     {
         return (clone $this)->setKeyResolver($keyResolver);
+    }
+
+    /**
+     * Set the callback that should be used to attempt to resolve missing named routes.
+     *
+     * @param  callable  $missingNamedRouteResolver
+     * @return $this
+     */
+    public function resolveMissingNamedRoutesUsing(callable $missingNamedRouteResolver)
+    {
+        $this->missingNamedRouteResolver = $missingNamedRouteResolver;
+
+        return $this;
     }
 
     /**

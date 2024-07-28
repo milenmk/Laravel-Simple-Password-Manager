@@ -2,10 +2,9 @@
 
 use Spatie\LaravelIgnition\Renderers\ErrorPageRenderer;
 
-if (!function_exists('ddd')) {
+if (! function_exists('ddd')) {
     function ddd()
     {
-
         $args = func_get_args();
 
         if (count($args) === 0) {

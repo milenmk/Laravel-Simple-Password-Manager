@@ -11,6 +11,7 @@
 
 namespace Symfony\Component\Console\Command;
 
+use DirectoryIterator;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -27,16 +28,6 @@ use Symfony\Component\Process\Process;
 #[AsCommand(name: 'completion', description: 'Dump the shell completion script')]
 final class DumpCompletionCommand extends Command
 {
-    /**
-     * @deprecated since Symfony 6.1
-     */
-    protected static $defaultName = 'completion';
-
-    /**
-     * @deprecated since Symfony 6.1
-     */
-    protected static $defaultDescription = 'Dump the shell completion script';
-
     private array $supportedShells;
 
     protected function configure(): void
@@ -149,7 +140,7 @@ EOH
 
         $shells = [];
 
-        foreach (new \DirectoryIterator(__DIR__.'/../Resources/') as $file) {
+        foreach (new DirectoryIterator(__DIR__.'/../Resources/') as $file) {
             if (str_starts_with($file->getBasename(), 'completion.') && $file->isFile()) {
                 $shells[] = $file->getExtension();
             }

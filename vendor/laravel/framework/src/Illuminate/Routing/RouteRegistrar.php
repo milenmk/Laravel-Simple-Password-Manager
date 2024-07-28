@@ -9,24 +9,25 @@ use Illuminate\Support\Reflector;
 use InvalidArgumentException;
 
 /**
- * @method \Illuminate\Routing\Route any(string $uri, \Closure|array|string|null $action = null)
- * @method \Illuminate\Routing\Route delete(string $uri, \Closure|array|string|null $action = null)
- * @method \Illuminate\Routing\Route get(string $uri, \Closure|array|string|null $action = null)
- * @method \Illuminate\Routing\Route options(string $uri, \Closure|array|string|null $action = null)
- * @method \Illuminate\Routing\Route patch(string $uri, \Closure|array|string|null $action = null)
- * @method \Illuminate\Routing\Route post(string $uri, \Closure|array|string|null $action = null)
- * @method \Illuminate\Routing\Route put(string $uri, \Closure|array|string|null $action = null)
- * @method \Illuminate\Routing\RouteRegistrar as(string $value)
- * @method \Illuminate\Routing\RouteRegistrar controller(string $controller)
- * @method \Illuminate\Routing\RouteRegistrar domain(string $value)
- * @method \Illuminate\Routing\RouteRegistrar middleware(array|string|null $middleware)
- * @method \Illuminate\Routing\RouteRegistrar name(string $value)
- * @method \Illuminate\Routing\RouteRegistrar namespace(string|null $value)
- * @method \Illuminate\Routing\RouteRegistrar prefix(string $prefix)
- * @method \Illuminate\Routing\RouteRegistrar scopeBindings()
- * @method \Illuminate\Routing\RouteRegistrar where(array $where)
- * @method \Illuminate\Routing\RouteRegistrar withoutMiddleware(array|string $middleware)
- * @method \Illuminate\Routing\RouteRegistrar withoutScopedBindings()
+ * @method Route any(string $uri, Closure|array|string|null $action = null)
+ * @method Route delete(string $uri, Closure|array|string|null $action = null)
+ * @method Route get(string $uri, Closure|array|string|null $action = null)
+ * @method Route options(string $uri, Closure|array|string|null $action = null)
+ * @method Route patch(string $uri, Closure|array|string|null $action = null)
+ * @method Route post(string $uri, Closure|array|string|null $action = null)
+ * @method Route put(string $uri, Closure|array|string|null $action = null)
+ * @method RouteRegistrar as(string $value)
+ * @method RouteRegistrar controller(string $controller)
+ * @method RouteRegistrar domain(string $value)
+ * @method RouteRegistrar middleware(array|string|null $middleware)
+ * @method RouteRegistrar missing(Closure $missing)
+ * @method RouteRegistrar name(string $value)
+ * @method RouteRegistrar namespace(string|null $value)
+ * @method RouteRegistrar prefix(string $prefix)
+ * @method RouteRegistrar scopeBindings()
+ * @method RouteRegistrar where(array $where)
+ * @method RouteRegistrar withoutMiddleware(array|string $middleware)
+ * @method RouteRegistrar withoutScopedBindings()
  */
 class RouteRegistrar
 {
@@ -65,6 +66,7 @@ class RouteRegistrar
         'controller',
         'domain',
         'middleware',
+        'missing',
         'name',
         'namespace',
         'prefix',
@@ -241,7 +243,7 @@ class RouteRegistrar
         }
 
         if (is_array($action) &&
-            ! Arr::isAssoc($action) &&
+            array_is_list($action) &&
             Reflector::isCallable($action)) {
             if (strncmp($action[0], '\\', 1)) {
                 $action[0] = '\\'.$action[0];

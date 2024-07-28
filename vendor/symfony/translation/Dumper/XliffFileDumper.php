@@ -11,8 +11,13 @@
 
 namespace Symfony\Component\Translation\Dumper;
 
+use DOMDocument;
+use Locale;
 use Symfony\Component\Translation\Exception\InvalidArgumentException;
 use Symfony\Component\Translation\MessageCatalogue;
+
+use function array_key_exists;
+use function strlen;
 
 /**
  * XliffFileDumper generates xliff files from a message catalogue.
@@ -29,14 +34,14 @@ class XliffFileDumper extends FileDumper
     public function formatCatalogue(MessageCatalogue $messages, string $domain, array $options = []): string
     {
         $xliffVersion = '1.2';
-        if (\array_key_exists('xliff_version', $options)) {
+        if (array_key_exists('xliff_version', $options)) {
             $xliffVersion = $options['xliff_version'];
         }
 
-        if (\array_key_exists('default_locale', $options)) {
+        if (array_key_exists('default_locale', $options)) {
             $defaultLocale = $options['default_locale'];
         } else {
-            $defaultLocale = \Locale::getDefault();
+            $defaultLocale = Locale::getDefault();
         }
 
         if ('1.2' === $xliffVersion) {
@@ -57,11 +62,11 @@ class XliffFileDumper extends FileDumper
     private function dumpXliff1(string $defaultLocale, MessageCatalogue $messages, ?string $domain, array $options = []): string
     {
         $toolInfo = ['tool-id' => 'symfony', 'tool-name' => 'Symfony'];
-        if (\array_key_exists('tool_info', $options)) {
+        if (array_key_exists('tool_info', $options)) {
             $toolInfo = array_merge($toolInfo, $options['tool_info']);
         }
 
-        $dom = new \DOMDocument('1.0', 'utf-8');
+        $dom = new DOMDocument('1.0', 'utf-8');
         $dom->formatOutput = true;
 
         $xliff = $dom->appendChild($dom->createElement('xliff'));
@@ -93,7 +98,7 @@ class XliffFileDumper extends FileDumper
         foreach ($messages->all($domain) as $source => $target) {
             $translation = $dom->createElement('trans-unit');
 
-            $translation->setAttribute('id', strtr(substr(base64_encode(hash('sha256', $source, true)), 0, 7), '/+', '._'));
+            $translation->setAttribute('id', strtr(substr(base64_encode(hash('xxh128', $source, true)), 0, 7), '/+', '._'));
             $translation->setAttribute('resname', $source);
 
             $s = $translation->appendChild($dom->createElement('source'));
@@ -139,7 +144,7 @@ class XliffFileDumper extends FileDumper
 
     private function dumpXliff2(string $defaultLocale, MessageCatalogue $messages, ?string $domain): string
     {
-        $dom = new \DOMDocument('1.0', 'utf-8');
+        $dom = new DOMDocument('1.0', 'utf-8');
         $dom->formatOutput = true;
 
         $xliff = $dom->appendChild($dom->createElement('xliff'));
@@ -150,7 +155,7 @@ class XliffFileDumper extends FileDumper
 
         $xliffFile = $xliff->appendChild($dom->createElement('file'));
         if (str_ends_with($domain, MessageCatalogue::INTL_DOMAIN_SUFFIX)) {
-            $xliffFile->setAttribute('id', substr($domain, 0, -\strlen(MessageCatalogue::INTL_DOMAIN_SUFFIX)).'.'.$messages->getLocale());
+            $xliffFile->setAttribute('id', substr($domain, 0, -strlen(MessageCatalogue::INTL_DOMAIN_SUFFIX)) . '.' . $messages->getLocale());
         } else {
             $xliffFile->setAttribute('id', $domain.'.'.$messages->getLocale());
         }
@@ -167,9 +172,9 @@ class XliffFileDumper extends FileDumper
 
         foreach ($messages->all($domain) as $source => $target) {
             $translation = $dom->createElement('unit');
-            $translation->setAttribute('id', strtr(substr(base64_encode(hash('sha256', $source, true)), 0, 7), '/+', '._'));
+            $translation->setAttribute('id', strtr(substr(base64_encode(hash('xxh128', $source, true)), 0, 7), '/+', '._'));
 
-            if (\strlen($source) <= 80) {
+            if (strlen($source) <= 80) {
                 $translation->setAttribute('name', $source);
             }
 

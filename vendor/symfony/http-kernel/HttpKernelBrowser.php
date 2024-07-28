@@ -11,6 +11,8 @@
 
 namespace Symfony\Component\HttpKernel;
 
+use ReflectionClass;
+use RuntimeException;
 use Symfony\Component\BrowserKit\AbstractBrowser;
 use Symfony\Component\BrowserKit\CookieJar;
 use Symfony\Component\BrowserKit\History;
@@ -19,6 +21,11 @@ use Symfony\Component\BrowserKit\Response as DomResponse;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+
+use function dirname;
+use function is_array;
+
+use const UPLOAD_ERR_INI_SIZE;
 
 /**
  * Simulates a browser and makes requests to an HttpKernel instance.
@@ -30,16 +37,18 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class HttpKernelBrowser extends AbstractBrowser
 {
-    protected $kernel;
     private bool $catchExceptions = true;
 
     /**
      * @param array $server The server parameters (equivalent of $_SERVER)
      */
-    public function __construct(HttpKernelInterface $kernel, array $server = [], ?History $history = null, ?CookieJar $cookieJar = null)
-    {
+    public function __construct(
+        protected HttpKernelInterface $kernel,
+        array $server = [],
+        ?History $history = null,
+        ?CookieJar $cookieJar = null,
+    ) {
         // These class properties must be set before calling the parent constructor, as it may depend on it.
-        $this->kernel = $kernel;
         $this->followRedirects = false;
 
         parent::__construct($server, $history, $cookieJar);
@@ -47,20 +56,16 @@ class HttpKernelBrowser extends AbstractBrowser
 
     /**
      * Sets whether to catch exceptions when the kernel is handling a request.
-     *
-     * @return void
      */
-    public function catchExceptions(bool $catchExceptions)
+    public function catchExceptions(bool $catchExceptions): void
     {
         $this->catchExceptions = $catchExceptions;
     }
 
     /**
      * @param Request $request
-     *
-     * @return Response
      */
-    protected function doRequest(object $request)
+    protected function doRequest(object $request): Response
     {
         $response = $this->kernel->handle($request, HttpKernelInterface::MAIN_REQUEST, $this->catchExceptions);
 
@@ -73,10 +78,8 @@ class HttpKernelBrowser extends AbstractBrowser
 
     /**
      * @param Request $request
-     *
-     * @return string
      */
-    protected function getScript(object $request)
+    protected function getScript(object $request): string
     {
         $kernel = var_export(serialize($this->kernel), true);
         $request = var_export(serialize($request), true);
@@ -86,8 +89,8 @@ class HttpKernelBrowser extends AbstractBrowser
         $requires = '';
         foreach (get_declared_classes() as $class) {
             if (str_starts_with($class, 'ComposerAutoloaderInit')) {
-                $r = new \ReflectionClass($class);
-                $file = \dirname($r->getFileName(), 2).'/autoload.php';
+                $r = new ReflectionClass($class);
+                $file = dirname($r->getFileName(), 2).'/autoload.php';
                 if (file_exists($file)) {
                     $requires .= 'require_once '.var_export($file, true).";\n";
                 }
@@ -95,7 +98,7 @@ class HttpKernelBrowser extends AbstractBrowser
         }
 
         if (!$requires) {
-            throw new \RuntimeException('Composer autoloader not found.');
+            throw new RuntimeException('Composer autoloader not found.');
         }
 
         $code = <<<EOF
@@ -112,10 +115,7 @@ EOF;
         return $code.$this->getHandleScript();
     }
 
-    /**
-     * @return string
-     */
-    protected function getHandleScript()
+    protected function getHandleScript(): string
     {
         return <<<'EOF'
 $response = $kernel->handle($request);
@@ -157,7 +157,7 @@ EOF;
     {
         $filtered = [];
         foreach ($files as $key => $value) {
-            if (\is_array($value)) {
+            if (is_array($value)) {
                 $filtered[$key] = $this->filterFiles($value);
             } elseif ($value instanceof UploadedFile) {
                 if ($value->isValid() && $value->getSize() > UploadedFile::getMaxFilesize()) {
@@ -165,7 +165,7 @@ EOF;
                         '',
                         $value->getClientOriginalName(),
                         $value->getClientMimeType(),
-                        \UPLOAD_ERR_INI_SIZE,
+                        UPLOAD_ERR_INI_SIZE,
                         true
                     );
                 } else {

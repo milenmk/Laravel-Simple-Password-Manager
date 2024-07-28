@@ -12,7 +12,6 @@ use Spatie\FlareClient\Http\Exceptions\BadResponseCode;
 
 class TestCommand extends Command
 {
-
     protected $signature = 'flare:test';
 
     protected $description = 'Send a test notification to Flare';
@@ -21,7 +20,6 @@ class TestCommand extends Command
 
     public function handle(Repository $config): void
     {
-
         $this->config = $config;
 
         $this->checkFlareKey();
@@ -35,7 +33,6 @@ class TestCommand extends Command
 
     protected function checkFlareKey(): self
     {
-
         $message = empty($this->config->get('flare.key'))
             ? '❌ Flare key not specified. Make sure you specify a value in the `key` key of the `flare` config file.'
             : '✅ Flare key specified';
@@ -47,7 +44,6 @@ class TestCommand extends Command
 
     public function checkFlareLogger(): self
     {
-
         $defaultLogChannel = $this->config->get('logging.default');
 
         $activeStack = $this->config->get("logging.channels.{$defaultLogChannel}");
@@ -56,7 +52,7 @@ class TestCommand extends Command
             $this->info("❌ The default logging channel `{$defaultLogChannel}` is not configured in the `logging` config file");
         }
 
-        if (!isset($activeStack['channels']) || !in_array('flare', $activeStack['channels'])) {
+        if (! isset($activeStack['channels']) || ! in_array('flare', $activeStack['channels'])) {
             $this->info("❌ The logging channel `{$defaultLogChannel}` does not contain the 'flare' channel");
         }
 
@@ -68,6 +64,10 @@ class TestCommand extends Command
             $this->info('❌ The `flare` logging channel defined in the `logging` config file is not set to `flare`.');
         }
 
+        if ($this->config->get('ignition.with_stack_frame_arguments') && ini_get('zend.exception_ignore_args')) {
+            $this->info('⚠️ The `zend.exception_ignore_args` php ini setting is enabled. This will prevent Flare from showing stack trace arguments.');
+        }
+
         $this->info('✅ The Flare logging driver was configured correctly.');
 
         return $this;
@@ -75,14 +75,12 @@ class TestCommand extends Command
 
     protected function sendTestException(): void
     {
-
         $testException = new Exception('This is an exception to test if the integration with Flare works.');
 
         try {
             app(Flare::class)->sendTestReport($testException);
             $this->info('');
-        }
-        catch (Exception $exception) {
+        } catch (Exception $exception) {
             $this->warn('❌ We were unable to send an exception to Flare. ');
 
             if ($exception instanceof BadResponseCode) {
@@ -108,8 +106,7 @@ class TestCommand extends Command
 
             $this->line('');
             $this->line('Extra info');
-            $this->table(
-                [], [
+            $this->table([], [
                 ['Platform', PHP_OS],
                 ['PHP', phpversion()],
                 ['Laravel', app()->version()],
@@ -120,8 +117,7 @@ class TestCommand extends Command
                 ['Curl', curl_version()['version'] ?? 'Unknown'],
                 /** @phpstan-ignore-next-line */
                 ['SSL', curl_version()['ssl_version'] ?? 'Unknown'],
-            ]
-            );
+            ]);
 
             if ($this->output->isVerbose()) {
                 throw $exception;
@@ -132,5 +128,4 @@ class TestCommand extends Command
 
         $this->info('We tried to send an exception to Flare. Please check if it arrived!');
     }
-
 }

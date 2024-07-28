@@ -11,6 +11,11 @@
 
 namespace Symfony\Component\Translation\Util;
 
+use function array_slice;
+use function count;
+use function is_array;
+use function is_string;
+
 /**
  * ArrayConverter generates tree like structure from a message catalogue.
  * e.g. this
@@ -27,7 +32,7 @@ class ArrayConverter
 {
     /**
      * Converts linear messages array to tree-like array.
-     * For example this array('foo.bar' => 'value') will be converted to ['foo' => ['bar' => 'value']].
+     * For example: ['foo.bar' => 'value'] will be converted to ['foo' => ['bar' => 'value']].
      *
      * @param array $messages Linear messages array
      */
@@ -52,7 +57,7 @@ class ArrayConverter
         $parentOfElem = null;
 
         foreach ($parts as $i => $part) {
-            if (isset($elem[$part]) && \is_string($elem[$part])) {
+            if (isset($elem[$part]) && is_string($elem[$part])) {
                 /* Process next case:
                  *    'foo': 'test1',
                  *    'foo.bar': 'test2'
@@ -60,7 +65,7 @@ class ArrayConverter
                  * $tree['foo'] was string before we found array {bar: test2}.
                  *  Treat new element as string too, e.g. add $tree['foo.bar'] = 'test2';
                  */
-                $elem = &$elem[implode('.', \array_slice($parts, $i))];
+                $elem = &$elem[implode('.', array_slice($parts, $i))];
                 break;
             }
 
@@ -68,7 +73,7 @@ class ArrayConverter
             $elem = &$elem[$part];
         }
 
-        if ($elem && \is_array($elem) && $parentOfElem) {
+        if ($elem && is_array($elem) && $parentOfElem) {
             /* Process next case:
              *    'foo.bar': 'test1'
              *    'foo': 'test2'
@@ -88,7 +93,7 @@ class ArrayConverter
         $prefix .= '.';
 
         foreach ($node as $id => $value) {
-            if (\is_string($value)) {
+            if (is_string($value)) {
                 $tree[$prefix.$id] = $value;
             } else {
                 self::cancelExpand($tree, $prefix.$id, $value);
@@ -102,7 +107,7 @@ class ArrayConverter
     private static function getKeyParts(string $key): array
     {
         $parts = explode('.', $key);
-        $partsCount = \count($parts);
+        $partsCount = count($parts);
 
         $result = [];
         $buffer = '';

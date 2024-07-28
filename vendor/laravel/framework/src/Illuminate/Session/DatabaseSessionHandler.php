@@ -59,7 +59,7 @@ class DatabaseSessionHandler implements ExistenceAwareInterface, SessionHandlerI
      * @param  \Illuminate\Contracts\Container\Container|null  $container
      * @return void
      */
-    public function __construct(ConnectionInterface $connection, $table, $minutes, Container $container = null)
+    public function __construct(ConnectionInterface $connection, $table, $minutes, ?Container $container = null)
     {
         $this->table = $table;
         $this->minutes = $minutes;
@@ -156,7 +156,7 @@ class DatabaseSessionHandler implements ExistenceAwareInterface, SessionHandlerI
     {
         try {
             return $this->getQuery()->insert(Arr::set($payload, 'id', $sessionId));
-        } catch (QueryException $e) {
+        } catch (QueryException) {
             $this->performUpdate($sessionId, $payload);
         }
     }

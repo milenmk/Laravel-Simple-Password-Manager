@@ -69,6 +69,82 @@ use PHPUnit\Framework\MockObject\Stub\ReturnValueMap as ReturnValueMapStub;
 use PHPUnit\Util\Xml\XmlException;
 use Throwable;
 
+if (!function_exists('PHPUnit\Framework\assertArrayIsEqualToArrayOnlyConsideringListOfKeys')) {
+    /**
+     * Asserts that two arrays are equal while only considering a list of keys.
+     *
+     * @psalm-param non-empty-list<array-key> $keysToBeConsidered
+     *
+     * @throws Exception
+     * @throws ExpectationFailedException
+     *
+     * @no-named-arguments Parameter names are not covered by the backward compatibility promise for PHPUnit
+     *
+     * @see Assert::assertArrayIsEqualToArrayOnlyConsideringListOfKeys
+     */
+    function assertArrayIsEqualToArrayOnlyConsideringListOfKeys(array $expected, array $actual, array $keysToBeConsidered, string $message = ''): void
+    {
+        Assert::assertArrayIsEqualToArrayOnlyConsideringListOfKeys(...func_get_args());
+    }
+}
+
+if (!function_exists('PHPUnit\Framework\assertArrayIsEqualToArrayIgnoringListOfKeys')) {
+    /**
+     * Asserts that two arrays are equal while ignoring a list of keys.
+     *
+     * @psalm-param non-empty-list<array-key> $keysToBeIgnored
+     *
+     * @throws Exception
+     * @throws ExpectationFailedException
+     *
+     * @no-named-arguments Parameter names are not covered by the backward compatibility promise for PHPUnit
+     *
+     * @see Assert::assertArrayIsEqualToArrayIgnoringListOfKeys
+     */
+    function assertArrayIsEqualToArrayIgnoringListOfKeys(array $expected, array $actual, array $keysToBeIgnored, string $message = ''): void
+    {
+        Assert::assertArrayIsEqualToArrayIgnoringListOfKeys(...func_get_args());
+    }
+}
+
+if (!function_exists('PHPUnit\Framework\assertArrayIsIdenticalToArrayOnlyConsideringListOfKeys')) {
+    /**
+     * Asserts that two arrays are identical while only considering a list of keys.
+     *
+     * @psalm-param non-empty-list<array-key> $keysToBeConsidered
+     *
+     * @throws Exception
+     * @throws ExpectationFailedException
+     *
+     * @no-named-arguments Parameter names are not covered by the backward compatibility promise for PHPUnit
+     *
+     * @see Assert::assertArrayIsIdenticalToArrayOnlyConsideringListOfKeys
+     */
+    function assertArrayIsIdenticalToArrayOnlyConsideringListOfKeys(array $expected, array $actual, array $keysToBeConsidered, string $message = ''): void
+    {
+        Assert::assertArrayIsIdenticalToArrayOnlyConsideringListOfKeys(...func_get_args());
+    }
+}
+
+if (!function_exists('PHPUnit\Framework\assertArrayIsIdenticalToArrayIgnoringListOfKeys')) {
+    /**
+     * Asserts that two arrays are equal while ignoring a list of keys.
+     *
+     * @psalm-param non-empty-list<array-key> $keysToBeIgnored
+     *
+     * @throws Exception
+     * @throws ExpectationFailedException
+     *
+     * @no-named-arguments Parameter names are not covered by the backward compatibility promise for PHPUnit
+     *
+     * @see Assert::assertArrayIsIdenticalToArrayIgnoringListOfKeys
+     */
+    function assertArrayIsIdenticalToArrayIgnoringListOfKeys(array $expected, array $actual, array $keysToBeIgnored, string $message = ''): void
+    {
+        Assert::assertArrayIsIdenticalToArrayIgnoringListOfKeys(...func_get_args());
+    }
+}
+
 if (!function_exists('PHPUnit\Framework\assertArrayHasKey')) {
     /**
      * Asserts that an array has a specified key.
@@ -405,6 +481,20 @@ if (!function_exists('PHPUnit\Framework\assertObjectEquals')) {
     function assertObjectEquals(object $expected, object $actual, string $method = 'equals', string $message = ''): void
     {
         Assert::assertObjectEquals(...func_get_args());
+    }
+}
+
+if (!function_exists('PHPUnit\Framework\assertObjectNotEquals')) {
+    /**
+     * @throws ExpectationFailedException
+     *
+     * @no-named-arguments Parameter names are not covered by the backward compatibility promise for PHPUnit
+     *
+     * @see Assert::assertObjectNotEquals
+     */
+    function assertObjectNotEquals(object $expected, object $actual, string $method = 'equals', string $message = ''): void
+    {
+        Assert::assertObjectNotEquals(...func_get_args());
     }
 }
 
@@ -2581,7 +2671,7 @@ if (!function_exists('PHPUnit\Framework\any')) {
      */
     function any(): AnyInvokedCountMatcher
     {
-        return new AnyInvokedCountMatcher;
+        return new AnyInvokedCountMatcher();
     }
 }
 
@@ -2614,7 +2704,7 @@ if (!function_exists('PHPUnit\Framework\atLeastOnce')) {
      */
     function atLeastOnce(): InvokedAtLeastOnceMatcher
     {
-        return new InvokedAtLeastOnceMatcher;
+        return new InvokedAtLeastOnceMatcher();
     }
 }
 
@@ -2686,7 +2776,7 @@ if (!function_exists('PHPUnit\Framework\returnSelf')) {
      */
     function returnSelf(): ReturnSelfStub
     {
-        return new ReturnSelfStub;
+        return new ReturnSelfStub();
     }
 }
 

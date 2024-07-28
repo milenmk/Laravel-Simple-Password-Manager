@@ -9,10 +9,8 @@ use Spatie\FlareClient\Context\ContextProviderDetector;
 
 class LaravelContextProviderDetector implements ContextProviderDetector
 {
-
     public function detectCurrentContext(): ContextProvider
     {
-
         if (app()->runningInConsole()) {
             return new LaravelConsoleContextProvider($_SERVER['argv'] ?? []);
         }
@@ -28,8 +26,6 @@ class LaravelContextProviderDetector implements ContextProviderDetector
 
     protected function isRunningLiveWire(Request $request): bool
     {
-
         return $request->hasHeader('x-livewire') && $request->hasHeader('referer');
     }
-
 }

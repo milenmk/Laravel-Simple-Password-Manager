@@ -5,6 +5,7 @@ namespace Illuminate\Testing\Fluent;
 use Closure;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Traits\Conditionable;
 use Illuminate\Support\Traits\Macroable;
 use Illuminate\Support\Traits\Tappable;
 use Illuminate\Testing\AssertableJsonString;
@@ -12,12 +13,14 @@ use PHPUnit\Framework\Assert as PHPUnit;
 
 class AssertableJson implements Arrayable
 {
-    use Concerns\Has,
-        Concerns\Matching,
-        Concerns\Debugging,
-        Concerns\Interaction,
-        Macroable,
-        Tappable;
+
+    use Concerns\Debugging;
+    use Concerns\Has;
+    use Concerns\Interaction;
+    use Concerns\Matching;
+    use Conditionable;
+    use Macroable;
+    use Tappable;
 
     /**
      * The properties in the current scope.
@@ -40,7 +43,7 @@ class AssertableJson implements Arrayable
      * @param  string|null  $path
      * @return void
      */
-    protected function __construct(array $props, string $path = null)
+    protected function __construct(array $props, ?string $path = null)
     {
         $this->path = $path;
         $this->props = $props;
@@ -67,7 +70,7 @@ class AssertableJson implements Arrayable
      * @param  string|null  $key
      * @return mixed
      */
-    protected function prop(string $key = null)
+    protected function prop(?string $key = null)
     {
         return Arr::get($this->props, $key);
     }

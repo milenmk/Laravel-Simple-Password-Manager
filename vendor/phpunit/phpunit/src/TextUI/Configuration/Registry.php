@@ -41,13 +41,17 @@ final class Registry
             return true;
         }
 
+        // @codeCoverageIgnoreStart
         return false;
+        // @codeCoverageIgnoreEnd
     }
 
     /**
      * This method is used by the "run test(s) in separate process" templates.
      *
      * @noinspection PhpUnused
+     *
+     * @codeCoverageIgnore
      */
     public static function loadFrom(string $path): void
     {
@@ -96,7 +100,7 @@ final class Registry
      */
     public static function init(CliConfiguration $cliConfiguration, XmlConfiguration $xmlConfiguration): Configuration
     {
-        self::$instance = (new Merger)->merge($cliConfiguration, $xmlConfiguration);
+        self::$instance = (new Merger())->merge($cliConfiguration, $xmlConfiguration);
 
         EventFacade::emitter()->testRunnerConfigured(self::$instance);
 

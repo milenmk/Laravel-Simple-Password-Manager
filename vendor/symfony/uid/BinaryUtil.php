@@ -11,6 +11,18 @@
 
 namespace Symfony\Component\Uid;
 
+use DateTimeImmutable;
+use DateTimeInterface;
+use InvalidArgumentException;
+
+use function chr;
+use function count;
+use function ord;
+use function strlen;
+
+use const PHP_INT_SIZE;
+use const STR_PAD_LEFT;
+
 /**
  * @internal
  *
@@ -46,16 +58,16 @@ class BinaryUtil
 
     public static function toBase(string $bytes, array $map): string
     {
-        $base = \strlen($alphabet = $map['']);
-        $bytes = array_values(unpack(\PHP_INT_SIZE >= 8 ? 'n*' : 'C*', $bytes));
+        $base = strlen($alphabet = $map['']);
+        $bytes = array_values(unpack(PHP_INT_SIZE >= 8 ? 'n*' : 'C*', $bytes));
         $digits = '';
 
-        while ($count = \count($bytes)) {
+        while ($count = count($bytes)) {
             $quotient = [];
             $remainder = 0;
 
             for ($i = 0; $i !== $count; ++$i) {
-                $carry = $bytes[$i] + ($remainder << (\PHP_INT_SIZE >= 8 ? 16 : 8));
+                $carry = $bytes[$i] + ($remainder << (PHP_INT_SIZE >= 8 ? 16 : 8));
                 $digit = intdiv($carry, $base);
                 $remainder = $carry % $base;
 
@@ -73,8 +85,8 @@ class BinaryUtil
 
     public static function fromBase(string $digits, array $map): string
     {
-        $base = \strlen($map['']);
-        $count = \strlen($digits);
+        $base = strlen($map['']);
+        $count = strlen($digits);
         $bytes = [];
 
         while ($count) {
@@ -84,7 +96,7 @@ class BinaryUtil
             for ($i = 0; $i !== $count; ++$i) {
                 $carry = ($bytes ? $digits[$i] : $map[$digits[$i]]) + $remainder * $base;
 
-                if (\PHP_INT_SIZE >= 8) {
+                if (PHP_INT_SIZE >= 8) {
                     $digit = $carry >> 16;
                     $remainder = $carry & 0xFFFF;
                 } else {
@@ -98,18 +110,18 @@ class BinaryUtil
             }
 
             $bytes[] = $remainder;
-            $count = \count($digits = $quotient);
+            $count = count($digits = $quotient);
         }
 
-        return pack(\PHP_INT_SIZE >= 8 ? 'n*' : 'C*', ...array_reverse($bytes));
+        return pack(PHP_INT_SIZE >= 8 ? 'n*' : 'C*', ...array_reverse($bytes));
     }
 
     public static function add(string $a, string $b): string
     {
         $carry = 0;
         for ($i = 7; 0 <= $i; --$i) {
-            $carry += \ord($a[$i]) + \ord($b[$i]);
-            $a[$i] = \chr($carry & 0xFF);
+            $carry += ord($a[$i]) + ord($b[$i]);
+            $a[$i] = chr($carry & 0xFF);
             $carry >>= 8;
         }
 
@@ -118,13 +130,15 @@ class BinaryUtil
 
     /**
      * @param string $time Count of 100-nanosecond intervals since the UUID epoch 1582-10-15 00:00:00 in hexadecimal
+     *
+     * @return string Count of 100-nanosecond intervals since the UUID epoch 1582-10-15 00:00:00 as a numeric string
      */
-    public static function hexToDateTime(string $time): \DateTimeImmutable
+    public static function hexToNumericString(string $time): string
     {
-        if (\PHP_INT_SIZE >= 8) {
+        if (PHP_INT_SIZE >= 8) {
             $time = (string) (hexdec($time) - self::TIME_OFFSET_INT);
         } else {
-            $time = str_pad(hex2bin($time), 8, "\0", \STR_PAD_LEFT);
+            $time = str_pad(hex2bin($time), 8, "\0", STR_PAD_LEFT);
 
             if (self::TIME_OFFSET_BIN <= $time) {
                 $time = self::add($time, self::TIME_OFFSET_COM2);
@@ -136,33 +150,43 @@ class BinaryUtil
             }
         }
 
-        if (9 > \strlen($time)) {
-            $time = '-' === $time[0] ? '-'.str_pad(substr($time, 1), 8, '0', \STR_PAD_LEFT) : str_pad($time, 8, '0', \STR_PAD_LEFT);
+        if (9 > strlen($time)) {
+            $time = '-' === $time[0] ? '-'.str_pad(substr($time, 1), 8, '0', STR_PAD_LEFT) : str_pad($time, 8, '0', STR_PAD_LEFT);
         }
 
-        return \DateTimeImmutable::createFromFormat('U.u?', substr_replace($time, '.', -7, 0));
+        return $time;
+    }
+
+    /**
+     * Sub-microseconds are lost since they are not handled by \DateTimeImmutable.
+     *
+     * @param string $time Count of 100-nanosecond intervals since the UUID epoch 1582-10-15 00:00:00 in hexadecimal
+     */
+    public static function hexToDateTime(string $time): DateTimeImmutable
+    {
+        return DateTimeImmutable::createFromFormat('U.u?', substr_replace(self::hexToNumericString($time), '.', -7, 0));
     }
 
     /**
      * @return string Count of 100-nanosecond intervals since the UUID epoch 1582-10-15 00:00:00 in hexadecimal
      */
-    public static function dateTimeToHex(\DateTimeInterface $time): string
+    public static function dateTimeToHex(DateTimeInterface $time): string
     {
-        if (\PHP_INT_SIZE >= 8) {
+        if (PHP_INT_SIZE >= 8) {
             if (-self::TIME_OFFSET_INT > $time = (int) $time->format('Uu0')) {
-                throw new \InvalidArgumentException('The given UUID date cannot be earlier than 1582-10-15.');
+                throw new InvalidArgumentException('The given UUID date cannot be earlier than 1582-10-15.');
             }
 
-            return str_pad(dechex(self::TIME_OFFSET_INT + $time), 16, '0', \STR_PAD_LEFT);
+            return str_pad(dechex(self::TIME_OFFSET_INT + $time), 16, '0', STR_PAD_LEFT);
         }
 
         $time = $time->format('Uu0');
         $negative = '-' === $time[0];
         if ($negative && self::TIME_OFFSET_INT < $time = substr($time, 1)) {
-            throw new \InvalidArgumentException('The given UUID date cannot be earlier than 1582-10-15.');
+            throw new InvalidArgumentException('The given UUID date cannot be earlier than 1582-10-15.');
         }
         $time = self::fromBase($time, self::BASE10);
-        $time = str_pad($time, 8, "\0", \STR_PAD_LEFT);
+        $time = str_pad($time, 8, "\0", STR_PAD_LEFT);
 
         if ($negative) {
             $time = self::add($time, self::TIME_OFFSET_COM1) ^ "\xff\xff\xff\xff\xff\xff\xff\xff";

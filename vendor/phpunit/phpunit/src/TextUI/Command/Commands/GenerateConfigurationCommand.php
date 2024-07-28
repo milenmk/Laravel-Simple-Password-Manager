@@ -12,6 +12,7 @@ namespace PHPUnit\TextUI\Command;
 use function fgets;
 use function file_put_contents;
 use function getcwd;
+use function sprintf;
 use function trim;
 use PHPUnit\Runner\Version;
 use PHPUnit\TextUI\XmlConfiguration\Generator;
@@ -19,7 +20,7 @@ use PHPUnit\TextUI\XmlConfiguration\Generator;
 /**
  * @internal This class is not covered by the backward compatibility promise for PHPUnit
  */
-final class GenerateConfigurationCommand implements Command
+final readonly class GenerateConfigurationCommand implements Command
 {
     public function execute(): Result
     {
@@ -56,9 +57,9 @@ final class GenerateConfigurationCommand implements Command
             $cacheDirectory = '.phpunit.cache';
         }
 
-        $generator = new Generator;
+        $generator = new Generator();
 
-        file_put_contents(
+        $result = @file_put_contents(
             'phpunit.xml',
             $generator->generateDefaultConfiguration(
                 Version::series(),
@@ -69,11 +70,26 @@ final class GenerateConfigurationCommand implements Command
             ),
         );
 
-        /* @noinspection MissingDirectorySeparatorInspection */
-        print PHP_EOL . 'Generated phpunit.xml in ' . getcwd() . '.' . PHP_EOL;
-        print 'Make sure to exclude the ' . $cacheDirectory . ' directory from version control.' . PHP_EOL;
+        if ($result !== false) {
+            return Result::from(
+                sprintf(
+                    PHP_EOL . 'Generated phpunit.xml in %s.' . PHP_EOL .
+                    'Make sure to exclude the %s directory from version control.' . PHP_EOL,
+                    getcwd(),
+                    $cacheDirectory,
+                ),
+            );
+        }
 
-        return Result::from();
+        // @codeCoverageIgnoreStart
+        return Result::from(
+            sprintf(
+                PHP_EOL . 'Could not write phpunit.xml in %s.' . PHP_EOL,
+                getcwd(),
+            ),
+            Result::EXCEPTION,
+        );
+        // @codeCoverageIgnoreEnd
     }
 
     private function read(): string

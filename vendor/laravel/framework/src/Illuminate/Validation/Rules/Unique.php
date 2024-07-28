@@ -4,10 +4,13 @@ namespace Illuminate\Validation\Rules;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Traits\Conditionable;
+use Stringable;
 
-class Unique
+class Unique implements Stringable
 {
-    use Conditionable, DatabaseRule;
+
+    use Conditionable;
+    use DatabaseRule;
 
     /**
      * The ID that should be ignored.

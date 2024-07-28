@@ -41,7 +41,7 @@ class LoadEnvironmentVariables
     protected function checkForSpecificEnvironmentFile($app)
     {
         if ($app->runningInConsole() &&
-            ($input = new ArgvInput)->hasParameterOption('--env') &&
+            ($input = new ArgvInput())->hasParameterOption('--env') &&
             $this->setEnvironmentFilePath($app, $app->environmentFile().'.'.$input->getParameterOption('--env'))) {
             return;
         }
@@ -94,11 +94,11 @@ class LoadEnvironmentVariables
      * Write the error information to the screen and exit.
      *
      * @param  \Dotenv\Exception\InvalidFileException  $e
-     * @return void
+     * @return never
      */
     protected function writeErrorAndDie(InvalidFileException $e)
     {
-        $output = (new ConsoleOutput)->getErrorOutput();
+        $output = (new ConsoleOutput())->getErrorOutput();
 
         $output->writeln('The environment file is invalid!');
         $output->writeln($e->getMessage());

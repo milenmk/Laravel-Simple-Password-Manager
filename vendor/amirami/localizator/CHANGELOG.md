@@ -2,6 +2,24 @@
 
 All notable changes to `amirami/localizator` will be documented in this file.
 
+## 0.12.1 - 2023-04-24
+
+### What's Changed
+
+- Added --force option to the localize command by @filip-nifti in https://github.com/amiranagram/localizator/pull/56
+
+## 0.12.0 - 2023-04-14
+
+### What's Changed
+
+- Add Laravel 10 compatibility by @musmanikram in https://github.com/amiranagram/localizator/pull/55
+
+## 0.11.1 - 2023-01-16
+
+### Fixed
+
+- `lang_path` for Laravel 9 by @amiranagram in https://github.com/amiranagram/localizator/pull/49
+
 ## 0.11.0 - 2022-11-14
 
 ### Changed

@@ -15,6 +15,20 @@ use Symfony\Component\ErrorHandler\ErrorRenderer\FileLinkFormatter;
 use Symfony\Component\VarDumper\Cloner\Cursor;
 use Symfony\Component\VarDumper\Cloner\Stub;
 
+use function count;
+use function in_array;
+use function ini_get;
+use function is_int;
+use function is_resource;
+use function is_string;
+
+use function ord;
+use function strlen;
+
+use const DIRECTORY_SEPARATOR;
+use const INF;
+use const PHP_SAPI;
+
 /**
  * CliDumper dumps variables for command line output.
  *
@@ -22,13 +36,13 @@ use Symfony\Component\VarDumper\Cloner\Stub;
  */
 class CliDumper extends AbstractDumper
 {
-    public static $defaultColors;
+    public static bool $defaultColors;
     /** @var callable|resource|string|null */
     public static $defaultOutput = 'php://stdout';
 
-    protected $colors;
-    protected $maxStringWidth = 0;
-    protected $styles = [
+    protected bool $colors;
+    protected int $maxStringWidth = 0;
+    protected array $styles = [
         // See http://en.wikipedia.org/wiki/ANSI_escape_code#graphics
         'default' => '0;38;5;208',
         'num' => '1;38;5;38',
@@ -44,8 +58,8 @@ class CliDumper extends AbstractDumper
         'index' => '38;5;38',
     ];
 
-    protected static $controlCharsRx = '/[\x00-\x1F\x7F]+/';
-    protected static $controlCharsMap = [
+    protected static string $controlCharsRx = '/[\x00-\x1F\x7F]+/';
+    protected static array $controlCharsMap = [
         "\t" => '\t',
         "\n" => '\n',
         "\v" => '\v',
@@ -53,10 +67,10 @@ class CliDumper extends AbstractDumper
         "\r" => '\r',
         "\033" => '\e',
     ];
-    protected static $unicodeCharsRx = "/[\u{00A0}\u{00AD}\u{034F}\u{061C}\u{115F}\u{1160}\u{17B4}\u{17B5}\u{180E}\u{2000}-\u{200F}\u{202F}\u{205F}\u{2060}-\u{2064}\u{206A}-\u{206F}\u{3000}\u{2800}\u{3164}\u{FEFF}\u{FFA0}\u{1D159}\u{1D173}-\u{1D17A}]/u";
+    protected static string $unicodeCharsRx = "/[\u{00A0}\u{00AD}\u{034F}\u{061C}\u{115F}\u{1160}\u{17B4}\u{17B5}\u{180E}\u{2000}-\u{200F}\u{202F}\u{205F}\u{2060}-\u{2064}\u{206A}-\u{206F}\u{3000}\u{2800}\u{3164}\u{FEFF}\u{FFA0}\u{1D159}\u{1D173}-\u{1D17A}]/u";
 
-    protected $collapseNextHash = false;
-    protected $expandNextHash = false;
+    protected bool $collapseNextHash = false;
+    protected bool $expandNextHash = false;
 
     private array $displayOptions = [
         'fileLinkFormat' => null,
@@ -68,7 +82,7 @@ class CliDumper extends AbstractDumper
     {
         parent::__construct($output, $charset, $flags);
 
-        if ('\\' === \DIRECTORY_SEPARATOR && !$this->isWindowsTrueColor()) {
+        if ('\\' === DIRECTORY_SEPARATOR && !$this->isWindowsTrueColor()) {
             // Use only the base 16 xterm colors when using ANSICON or standard Windows 10 CLI
             $this->setStyles([
                 'default' => '31',
@@ -83,25 +97,21 @@ class CliDumper extends AbstractDumper
             ]);
         }
 
-        $this->displayOptions['fileLinkFormat'] = class_exists(FileLinkFormatter::class) ? new FileLinkFormatter() : (\ini_get('xdebug.file_link_format') ?: get_cfg_var('xdebug.file_link_format') ?: 'file://%f#L%l');
+        $this->displayOptions['fileLinkFormat'] = class_exists(FileLinkFormatter::class) ? new FileLinkFormatter() : (ini_get('xdebug.file_link_format') ?: get_cfg_var('xdebug.file_link_format') ?: 'file://%f#L%l');
     }
 
     /**
      * Enables/disables colored output.
-     *
-     * @return void
      */
-    public function setColors(bool $colors)
+    public function setColors(bool $colors): void
     {
         $this->colors = $colors;
     }
 
     /**
      * Sets the maximum number of characters per line for dumped strings.
-     *
-     * @return void
      */
-    public function setMaxStringWidth(int $maxStringWidth)
+    public function setMaxStringWidth(int $maxStringWidth): void
     {
         $this->maxStringWidth = $maxStringWidth;
     }
@@ -110,10 +120,8 @@ class CliDumper extends AbstractDumper
      * Configures styles.
      *
      * @param array $styles A map of style names to style definitions
-     *
-     * @return void
      */
-    public function setStyles(array $styles)
+    public function setStyles(array $styles): void
     {
         $this->styles = $styles + $this->styles;
     }
@@ -122,18 +130,13 @@ class CliDumper extends AbstractDumper
      * Configures display options.
      *
      * @param array $displayOptions A map of display options to customize the behavior
-     *
-     * @return void
      */
-    public function setDisplayOptions(array $displayOptions)
+    public function setDisplayOptions(array $displayOptions): void
     {
         $this->displayOptions = $displayOptions + $this->displayOptions;
     }
 
-    /**
-     * @return void
-     */
-    public function dumpScalar(Cursor $cursor, string $type, string|int|float|bool|null $value)
+    public function dumpScalar(Cursor $cursor, string $type, string|int|float|bool|null $value): void
     {
         $this->dumpKey($cursor);
         $this->collapseNextHash = $this->expandNextHash = false;
@@ -168,10 +171,10 @@ class CliDumper extends AbstractDumper
                 }
 
                 $value = match (true) {
-                    \INF === $value => 'INF',
-                    -\INF === $value => '-INF',
-                    is_nan($value) => 'NAN',
-                    default => !str_contains($value = (string) $value, $this->decimalPoint) ? $value .= $this->decimalPoint.'0' : $value,
+                    INF === $value  => 'INF',
+                    -INF === $value => '-INF',
+                    is_nan($value)  => 'NAN',
+                    default         => !str_contains($value = (string) $value, $this->decimalPoint) ? $value .= $this->decimalPoint.'0' : $value,
                 };
                 break;
 
@@ -194,10 +197,7 @@ class CliDumper extends AbstractDumper
         $this->endValue($cursor);
     }
 
-    /**
-     * @return void
-     */
-    public function dumpString(Cursor $cursor, string $str, bool $bin, int $cut)
+    public function dumpString(Cursor $cursor, string $str, bool $bin, int $cut): void
     {
         $this->dumpKey($cursor);
         $this->collapseNextHash = $this->expandNextHash = false;
@@ -222,7 +222,7 @@ class CliDumper extends AbstractDumper
                 unset($str[1]);
                 $str[0] .= "\n";
             }
-            $m = \count($str) - 1;
+            $m = count($str) - 1;
             $i = $lineCut = 0;
 
             if (self::DUMP_STRING_LENGTH & $this->flags) {
@@ -286,10 +286,7 @@ class CliDumper extends AbstractDumper
         }
     }
 
-    /**
-     * @return void
-     */
-    public function enterHash(Cursor $cursor, int $type, string|int|null $class, bool $hasChild)
+    public function enterHash(Cursor $cursor, int $type, string|int|null $class, bool $hasChild): void
     {
         $this->colors ??= $this->supportsColors();
 
@@ -326,10 +323,7 @@ class CliDumper extends AbstractDumper
         }
     }
 
-    /**
-     * @return void
-     */
-    public function leaveHash(Cursor $cursor, int $type, string|int|null $class, bool $hasChild, int $cut)
+    public function leaveHash(Cursor $cursor, int $type, string|int|null $class, bool $hasChild, int $cut): void
     {
         if (empty($cursor->attr['cut_hash'])) {
             $this->dumpEllipsis($cursor, $hasChild, $cut);
@@ -344,10 +338,8 @@ class CliDumper extends AbstractDumper
      *
      * @param bool $hasChild When the dump of the hash has child item
      * @param int  $cut      The number of items the hash has been cut by
-     *
-     * @return void
      */
-    protected function dumpEllipsis(Cursor $cursor, bool $hasChild, int $cut)
+    protected function dumpEllipsis(Cursor $cursor, bool $hasChild, int $cut): void
     {
         if ($cut) {
             $this->line .= ' …';
@@ -362,10 +354,8 @@ class CliDumper extends AbstractDumper
 
     /**
      * Dumps a key in a hash structure.
-     *
-     * @return void
      */
-    protected function dumpKey(Cursor $cursor)
+    protected function dumpKey(Cursor $cursor): void
     {
         if (null !== $key = $cursor->hashKey) {
             if ($cursor->hashKeyIsBinary) {
@@ -383,7 +373,7 @@ class CliDumper extends AbstractDumper
                     $style = 'index';
                     // no break
                 case Cursor::HASH_ASSOC:
-                    if (\is_int($key)) {
+                    if (is_int($key)) {
                         $this->line .= $this->style($style, $key).' => ';
                     } else {
                         $this->line .= $bin.'"'.$this->style($style, $key).'" => ';
@@ -461,8 +451,8 @@ class CliDumper extends AbstractDumper
 
         if (isset($attr['ellipsis'], $attr['ellipsis-type'])) {
             $prefix = substr($value, 0, -$attr['ellipsis']);
-            if ('cli' === \PHP_SAPI && 'path' === $attr['ellipsis-type'] && isset($_SERVER[$pwd = '\\' === \DIRECTORY_SEPARATOR ? 'CD' : 'PWD']) && str_starts_with($prefix, $_SERVER[$pwd])) {
-                $prefix = '.'.substr($prefix, \strlen($_SERVER[$pwd]));
+            if ('cli' === PHP_SAPI && 'path' === $attr['ellipsis-type'] && isset($_SERVER[$pwd = '\\' === DIRECTORY_SEPARATOR ? 'CD' : 'PWD']) && str_starts_with($prefix, $_SERVER[$pwd])) {
+                $prefix = '.'.substr($prefix, strlen($_SERVER[$pwd]));
             }
             if (!empty($attr['ellipsis-tail'])) {
                 $prefix .= substr($value, -$attr['ellipsis'], $attr['ellipsis-tail']);
@@ -483,7 +473,7 @@ class CliDumper extends AbstractDumper
             $s = $startCchr;
             $c = $c[$i = 0];
             do {
-                $s .= $map[$c[$i]] ?? sprintf('\x%02X', \ord($c[$i]));
+                $s .= $map[$c[$i]] ?? sprintf('\x%02X', ord($c[$i]));
             } while (isset($c[++$i]));
 
             return $s.$endCchr;
@@ -499,12 +489,12 @@ class CliDumper extends AbstractDumper
 
         if ($this->colors && '' !== $value) {
             if ($cchrCount && "\033" === $value[0]) {
-                $value = substr($value, \strlen($startCchr));
+                $value = substr($value, strlen($startCchr));
             } else {
                 $value = "\033[{$this->styles[$style]}m".$value;
             }
             if ($cchrCount && str_ends_with($value, $endCchr)) {
-                $value = substr($value, 0, -\strlen($endCchr));
+                $value = substr($value, 0, -strlen($endCchr));
             } else {
                 $value .= "\033[{$this->styles['default']}m";
             }
@@ -544,7 +534,7 @@ class CliDumper extends AbstractDumper
         }
         if (isset($_SERVER['argv'][1])) {
             $colors = $_SERVER['argv'];
-            $i = \count($colors);
+            $i = count($colors);
             while (--$i > 0) {
                 if (isset($colors[$i][5])) {
                     switch ($colors[$i]) {
@@ -573,25 +563,15 @@ class CliDumper extends AbstractDumper
         return static::$defaultColors = $this->hasColorSupport($h);
     }
 
-    /**
-     * @return void
-     */
-    protected function dumpLine(int $depth, bool $endOfValue = false)
+    protected function dumpLine(int $depth, bool $endOfValue = false): void
     {
-        if (null === $this->colors) {
-            $this->colors = $this->supportsColors();
-        }
-
-        if ($this->colors) {
+        if ($this->colors ??= $this->supportsColors()) {
             $this->line = sprintf("\033[%sm%s\033[m", $this->styles['default'], $this->line);
         }
         parent::dumpLine($depth);
     }
 
-    /**
-     * @return void
-     */
-    protected function endValue(Cursor $cursor)
+    protected function endValue(Cursor $cursor): void
     {
         if (-1 === $cursor->hashType) {
             return;
@@ -616,22 +596,22 @@ class CliDumper extends AbstractDumper
      */
     private function hasColorSupport(mixed $stream): bool
     {
-        if (!\is_resource($stream) || 'stream' !== get_resource_type($stream)) {
+        if (!is_resource($stream) || 'stream' !== get_resource_type($stream)) {
             return false;
         }
 
         // Follow https://no-color.org/
-        if (isset($_SERVER['NO_COLOR']) || false !== getenv('NO_COLOR')) {
+        if ('' !== ($_SERVER['NO_COLOR'] ?? getenv('NO_COLOR') ?: '')) {
             return false;
         }
 
         // Detect msysgit/mingw and assume this is a tty because detection
         // does not work correctly, see https://github.com/composer/composer/issues/9690
-        if (!@stream_isatty($stream) && !\in_array(strtoupper((string) getenv('MSYSTEM')), ['MINGW32', 'MINGW64'], true)) {
+        if (!@stream_isatty($stream) && !in_array(strtoupper((string) getenv('MSYSTEM')), ['MINGW32', 'MINGW64'], true)) {
             return false;
         }
 
-        if ('\\' === \DIRECTORY_SEPARATOR && @sapi_windows_vt100_support($stream)) {
+        if ('\\' === DIRECTORY_SEPARATOR && @sapi_windows_vt100_support($stream)) {
             return true;
         }
 
@@ -681,7 +661,7 @@ class CliDumper extends AbstractDumper
     private function getSourceLink(string $file, int $line): string|false
     {
         if ($fmt = $this->displayOptions['fileLinkFormat']) {
-            return \is_string($fmt) ? strtr($fmt, ['%f' => $file, '%l' => $line]) : ($fmt->format($file, $line) ?: 'file://'.$file.'#L'.$line);
+            return is_string($fmt) ? strtr($fmt, ['%f' => $file, '%l' => $line]) : ($fmt->format($file, $line) ?: 'file://'.$file.'#L'.$line);
         }
 
         return false;

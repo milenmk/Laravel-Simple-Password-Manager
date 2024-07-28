@@ -11,6 +11,9 @@
 
 namespace Symfony\Component\Uid;
 
+use DateTimeImmutable;
+use DateTimeInterface;
+
 /**
  * A v1 UUID contains a 60-bit timestamp and 62 extra unique bits.
  *
@@ -31,17 +34,29 @@ class UuidV1 extends Uuid implements TimeBasedUidInterface
         }
     }
 
-    public function getDateTime(): \DateTimeImmutable
+    public function getDateTime(): DateTimeImmutable
     {
         return BinaryUtil::hexToDateTime('0'.substr($this->uid, 15, 3).substr($this->uid, 9, 4).substr($this->uid, 0, 8));
     }
 
     public function getNode(): string
     {
-        return uuid_mac($this->uid);
+        return substr($this->uid, -12);
     }
 
-    public static function generate(?\DateTimeInterface $time = null, ?Uuid $node = null): string
+    public function toV6(): UuidV6
+    {
+        $uuid = $this->uid;
+
+        return new UuidV6(substr($uuid, 15, 3).substr($uuid, 9, 4).$uuid[0].'-'.substr($uuid, 1, 4).'-6'.substr($uuid, 5, 3).substr($uuid, 18, 6).substr($uuid, 24));
+    }
+
+    public function toV7(): UuidV7
+    {
+        return $this->toV6()->toV7();
+    }
+
+    public static function generate(?DateTimeInterface $time = null, ?Uuid $node = null): string
     {
         $uuid = !$time || !$node ? uuid_create(static::TYPE) : parent::NIL;
 

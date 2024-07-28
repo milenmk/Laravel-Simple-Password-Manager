@@ -16,14 +16,16 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Exception\RunCommandFailedException;
 use Symfony\Component\Console\Input\StringInput;
 use Symfony\Component\Console\Output\BufferedOutput;
+use Throwable;
 
 /**
  * @author Kevin Bond <kevinbond@gmail.com>
  */
 final class RunCommandMessageHandler
 {
-    public function __construct(private readonly Application $application)
-    {
+    public function __construct(
+        private readonly Application $application,
+    ) {
     }
 
     public function __invoke(RunCommandMessage $message): RunCommandContext
@@ -35,7 +37,7 @@ final class RunCommandMessageHandler
 
         try {
             $exitCode = $this->application->run($input, $output);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             throw new RunCommandFailedException($e, new RunCommandContext($message, Command::FAILURE, $output->fetch()));
         }
 

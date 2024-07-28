@@ -6,7 +6,6 @@ use Illuminate\Database\Events\QueryExecuted;
 
 class Query
 {
-
     protected string $sql;
 
     protected float $time;
@@ -18,22 +17,31 @@ class Query
 
     protected float $microtime;
 
+    public static function fromQueryExecutedEvent(QueryExecuted $queryExecuted, bool $reportBindings = false): self
+    {
+        return new self(
+            $queryExecuted->sql,
+            $queryExecuted->time,
+            /** @phpstan-ignore-next-line  */
+            $queryExecuted->connectionName ?? '',
+            $reportBindings ? $queryExecuted->bindings : null
+        );
+    }
+
     /**
-     * @param string                     $sql
-     * @param float                      $time
-     * @param string                     $connectionName
+     * @param string $sql
+     * @param float $time
+     * @param string $connectionName
      * @param array<string, string>|null $bindings
-     * @param float|null                 $microtime
+     * @param float|null $microtime
      */
     protected function __construct(
         string $sql,
-        float  $time,
+        float $time,
         string $connectionName,
         ?array $bindings = null,
         ?float $microtime = null
-    )
-    {
-
+    ) {
         $this->sql = $sql;
         $this->time = $time;
         $this->connectionName = $connectionName;
@@ -41,31 +49,17 @@ class Query
         $this->microtime = $microtime ?? microtime(true);
     }
 
-    public static function fromQueryExecutedEvent(QueryExecuted $queryExecuted, bool $reportBindings = false): self
-    {
-
-        return new self(
-            $queryExecuted->sql,
-            $queryExecuted->time,
-            /** @phpstan-ignore-next-line */
-            $queryExecuted->connectionName ?? '',
-            $reportBindings ? $queryExecuted->bindings : null
-        );
-    }
-
     /**
      * @return array<string, mixed>
      */
     public function toArray(): array
     {
-
         return [
-            'sql'             => $this->sql,
-            'time'            => $this->time,
+            'sql' => $this->sql,
+            'time' => $this->time,
             'connection_name' => $this->connectionName,
-            'bindings'        => $this->bindings,
-            'microtime'       => $this->microtime,
+            'bindings' => $this->bindings,
+            'microtime' => $this->microtime,
         ];
     }
-
 }

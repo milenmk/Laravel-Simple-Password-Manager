@@ -15,7 +15,7 @@ use RedisCluster;
 class PhpRedisConnector implements Connector
 {
     /**
-     * Create a new clustered PhpRedis connection.
+     * Create a new connection.
      *
      * @param  array  $config
      * @param  array  $options
@@ -63,9 +63,7 @@ class PhpRedisConnector implements Connector
      */
     protected function buildClusterConnectionString(array $server)
     {
-        return $this->formatHost($server).':'.$server['port'].'?'.Arr::query(Arr::only($server, [
-            'database', 'password', 'prefix', 'read_timeout',
-        ]));
+        return $this->formatHost($server).':'.$server['port'];
     }
 
     /**
@@ -78,7 +76,7 @@ class PhpRedisConnector implements Connector
      */
     protected function createClient(array $config)
     {
-        return tap(new Redis, function ($client) use ($config) {
+        return tap(new Redis(), function ($client) use ($config) {
             if ($client instanceof RedisFacade) {
                 throw new LogicException(
                     extension_loaded('redis')
@@ -197,10 +195,6 @@ class PhpRedisConnector implements Connector
 
             if (! empty($options['failover'])) {
                 $client->setOption(RedisCluster::OPT_SLAVE_FAILOVER, $options['failover']);
-            }
-
-            if (! empty($options['name'])) {
-                $client->client('SETNAME', $options['name']);
             }
 
             if (array_key_exists('serializer', $options)) {

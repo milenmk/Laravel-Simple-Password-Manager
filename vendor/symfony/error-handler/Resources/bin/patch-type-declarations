@@ -10,16 +10,16 @@
  * file that was distributed with this source code.
  */
 
-if ('cli' !== \PHP_SAPI) {
+if ('cli' !== PHP_SAPI) {
     throw new Exception('This script must be run from the command line.');
 }
 
-if (\in_array('-h', $argv) || \in_array('--help', $argv)) {
+if (in_array('-h', $argv) || in_array('--help', $argv)) {
     echo implode(PHP_EOL, [
         ' Patches type declarations based on "@return" PHPDoc and triggers deprecations for',
         ' incompatible method declarations.',
         '',
-        ' This assists you to make your package compatible with Symfony 6, but it can be used',
+        ' This assists you to make your package compatible with Symfony 7, but it can be used',
         ' for any class/package.',
         '',
         ' Available configuration via environment variables:',
@@ -65,7 +65,7 @@ Symfony\Component\ErrorHandler\DebugClassLoader::enable();
 
 $deprecations = [];
 set_error_handler(function ($type, $msg, $file, $line, $context = []) use (&$deprecations) {
-    if (\E_USER_DEPRECATED !== $type) {
+    if (E_USER_DEPRECATED !== $type) {
         return;
     }
 
@@ -75,7 +75,7 @@ set_error_handler(function ($type, $msg, $file, $line, $context = []) use (&$dep
 
 $exclude = getenv('SYMFONY_PATCH_TYPE_EXCLUDE') ?: null;
 foreach ($loader->getClassMap() as $class => $file) {
-    if (str_contains($file = realpath($file), \DIRECTORY_SEPARATOR.'vendor'.\DIRECTORY_SEPARATOR)) {
+    if (str_contains($file = realpath($file), DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR)) {
         continue;
     }
 
@@ -89,7 +89,7 @@ foreach ($loader->getClassMap() as $class => $file) {
 Symfony\Component\ErrorHandler\DebugClassLoader::checkClasses();
 
 foreach ($deprecations as $class => $classDeprecations) {
-    echo $class.' ('.\count($classDeprecations).')'.PHP_EOL;
+    echo $class.' (' . count($classDeprecations) . ')' . PHP_EOL;
     echo implode(PHP_EOL, $classDeprecations).PHP_EOL.PHP_EOL;
 }
 

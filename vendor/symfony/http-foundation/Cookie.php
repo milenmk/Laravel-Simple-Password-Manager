@@ -11,6 +11,11 @@
 
 namespace Symfony\Component\HttpFoundation;
 
+use DateTimeInterface;
+use InvalidArgumentException;
+
+use function in_array;
+
 /**
  * Represents a cookie.
  *
@@ -22,13 +27,13 @@ class Cookie
     public const SAMESITE_LAX = 'lax';
     public const SAMESITE_STRICT = 'strict';
 
-    protected $name;
-    protected $value;
-    protected $domain;
-    protected $expire;
-    protected $path;
-    protected $secure;
-    protected $httpOnly;
+    protected string $name;
+    protected ?string $value;
+    protected ?string $domain;
+    protected int $expire;
+    protected string $path;
+    protected ?bool $secure;
+    protected bool $httpOnly;
 
     private bool $raw;
     private ?string $sameSite = null;
@@ -75,12 +80,9 @@ class Cookie
      * @see self::__construct
      *
      * @param self::SAMESITE_*|''|null $sameSite
-     * @param bool                     $partitioned
      */
-    public static function create(string $name, ?string $value = null, int|string|\DateTimeInterface $expire = 0, ?string $path = '/', ?string $domain = null, ?bool $secure = null, bool $httpOnly = true, bool $raw = false, ?string $sameSite = self::SAMESITE_LAX /* , bool $partitioned = false */): self
+    public static function create(string $name, ?string $value = null, int|string|DateTimeInterface $expire = 0, ?string $path = '/', ?string $domain = null, ?bool $secure = null, bool $httpOnly = true, bool $raw = false, ?string $sameSite = self::SAMESITE_LAX, bool $partitioned = false): self
     {
-        $partitioned = 9 < \func_num_args() ? func_get_arg(9) : false;
-
         return new self($name, $value, $expire, $path, $domain, $secure, $httpOnly, $raw, $sameSite, $partitioned);
     }
 
@@ -97,22 +99,22 @@ class Cookie
      *
      * @throws \InvalidArgumentException
      */
-    public function __construct(string $name, ?string $value = null, int|string|\DateTimeInterface $expire = 0, ?string $path = '/', ?string $domain = null, ?bool $secure = null, bool $httpOnly = true, bool $raw = false, ?string $sameSite = self::SAMESITE_LAX, bool $partitioned = false)
+    public function __construct(string $name, ?string $value = null, int|string|DateTimeInterface $expire = 0, ?string $path = '/', ?string $domain = null, ?bool $secure = null, bool $httpOnly = true, bool $raw = false, ?string $sameSite = self::SAMESITE_LAX, bool $partitioned = false)
     {
         // from PHP source code
         if ($raw && false !== strpbrk($name, self::RESERVED_CHARS_LIST)) {
-            throw new \InvalidArgumentException(sprintf('The cookie name "%s" contains invalid characters.', $name));
+            throw new InvalidArgumentException(sprintf('The cookie name "%s" contains invalid characters.', $name));
         }
 
-        if (empty($name)) {
-            throw new \InvalidArgumentException('The cookie name cannot be empty.');
+        if (!$name) {
+            throw new InvalidArgumentException('The cookie name cannot be empty.');
         }
 
         $this->name = $name;
         $this->value = $value;
         $this->domain = $domain;
         $this->expire = self::expiresTimestamp($expire);
-        $this->path = empty($path) ? '/' : $path;
+        $this->path = $path ?: '/';
         $this->secure = $secure;
         $this->httpOnly = $httpOnly;
         $this->raw = $raw;
@@ -145,7 +147,7 @@ class Cookie
     /**
      * Creates a cookie copy with a new time the cookie expires.
      */
-    public function withExpires(int|string|\DateTimeInterface $expire = 0): static
+    public function withExpires(int|string|DateTimeInterface $expire = 0): static
     {
         $cookie = clone $this;
         $cookie->expire = self::expiresTimestamp($expire);
@@ -156,16 +158,16 @@ class Cookie
     /**
      * Converts expires formats to a unix timestamp.
      */
-    private static function expiresTimestamp(int|string|\DateTimeInterface $expire = 0): int
+    private static function expiresTimestamp(int|string|DateTimeInterface $expire = 0): int
     {
         // convert expiration time to a Unix timestamp
-        if ($expire instanceof \DateTimeInterface) {
+        if ($expire instanceof DateTimeInterface) {
             $expire = $expire->format('U');
         } elseif (!is_numeric($expire)) {
             $expire = strtotime($expire);
 
             if (false === $expire) {
-                throw new \InvalidArgumentException('The cookie expiration time is not valid.');
+                throw new InvalidArgumentException('The cookie expiration time is not valid.');
             }
         }
 
@@ -211,7 +213,7 @@ class Cookie
     public function withRaw(bool $raw = true): static
     {
         if ($raw && false !== strpbrk($this->name, self::RESERVED_CHARS_LIST)) {
-            throw new \InvalidArgumentException(sprintf('The cookie name "%s" contains invalid characters.', $this->name));
+            throw new InvalidArgumentException(sprintf('The cookie name "%s" contains invalid characters.', $this->name));
         }
 
         $cookie = clone $this;
@@ -233,8 +235,8 @@ class Cookie
             $sameSite = strtolower($sameSite);
         }
 
-        if (!\in_array($sameSite, [self::SAMESITE_LAX, self::SAMESITE_STRICT, self::SAMESITE_NONE, null], true)) {
-            throw new \InvalidArgumentException('The "sameSite" parameter value is not valid.');
+        if (!in_array($sameSite, [self::SAMESITE_LAX, self::SAMESITE_STRICT, self::SAMESITE_NONE, null], true)) {
+            throw new InvalidArgumentException('The "sameSite" parameter value is not valid.');
         }
 
         $cookie = clone $this;
@@ -343,7 +345,7 @@ class Cookie
     {
         $maxAge = $this->expire - time();
 
-        return 0 >= $maxAge ? 0 : $maxAge;
+        return max(0, $maxAge);
     }
 
     /**

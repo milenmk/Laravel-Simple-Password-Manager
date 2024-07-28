@@ -3,6 +3,7 @@
 namespace Illuminate\Console;
 
 use Illuminate\Console\View\Components\TwoColumnDetail;
+use Override;
 use Symfony\Component\Console\Formatter\OutputFormatter;
 use Symfony\Component\Console\Helper\SymfonyQuestionHelper;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -17,7 +18,8 @@ class QuestionHelper extends SymfonyQuestionHelper
      *
      * @return void
      */
-    protected function writePrompt(OutputInterface $output, Question $question)
+    #[Override]
+    protected function writePrompt(OutputInterface $output, Question $question): void
     {
         $text = OutputFormatter::escapeTrailingBackslash($question->getQuestion());
 

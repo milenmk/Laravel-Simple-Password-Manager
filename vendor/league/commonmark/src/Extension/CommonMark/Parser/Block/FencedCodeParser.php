@@ -21,6 +21,10 @@ use League\CommonMark\Parser\Cursor;
 use League\CommonMark\Util\ArrayCollection;
 use League\CommonMark\Util\RegexHelper;
 
+use function implode;
+use function strlen;
+use function trim;
+
 final class FencedCodeParser extends AbstractBlockContinueParser
 {
     /** @psalm-readonly */
@@ -44,8 +48,8 @@ final class FencedCodeParser extends AbstractBlockContinueParser
     {
         // Check for closing code fence
         if (! $cursor->isIndented() && $cursor->getNextNonSpaceCharacter() === $this->block->getChar()) {
-            $match = RegexHelper::matchFirst('/^(?:`{3,}|~{3,})(?= *$)/', $cursor->getLine(), $cursor->getNextNonSpacePosition());
-            if ($match !== null && \strlen($match[0]) >= $this->block->getLength()) {
+            $match = RegexHelper::matchFirst('/^(?:`{3,}|~{3,})(?=[ \t]*$)/', $cursor->getLine(), $cursor->getNextNonSpacePosition());
+            if ($match !== null && strlen($match[0]) >= $this->block->getLength()) {
                 // closing fence - we're at end of line, so we can finalize now
                 return BlockContinue::finished();
             }
@@ -73,12 +77,12 @@ final class FencedCodeParser extends AbstractBlockContinueParser
             $firstLine = '';
         }
 
-        $this->block->setInfo(RegexHelper::unescape(\trim($firstLine)));
+        $this->block->setInfo(RegexHelper::unescape(trim($firstLine)));
 
         if ($this->strings->count() === 1) {
             $this->block->setLiteral('');
         } else {
-            $this->block->setLiteral(\implode("\n", $this->strings->slice(1)) . "\n");
+            $this->block->setLiteral(implode("\n", $this->strings->slice(1)) . "\n");
         }
     }
 }

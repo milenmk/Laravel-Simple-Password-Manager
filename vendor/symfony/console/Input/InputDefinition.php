@@ -14,6 +14,12 @@ namespace Symfony\Component\Console\Input;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Exception\LogicException;
 
+use function count;
+
+use function is_int;
+
+use const PHP_INT_MAX;
+
 /**
  * A InputDefinition represents a set of valid command line arguments and options.
  *
@@ -46,10 +52,8 @@ class InputDefinition
 
     /**
      * Sets the definition of the input.
-     *
-     * @return void
      */
-    public function setDefinition(array $definition)
+    public function setDefinition(array $definition): void
     {
         $arguments = [];
         $options = [];
@@ -69,10 +73,8 @@ class InputDefinition
      * Sets the InputArgument objects.
      *
      * @param InputArgument[] $arguments An array of InputArgument objects
-     *
-     * @return void
      */
-    public function setArguments(array $arguments = [])
+    public function setArguments(array $arguments = []): void
     {
         $this->arguments = [];
         $this->requiredCount = 0;
@@ -85,10 +87,8 @@ class InputDefinition
      * Adds an array of InputArgument objects.
      *
      * @param InputArgument[] $arguments An array of InputArgument objects
-     *
-     * @return void
      */
-    public function addArguments(?array $arguments = [])
+    public function addArguments(?array $arguments = []): void
     {
         if (null !== $arguments) {
             foreach ($arguments as $argument) {
@@ -98,11 +98,9 @@ class InputDefinition
     }
 
     /**
-     * @return void
-     *
      * @throws LogicException When incorrect argument is given
      */
-    public function addArgument(InputArgument $argument)
+    public function addArgument(InputArgument $argument): void
     {
         if (isset($this->arguments[$argument->getName()])) {
             throw new LogicException(sprintf('An argument with name "%s" already exists.', $argument->getName()));
@@ -140,7 +138,7 @@ class InputDefinition
             throw new InvalidArgumentException(sprintf('The "%s" argument does not exist.', $name));
         }
 
-        $arguments = \is_int($name) ? array_values($this->arguments) : $this->arguments;
+        $arguments = is_int($name) ? array_values($this->arguments) : $this->arguments;
 
         return $arguments[$name];
     }
@@ -150,7 +148,7 @@ class InputDefinition
      */
     public function hasArgument(string|int $name): bool
     {
-        $arguments = \is_int($name) ? array_values($this->arguments) : $this->arguments;
+        $arguments = is_int($name) ? array_values($this->arguments) : $this->arguments;
 
         return isset($arguments[$name]);
     }
@@ -170,7 +168,7 @@ class InputDefinition
      */
     public function getArgumentCount(): int
     {
-        return null !== $this->lastArrayArgument ? \PHP_INT_MAX : \count($this->arguments);
+        return null !== $this->lastArrayArgument ? PHP_INT_MAX : count($this->arguments);
     }
 
     /**
@@ -198,10 +196,8 @@ class InputDefinition
      * Sets the InputOption objects.
      *
      * @param InputOption[] $options An array of InputOption objects
-     *
-     * @return void
      */
-    public function setOptions(array $options = [])
+    public function setOptions(array $options = []): void
     {
         $this->options = [];
         $this->shortcuts = [];
@@ -213,10 +209,8 @@ class InputDefinition
      * Adds an array of InputOption objects.
      *
      * @param InputOption[] $options An array of InputOption objects
-     *
-     * @return void
      */
-    public function addOptions(array $options = [])
+    public function addOptions(array $options = []): void
     {
         foreach ($options as $option) {
             $this->addOption($option);
@@ -224,11 +218,9 @@ class InputDefinition
     }
 
     /**
-     * @return void
-     *
      * @throws LogicException When option given already exist
      */
-    public function addOption(InputOption $option)
+    public function addOption(InputOption $option): void
     {
         if (isset($this->options[$option->getName()]) && !$option->equals($this->options[$option->getName()])) {
             throw new LogicException(sprintf('An option named "%s" already exists.', $option->getName()));
@@ -392,7 +384,7 @@ class InputDefinition
             }
         }
 
-        if (\count($elements) && $this->getArguments()) {
+        if (count($elements) && $this->getArguments()) {
             $elements[] = '[--]';
         }
 

@@ -16,19 +16,19 @@ final class Factory
     private static ?Factory $instance = null;
 
     /**
-     * @psalm-var list<Comparator>
+     * @var list<Comparator>
      */
     private array $customComparators = [];
 
     /**
-     * @psalm-var list<Comparator>
+     * @var list<Comparator>
      */
     private array $defaultComparators = [];
 
     public static function getInstance(): self
     {
         if (self::$instance === null) {
-            self::$instance = new self; // @codeCoverageIgnore
+            self::$instance = new self(); // @codeCoverageIgnore
         }
 
         return self::$instance;
@@ -92,17 +92,17 @@ final class Factory
 
     private function registerDefaultComparators(): void
     {
-        $this->registerDefaultComparator(new MockObjectComparator);
-        $this->registerDefaultComparator(new DateTimeComparator);
-        $this->registerDefaultComparator(new DOMNodeComparator);
-        $this->registerDefaultComparator(new SplObjectStorageComparator);
-        $this->registerDefaultComparator(new ExceptionComparator);
-        $this->registerDefaultComparator(new ObjectComparator);
-        $this->registerDefaultComparator(new ResourceComparator);
-        $this->registerDefaultComparator(new ArrayComparator);
-        $this->registerDefaultComparator(new NumericComparator);
-        $this->registerDefaultComparator(new ScalarComparator);
-        $this->registerDefaultComparator(new TypeComparator);
+        $this->registerDefaultComparator(new MockObjectComparator());
+        $this->registerDefaultComparator(new DateTimeComparator());
+        $this->registerDefaultComparator(new DOMNodeComparator());
+        $this->registerDefaultComparator(new SplObjectStorageComparator());
+        $this->registerDefaultComparator(new ExceptionComparator());
+        $this->registerDefaultComparator(new ObjectComparator());
+        $this->registerDefaultComparator(new ResourceComparator());
+        $this->registerDefaultComparator(new ArrayComparator());
+        $this->registerDefaultComparator(new NumericComparator());
+        $this->registerDefaultComparator(new ScalarComparator());
+        $this->registerDefaultComparator(new TypeComparator());
     }
 
     private function registerDefaultComparator(Comparator $comparator): void

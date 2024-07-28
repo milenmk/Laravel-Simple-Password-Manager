@@ -10,7 +10,9 @@ use Illuminate\Queue\InteractsWithQueue;
 
 class CallQueuedListener implements ShouldQueue
 {
-    use InteractsWithQueue, Queueable;
+
+    use InteractsWithQueue;
+    use Queueable;
 
     /**
      * The listener class name.
@@ -67,6 +69,13 @@ class CallQueuedListener implements ShouldQueue
      * @var int
      */
     public $timeout;
+
+    /**
+     * Indicates if the job should fail if the timeout is exceeded.
+     *
+     * @var bool
+     */
+    public $failOnTimeout = false;
 
     /**
      * Indicates if the job should be encrypted.

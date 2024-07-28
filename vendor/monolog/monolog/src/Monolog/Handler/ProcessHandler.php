@@ -11,7 +11,13 @@
 
 namespace Monolog\Handler;
 
-use Monolog\Logger;
+use InvalidArgumentException;
+use Monolog\Level;
+use Monolog\LogRecord;
+
+use UnexpectedValueException;
+
+use function is_resource;
 
 /**
  * Stores to STDIN of any process, specified by a command.
@@ -33,20 +39,14 @@ class ProcessHandler extends AbstractProcessingHandler
      */
     private $process;
 
-    /**
-     * @var string
-     */
-    private $command;
+    private string $command;
 
-    /**
-     * @var string|null
-     */
-    private $cwd;
+    private ?string $cwd;
 
     /**
      * @var resource[]
      */
-    private $pipes = [];
+    private array $pipes = [];
 
     /**
      * @var array<int, string[]>
@@ -63,13 +63,13 @@ class ProcessHandler extends AbstractProcessingHandler
      * @param  string|null               $cwd     "Current working directory" (CWD) for the process to be executed in.
      * @throws \InvalidArgumentException
      */
-    public function __construct(string $command, $level = Logger::DEBUG, bool $bubble = true, ?string $cwd = null)
+    public function __construct(string $command, int|string|Level $level = Level::Debug, bool $bubble = true, ?string $cwd = null)
     {
         if ($command === '') {
-            throw new \InvalidArgumentException('The command argument must be a non-empty string.');
+            throw new InvalidArgumentException('The command argument must be a non-empty string.');
         }
         if ($cwd === '') {
-            throw new \InvalidArgumentException('The optional CWD argument must be a non-empty string or null.');
+            throw new InvalidArgumentException('The optional CWD argument must be a non-empty string or null.');
         }
 
         parent::__construct($level, $bubble);
@@ -83,15 +83,15 @@ class ProcessHandler extends AbstractProcessingHandler
      *
      * @throws \UnexpectedValueException
      */
-    protected function write(array $record): void
+    protected function write(LogRecord $record): void
     {
         $this->ensureProcessIsStarted();
 
-        $this->writeProcessInput($record['formatted']);
+        $this->writeProcessInput($record->formatted);
 
         $errors = $this->readProcessErrors();
-        if (empty($errors) === false) {
-            throw new \UnexpectedValueException(sprintf('Errors while writing to process: %s', $errors));
+        if ($errors !== '') {
+            throw new UnexpectedValueException(sprintf('Errors while writing to process: %s', $errors));
         }
     }
 
@@ -129,13 +129,13 @@ class ProcessHandler extends AbstractProcessingHandler
     {
         $selected = $this->selectErrorStream();
         if (false === $selected) {
-            throw new \UnexpectedValueException('Something went wrong while selecting a stream.');
+            throw new UnexpectedValueException('Something went wrong while selecting a stream.');
         }
 
         $errors = $this->readProcessErrors();
 
-        if (is_resource($this->process) === false || empty($errors) === false) {
-            throw new \UnexpectedValueException(
+        if (is_resource($this->process) === false || $errors !== '') {
+            throw new UnexpectedValueException(
                 sprintf('The process "%s" could not be opened: ' . $errors, $this->command)
             );
         }
@@ -176,7 +176,7 @@ class ProcessHandler extends AbstractProcessingHandler
     }
 
     /**
-     * {@inheritDoc}
+     * @inheritDoc
      */
     public function close(): void
     {

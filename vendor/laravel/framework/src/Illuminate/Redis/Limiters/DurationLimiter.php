@@ -3,6 +3,7 @@
 namespace Illuminate\Redis\Limiters;
 
 use Illuminate\Contracts\Redis\LimiterTimeoutException;
+use Illuminate\Support\Sleep;
 
 class DurationLimiter
 {
@@ -81,10 +82,10 @@ class DurationLimiter
 
         while (! $this->acquire()) {
             if (time() - $timeout >= $starting) {
-                throw new LimiterTimeoutException;
+                throw new LimiterTimeoutException();
             }
 
-            usleep($sleep * 1000);
+            Sleep::usleep($sleep * 1000);
         }
 
         if (is_callable($callback)) {

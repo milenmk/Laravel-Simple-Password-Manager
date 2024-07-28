@@ -37,7 +37,14 @@ export default function on (el, event, modifiers, callback) {
 
     if (modifiers.includes('prevent')) handler = wrapHandler(handler, (next, e) => { e.preventDefault(); next(e) })
     if (modifiers.includes('stop')) handler = wrapHandler(handler, (next, e) => { e.stopPropagation(); next(e) })
-    if (modifiers.includes('self')) handler = wrapHandler(handler, (next, e) => { e.target === el && next(e) })
+
+    if (modifiers.includes("once")) {
+        handler = wrapHandler(handler, (next, e) => {
+            next(e);
+
+            listenerTarget.removeEventListener(event, handler, options);
+        });
+    }
 
     if (modifiers.includes('away') || modifiers.includes('outside')) {
         listenerTarget = document
@@ -57,24 +64,19 @@ export default function on (el, event, modifiers, callback) {
         })
     }
 
-    if (modifiers.includes('once')) {
-        handler = wrapHandler(handler, (next, e) => {
-            next(e)
-
-            listenerTarget.removeEventListener(event, handler, options)
-        })
-    }
+    if (modifiers.includes('self')) handler = wrapHandler(handler, (next, e) => { e.target === el && next(e) })
 
     // Handle :keydown and :keyup listeners.
-    handler = wrapHandler(handler, (next, e) => {
-        if (isKeyEvent(event)) {
+    // Handle :click and :auxclick listeners.
+    if (isKeyEvent(event) || isClickEvent(event)) {
+        handler = wrapHandler(handler, (next, e) => {
             if (isListeningForASpecificKeyThatHasntBeenPressed(e, modifiers)) {
                 return
             }
-        }
-
-        next(e)
-    })
+            
+            next(e)
+        })
+    }
 
     listenerTarget.addEventListener(event, handler, options)
 
@@ -105,9 +107,13 @@ function isKeyEvent(event) {
     return ['keydown', 'keyup'].includes(event)
 }
 
+function isClickEvent(event) {
+    return ['contextmenu','click','mouse'].some(i => event.includes(i))
+}
+
 function isListeningForASpecificKeyThatHasntBeenPressed(e, modifiers) {
     let keyModifiers = modifiers.filter(i => {
-        return ! ['window', 'document', 'prevent', 'stop', 'once', 'capture'].includes(i)
+        return ! ['window', 'document', 'prevent', 'stop', 'once', 'capture', 'self', 'away', 'outside', 'passive'].includes(i)
     })
 
     if (keyModifiers.includes('debounce')) {
@@ -142,7 +148,11 @@ function isListeningForASpecificKeyThatHasntBeenPressed(e, modifiers) {
 
         // If all the modifiers selected are pressed, ...
         if (activelyPressedKeyModifiers.length === selectedSystemKeyModifiers.length) {
-            // AND the remaining key is pressed as well. It's a press.
+
+            // AND the event is a click. It's a pass.
+            if (isClickEvent(e.type)) return false
+
+            // OR the remaining key is pressed as well. It's a press.
             if (keyToModifiers(e.key).includes(keyModifiers[0])) return false
         }
     }
@@ -168,6 +178,7 @@ function keyToModifiers(key) {
         'left': 'arrow-left',
         'right': 'arrow-right',
         'period': '.',
+        'comma': ',',
         'equal': '=',
         'minus': '-',
         'underscore': '_',

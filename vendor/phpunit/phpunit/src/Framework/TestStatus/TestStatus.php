@@ -14,9 +14,9 @@ namespace PHPUnit\Framework\TestStatus;
  *
  * @internal This class is not covered by the backward compatibility promise for PHPUnit
  */
-abstract class TestStatus
+abstract readonly class TestStatus
 {
-    private readonly string $message;
+    private string $message;
 
     public static function from(int $status): self
     {
@@ -36,12 +36,12 @@ abstract class TestStatus
 
     public static function unknown(): self
     {
-        return new Unknown;
+        return new Unknown();
     }
 
     public static function success(): self
     {
-        return new Success;
+        return new Success();
     }
 
     public static function skipped(string $message = ''): self

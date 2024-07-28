@@ -8,9 +8,12 @@ use Exception;
 use Illuminate\Contracts\Container\BindingResolutionException;
 use Illuminate\Contracts\Container\CircularDependencyException;
 use Illuminate\Contracts\Container\Container as ContainerContract;
+use Illuminate\Contracts\Container\ContextualAttribute;
 use LogicException;
+use ReflectionAttribute;
 use ReflectionClass;
 use ReflectionException;
+use ReflectionFunction;
 use ReflectionParameter;
 use TypeError;
 
@@ -108,6 +111,13 @@ class Container implements ArrayAccess, ContainerContract
     public $contextual = [];
 
     /**
+     * The contextual attribute handlers.
+     *
+     * @var array[]
+     */
+    public $contextualAttributes = [];
+
+    /**
      * All of the registered rebound callbacks.
      *
      * @var array[]
@@ -157,6 +167,13 @@ class Container implements ArrayAccess, ContainerContract
     protected $afterResolvingCallbacks = [];
 
     /**
+     * All of the after resolving attribute callbacks by class type.
+     *
+     * @var array[]
+     */
+    protected $afterResolvingAttributeCallbacks = [];
+
+    /**
      * Define a contextual binding.
      *
      * @param  array|string  $concrete
@@ -171,6 +188,18 @@ class Container implements ArrayAccess, ContainerContract
         }
 
         return new ContextualBindingBuilder($this, $aliases);
+    }
+
+    /**
+     * Define a contextual binding based on an attribute.
+     *
+     * @param  string  $attribute
+     * @param  \Closure  $handler
+     * @return void
+     */
+    public function whenHasAttribute(string $attribute, Closure $handler)
+    {
+        $this->contextualAttributes[$attribute] = $handler;
     }
 
     /**
@@ -648,8 +677,8 @@ class Container implements ArrayAccess, ContainerContract
     {
         $pushedToBuildStack = false;
 
-        if (is_array($callback) && ! in_array(
-            $className = (is_string($callback[0]) ? $callback[0] : get_class($callback[0])),
+        if (($className = $this->getClassForCallable($callback)) && ! in_array(
+            $className,
             $this->buildStack,
             true
         )) {
@@ -665,6 +694,22 @@ class Container implements ArrayAccess, ContainerContract
         }
 
         return $result;
+    }
+
+    /**
+     * Get the class name for the given callback, if one can be determined.
+     *
+     * @param  callable|string  $callback
+     * @return string|false
+     */
+    protected function getClassForCallable($callback)
+    {
+        if (is_callable($callback) &&
+            ! ($reflector = new ReflectionFunction($callback(...)))->isAnonymous()) {
+            return $reflector->getClosureScopeClass()->name ?? false;
+        }
+
+        return false;
     }
 
     /**
@@ -695,7 +740,7 @@ class Container implements ArrayAccess, ContainerContract
     /**
      * Resolve the given type from the container.
      *
-     * @param  string|callable  $abstract
+     * @param  string  $abstract
      * @param  array  $parameters
      * @return mixed
      *
@@ -766,11 +811,9 @@ class Container implements ArrayAccess, ContainerContract
         // We're ready to instantiate an instance of the concrete type registered for
         // the binding. This will instantiate the types, as well as resolve any of
         // its "nested" dependencies recursively until all have gotten resolved.
-        if ($this->isBuildable($concrete, $abstract)) {
-            $object = $this->build($concrete);
-        } else {
-            $object = $this->make($concrete);
-        }
+        $object = $this->isBuildable($concrete, $abstract)
+            ? $this->build($concrete)
+            : $this->make($concrete);
 
         // If we defined any extenders for this type, we'll need to spin through them
         // and apply them to the object being built. This allows for the extension
@@ -882,7 +925,13 @@ class Container implements ArrayAccess, ContainerContract
         // hand back the results of the functions, which allows functions to be
         // used as resolvers for more fine-tuned resolution of these objects.
         if ($concrete instanceof Closure) {
-            return $concrete($this, $this->getLastParameterOverride());
+            $this->buildStack[] = spl_object_hash($concrete);
+
+            try {
+                return $concrete($this, $this->getLastParameterOverride());
+            } finally {
+                array_pop($this->buildStack);
+            }
         }
 
         try {
@@ -908,7 +957,11 @@ class Container implements ArrayAccess, ContainerContract
         if (is_null($constructor)) {
             array_pop($this->buildStack);
 
-            return new $concrete;
+            $this->fireAfterResolvingAttributeCallbacks(
+                $reflector->getAttributes(), $instance = new $concrete()
+            );
+
+            return $instance;
         }
 
         $dependencies = $constructor->getParameters();
@@ -926,7 +979,11 @@ class Container implements ArrayAccess, ContainerContract
 
         array_pop($this->buildStack);
 
-        return $reflector->newInstanceArgs($instances);
+        $this->fireAfterResolvingAttributeCallbacks(
+            $reflector->getAttributes(), $instance = $reflector->newInstanceArgs($instances)
+        );
+
+        return $instance;
     }
 
     /**
@@ -951,12 +1008,20 @@ class Container implements ArrayAccess, ContainerContract
                 continue;
             }
 
+            $result = null;
+
+            if (! is_null($attribute = $this->getContextualAttributeFromDependency($dependency))) {
+                $result = $this->resolveFromAttribute($attribute);
+            }
+
             // If the class is null, it means the dependency is a string or some other
             // primitive type which we can not resolve since it is not a class and
             // we will just bomb out with an error since we have no-where to go.
-            $result = is_null(Util::getParameterClassName($dependency))
+            $result ??= is_null(Util::getParameterClassName($dependency))
                             ? $this->resolvePrimitive($dependency)
                             : $this->resolveClass($dependency);
+
+            $this->fireAfterResolvingAttributeCallbacks($dependency->getAttributes(), $result);
 
             if ($dependency->isVariadic()) {
                 $results = array_merge($results, $result);
@@ -1000,6 +1065,17 @@ class Container implements ArrayAccess, ContainerContract
     protected function getLastParameterOverride()
     {
         return count($this->with) ? end($this->with) : [];
+    }
+
+    /**
+     * Get a contextual attribute from a dependency.
+     *
+     * @param  ReflectionParameter  $dependency
+     * @return \ReflectionAttribute|null
+     */
+    protected function getContextualAttributeFromDependency($dependency)
+    {
+        return $dependency->getAttributes(ContextualAttribute::class, ReflectionAttribute::IS_INSTANCEOF)[0] ?? null;
     }
 
     /**
@@ -1083,6 +1159,29 @@ class Container implements ArrayAccess, ContainerContract
     }
 
     /**
+     * Resolve a dependency based on an attribute.
+     *
+     * @param  \ReflectionAttribute  $attribute
+     * @return mixed
+     */
+    protected function resolveFromAttribute(ReflectionAttribute $attribute)
+    {
+        $handler = $this->contextualAttributes[$attribute->getName()] ?? null;
+
+        $instance = $attribute->newInstance();
+
+        if (is_null($handler) && method_exists($instance, 'resolve')) {
+            $handler = $instance->resolve(...);
+        }
+
+        if (is_null($handler)) {
+            throw new BindingResolutionException("Contextual binding attribute [{$attribute->getName()}] has no registered handler.");
+        }
+
+        return $handler($instance, $this);
+    }
+
+    /**
      * Throw an exception that the concrete is not instantiable.
      *
      * @param  string  $concrete
@@ -1125,7 +1224,7 @@ class Container implements ArrayAccess, ContainerContract
      * @param  \Closure|null  $callback
      * @return void
      */
-    public function beforeResolving($abstract, Closure $callback = null)
+    public function beforeResolving($abstract, ?Closure $callback = null)
     {
         if (is_string($abstract)) {
             $abstract = $this->getAlias($abstract);
@@ -1145,7 +1244,7 @@ class Container implements ArrayAccess, ContainerContract
      * @param  \Closure|null  $callback
      * @return void
      */
-    public function resolving($abstract, Closure $callback = null)
+    public function resolving($abstract, ?Closure $callback = null)
     {
         if (is_string($abstract)) {
             $abstract = $this->getAlias($abstract);
@@ -1165,7 +1264,7 @@ class Container implements ArrayAccess, ContainerContract
      * @param  \Closure|null  $callback
      * @return void
      */
-    public function afterResolving($abstract, Closure $callback = null)
+    public function afterResolving($abstract, ?Closure $callback = null)
     {
         if (is_string($abstract)) {
             $abstract = $this->getAlias($abstract);
@@ -1176,6 +1275,18 @@ class Container implements ArrayAccess, ContainerContract
         } else {
             $this->afterResolvingCallbacks[$abstract][] = $callback;
         }
+    }
+
+    /**
+     * Register a new after resolving attribute callback for all types.
+     *
+     * @param  string  $attribute
+     * @param  \Closure  $callback
+     * @return void
+     */
+    public function afterResolvingAttribute(string $attribute, Closure $callback)
+    {
+        $this->afterResolvingAttributeCallbacks[$attribute][] = $callback;
     }
 
     /**
@@ -1243,6 +1354,34 @@ class Container implements ArrayAccess, ContainerContract
         $this->fireCallbackArray(
             $object, $this->getCallbacksForType($abstract, $object, $this->afterResolvingCallbacks)
         );
+    }
+
+    /**
+     * Fire all of the after resolving attribute callbacks.
+     *
+     * @param  \ReflectionAttribute[]  $abstract
+     * @param  mixed  $object
+     * @return void
+     */
+    protected function fireAfterResolvingAttributeCallbacks(array $attributes, $object)
+    {
+        foreach ($attributes as $attribute) {
+            if (is_a($attribute->getName(), ContextualAttribute::class, true)) {
+                $instance = $attribute->newInstance();
+
+                if (method_exists($instance, 'after')) {
+                    $instance->after($instance, $object, $this);
+                }
+            }
+
+            $callbacks = $this->getCallbacksForType(
+                $attribute->getName(), $object, $this->afterResolvingAttributeCallbacks
+            );
+
+            foreach ($callbacks as $callback) {
+                $callback($attribute->newInstance(), $object, $this);
+            }
+        }
     }
 
     /**
@@ -1392,7 +1531,7 @@ class Container implements ArrayAccess, ContainerContract
     public static function getInstance()
     {
         if (is_null(static::$instance)) {
-            static::$instance = new static;
+            static::$instance = new static();
         }
 
         return static::$instance;
@@ -1404,7 +1543,7 @@ class Container implements ArrayAccess, ContainerContract
      * @param  \Illuminate\Contracts\Container\Container|null  $container
      * @return \Illuminate\Contracts\Container\Container|static
      */
-    public static function setInstance(ContainerContract $container = null)
+    public static function setInstance(?ContainerContract $container = null)
     {
         return static::$instance = $container;
     }

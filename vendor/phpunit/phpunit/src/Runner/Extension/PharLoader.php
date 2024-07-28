@@ -28,7 +28,7 @@ use Throwable;
 /**
  * @internal This class is not covered by the backward compatibility promise for PHPUnit
  */
-final class PharLoader
+final readonly class PharLoader
 {
     /**
      * @psalm-param non-empty-string $directory
@@ -40,7 +40,7 @@ final class PharLoader
         $pharExtensionLoaded = extension_loaded('phar');
         $loadedExtensions    = [];
 
-        foreach ((new FileIteratorFacade)->getFilesAsArray($directory, '.phar') as $file) {
+        foreach ((new FileIteratorFacade())->getFilesAsArray($directory, '.phar') as $file) {
             if (!$pharExtensionLoaded) {
                 Event\Facade::emitter()->testRunnerTriggeredWarning(
                     sprintf(

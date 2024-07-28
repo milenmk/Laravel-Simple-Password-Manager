@@ -84,7 +84,7 @@ class Signals
     /**
      * Unregister the current signal handlers.
      *
-     * @return array<int, array<int, callable(int $signal): void>>
+     * @return void
      */
     public function unregister()
     {
@@ -142,7 +142,7 @@ class Signals
     /**
      * Set the availability resolver.
      *
-     * @param  callable(): bool
+     * @param  (callable(): bool)  $resolver
      * @return void
      */
     public static function resolveAvailabilityUsing($resolver)

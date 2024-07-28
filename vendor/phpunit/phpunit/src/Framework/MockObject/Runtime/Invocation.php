@@ -23,22 +23,22 @@ use SebastianBergmann\Exporter\Exporter;
 /**
  * @internal This class is not covered by the backward compatibility promise for PHPUnit
  */
-final class Invocation implements SelfDescribing
+final readonly class Invocation implements SelfDescribing
 {
     /**
      * @psalm-var class-string
      */
-    private readonly string $className;
+    private string $className;
 
     /**
      * @psalm-var non-empty-string
      */
-    private readonly string $methodName;
-    private readonly array $parameters;
-    private readonly string $returnType;
-    private readonly bool $isReturnTypeNullable;
-    private readonly bool $proxiedCall;
-    private readonly MockObjectInternal|StubInternal $object;
+    private string $methodName;
+    private array $parameters;
+    private string $returnType;
+    private bool $isReturnTypeNullable;
+    private bool $proxiedCall;
+    private MockObjectInternal|StubInternal $object;
 
     /**
      * @psalm-param class-string $className
@@ -116,7 +116,7 @@ final class Invocation implements SelfDescribing
             return null;
         }
 
-        return (new ReturnValueGenerator)->generate(
+        return (new ReturnValueGenerator())->generate(
             $this->className,
             $this->methodName,
             $this->object::class,
@@ -126,7 +126,7 @@ final class Invocation implements SelfDescribing
 
     public function toString(): string
     {
-        $exporter = new Exporter;
+        $exporter = new Exporter();
 
         return sprintf(
             '%s::%s(%s)%s',

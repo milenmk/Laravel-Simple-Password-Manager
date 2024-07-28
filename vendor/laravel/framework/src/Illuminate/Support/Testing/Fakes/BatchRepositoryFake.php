@@ -88,7 +88,7 @@ class BatchRepositoryFake implements BatchRepository
      */
     public function decrementPendingJobs(string $batchId, string $jobId)
     {
-        return new UpdatedBatchJobCounts;
+        return new UpdatedBatchJobCounts();
     }
 
     /**
@@ -100,7 +100,7 @@ class BatchRepositoryFake implements BatchRepository
      */
     public function incrementFailedJobs(string $batchId, string $jobId)
     {
-        return new UpdatedBatchJobCounts;
+        return new UpdatedBatchJobCounts();
     }
 
     /**
@@ -149,5 +149,15 @@ class BatchRepositoryFake implements BatchRepository
     public function transaction(Closure $callback)
     {
         return $callback();
+    }
+
+    /**
+     * Rollback the last database transaction for the connection.
+     *
+     * @return void
+     */
+    public function rollBack()
+    {
+        //
     }
 }

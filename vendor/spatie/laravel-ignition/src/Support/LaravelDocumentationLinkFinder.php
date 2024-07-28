@@ -9,10 +9,8 @@ use Throwable;
 
 class LaravelDocumentationLinkFinder
 {
-
     public function findLinkForThrowable(Throwable $throwable): ?string
     {
-
         if ($throwable instanceof ViewException) {
             $throwable = $throwable->getPrevious();
         }
@@ -25,29 +23,28 @@ class LaravelDocumentationLinkFinder
 
         $type = $this->getType($throwable);
 
-        if (!$type) {
+        if (! $type) {
             return null;
         }
 
         return match ($type) {
-            'Auth'         => "https://laravel.com/docs/{$majorVersion}.x/authentication",
+            'Auth' => "https://laravel.com/docs/{$majorVersion}.x/authentication",
             'Broadcasting' => "https://laravel.com/docs/{$majorVersion}.x/broadcasting",
-            'Container'    => "https://laravel.com/docs/{$majorVersion}.x/container",
-            'Database'     => "https://laravel.com/docs/{$majorVersion}.x/eloquent",
-            'Pagination'   => "https://laravel.com/docs/{$majorVersion}.x/pagination",
-            'Queue'        => "https://laravel.com/docs/{$majorVersion}.x/queues",
-            'Routing'      => "https://laravel.com/docs/{$majorVersion}.x/routing",
-            'Session'      => "https://laravel.com/docs/{$majorVersion}.x/session",
-            'Validation'   => "https://laravel.com/docs/{$majorVersion}.x/validation",
-            'View'         => "https://laravel.com/docs/{$majorVersion}.x/views",
-            default        => null,
+            'Container' => "https://laravel.com/docs/{$majorVersion}.x/container",
+            'Database' => "https://laravel.com/docs/{$majorVersion}.x/eloquent",
+            'Pagination' => "https://laravel.com/docs/{$majorVersion}.x/pagination",
+            'Queue' => "https://laravel.com/docs/{$majorVersion}.x/queues",
+            'Routing' => "https://laravel.com/docs/{$majorVersion}.x/routing",
+            'Session' => "https://laravel.com/docs/{$majorVersion}.x/session",
+            'Validation' => "https://laravel.com/docs/{$majorVersion}.x/validation",
+            'View' => "https://laravel.com/docs/{$majorVersion}.x/views",
+            default => null,
         };
     }
 
     protected function getType(?Throwable $throwable): ?string
     {
-
-        if (!$throwable) {
+        if (! $throwable) {
             return null;
         }
 
@@ -61,5 +58,4 @@ class LaravelDocumentationLinkFinder
 
         return null;
     }
-
 }

@@ -20,34 +20,35 @@ trait InstallsBladeStack
                 '@tailwindcss/forms' => '^0.5.2',
                 'alpinejs' => '^3.4.2',
                 'autoprefixer' => '^10.4.2',
-                'postcss' => '^8.4.6',
+                'postcss' => '^8.4.31',
                 'tailwindcss' => '^3.1.0',
             ] + $packages;
         });
 
         // Controllers...
-        (new Filesystem)->ensureDirectoryExists(app_path('Http/Controllers'));
-        (new Filesystem)->copyDirectory(__DIR__.'/../../stubs/default/app/Http/Controllers', app_path('Http/Controllers'));
+        (new Filesystem())->ensureDirectoryExists(app_path('Http/Controllers'));
+        (new Filesystem())->copyDirectory(__DIR__ . '/../../stubs/default/app/Http/Controllers', app_path('Http/Controllers'));
 
         // Requests...
-        (new Filesystem)->ensureDirectoryExists(app_path('Http/Requests'));
-        (new Filesystem)->copyDirectory(__DIR__.'/../../stubs/default/app/Http/Requests', app_path('Http/Requests'));
+        (new Filesystem())->ensureDirectoryExists(app_path('Http/Requests'));
+        (new Filesystem())->copyDirectory(__DIR__ . '/../../stubs/default/app/Http/Requests', app_path('Http/Requests'));
 
         // Views...
-        (new Filesystem)->ensureDirectoryExists(resource_path('views'));
-        (new Filesystem)->copyDirectory(__DIR__.'/../../stubs/default/resources/views', resource_path('views'));
+        (new Filesystem())->ensureDirectoryExists(resource_path('views'));
+        (new Filesystem())->copyDirectory(__DIR__ . '/../../stubs/default/resources/views', resource_path('views'));
 
         if (! $this->option('dark')) {
-            $this->removeDarkClasses((new Finder)
+            $this->removeDarkClasses((new Finder())
                 ->in(resource_path('views'))
                 ->name('*.blade.php')
+                ->notPath('livewire/welcome/navigation.blade.php')
                 ->notName('welcome.blade.php')
             );
         }
 
         // Components...
-        (new Filesystem)->ensureDirectoryExists(app_path('View/Components'));
-        (new Filesystem)->copyDirectory(__DIR__.'/../../stubs/default/app/View/Components', app_path('View/Components'));
+        (new Filesystem())->ensureDirectoryExists(app_path('View/Components'));
+        (new Filesystem())->copyDirectory(__DIR__ . '/../../stubs/default/app/View/Components', app_path('View/Components'));
 
         // Tests...
         if (! $this->installTests()) {
@@ -61,7 +62,6 @@ trait InstallsBladeStack
         // "Dashboard" Route...
         $this->replaceInFile('/home', '/dashboard', resource_path('views/welcome.blade.php'));
         $this->replaceInFile('Home', 'Dashboard', resource_path('views/welcome.blade.php'));
-        $this->replaceInFile('/home', '/dashboard', app_path('Providers/RouteServiceProvider.php'));
 
         // Tailwind / Vite...
         copy(__DIR__.'/../../stubs/default/tailwind.config.js', base_path('tailwind.config.js'));

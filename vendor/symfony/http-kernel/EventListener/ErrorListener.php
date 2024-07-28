@@ -11,8 +11,15 @@
 
 namespace Symfony\Component\HttpKernel\EventListener;
 
+use Error;
+use Exception;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
+use ReflectionAttribute;
+use ReflectionClass;
+use ReflectionFunction;
+use ReflectionNamedType;
+use ReflectionProperty;
 use Symfony\Component\ErrorHandler\ErrorHandler;
 use Symfony\Component\ErrorHandler\Exception\FlattenException;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
@@ -27,35 +34,27 @@ use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\HttpKernel\Log\DebugLoggerConfigurator;
+use Throwable;
+
+use function is_array;
 
 /**
  * @author Fabien Potencier <fabien@symfony.com>
  */
 class ErrorListener implements EventSubscriberInterface
 {
-    protected $controller;
-    protected $logger;
-    protected $debug;
-    /**
-     * @var array<class-string, array{log_level: string|null, status_code: int<100,599>|null}>
-     */
-    protected $exceptionsMapping;
-
     /**
      * @param array<class-string, array{log_level: string|null, status_code: int<100,599>|null}> $exceptionsMapping
      */
-    public function __construct(string|object|array|null $controller, ?LoggerInterface $logger = null, bool $debug = false, array $exceptionsMapping = [])
-    {
-        $this->controller = $controller;
-        $this->logger = $logger;
-        $this->debug = $debug;
-        $this->exceptionsMapping = $exceptionsMapping;
+    public function __construct(
+        protected string|object|array|null $controller,
+        protected ?LoggerInterface $logger = null,
+        protected bool $debug = false,
+        protected array $exceptionsMapping = [],
+    ) {
     }
 
-    /**
-     * @return void
-     */
-    public function logKernelException(ExceptionEvent $event)
+    public function logKernelException(ExceptionEvent $event): void
     {
         $throwable = $event->getThrowable();
         $logLevel = $this->resolveLogLevel($throwable);
@@ -66,26 +65,16 @@ class ErrorListener implements EventSubscriberInterface
             }
             if (!$throwable instanceof HttpExceptionInterface || $throwable->getStatusCode() !== $config['status_code']) {
                 $headers = $throwable instanceof HttpExceptionInterface ? $throwable->getHeaders() : [];
-                $throwable = new HttpException($config['status_code'], $throwable->getMessage(), $throwable, $headers);
+                $throwable = HttpException::fromStatusCode($config['status_code'], $throwable->getMessage(), $throwable, $headers);
                 $event->setThrowable($throwable);
             }
             break;
         }
 
         // There's no specific status code defined in the configuration for this exception
-        if (!$throwable instanceof HttpExceptionInterface) {
-            $class = new \ReflectionClass($throwable);
-
-            do {
-                if ($attributes = $class->getAttributes(WithHttpStatus::class, \ReflectionAttribute::IS_INSTANCEOF)) {
-                    /** @var WithHttpStatus $instance */
-                    $instance = $attributes[0]->newInstance();
-
-                    $throwable = new HttpException($instance->statusCode, $throwable->getMessage(), $throwable, $instance->headers);
-                    $event->setThrowable($throwable);
-                    break;
-                }
-            } while ($class = $class->getParentClass());
+        if (!$throwable instanceof HttpExceptionInterface && $withHttpStatus = $this->getInheritedAttribute($throwable::class, WithHttpStatus::class)) {
+            $throwable = HttpException::fromStatusCode($withHttpStatus->statusCode, $throwable->getMessage(), $throwable, $withHttpStatus->headers);
+            $event->setThrowable($throwable);
         }
 
         $e = FlattenException::createFromThrowable($throwable);
@@ -93,12 +82,13 @@ class ErrorListener implements EventSubscriberInterface
         $this->logException($throwable, sprintf('Uncaught PHP Exception %s: "%s" at %s line %s', $e->getClass(), $e->getMessage(), basename($e->getFile()), $e->getLine()), $logLevel);
     }
 
-    /**
-     * @return void
-     */
-    public function onKernelException(ExceptionEvent $event)
+    public function onKernelException(ExceptionEvent $event): void
     {
         if (null === $this->controller) {
+            return;
+        }
+
+        if (!$this->debug && $event->isKernelTerminating()) {
             return;
         }
 
@@ -106,7 +96,7 @@ class ErrorListener implements EventSubscriberInterface
 
         if ($exceptionHandler = set_exception_handler(var_dump(...))) {
             restore_exception_handler();
-            if (\is_array($exceptionHandler) && $exceptionHandler[0] instanceof ErrorHandler) {
+            if (is_array($exceptionHandler) && $exceptionHandler[0] instanceof ErrorHandler) {
                 $throwable = $exceptionHandler[0]->enhanceError($event->getThrowable());
             }
         }
@@ -115,7 +105,7 @@ class ErrorListener implements EventSubscriberInterface
 
         try {
             $response = $event->getKernel()->handle($request, HttpKernelInterface::SUB_REQUEST, false);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $f = FlattenException::createFromThrowable($e);
 
             $this->logException($e, sprintf('Exception thrown when handling an exception (%s: %s at %s line %s)', $f->getClass(), $f->getMessage(), basename($e->getFile()), $e->getLine()));
@@ -127,7 +117,7 @@ class ErrorListener implements EventSubscriberInterface
                 }
             } while ($prev = $wrapper->getPrevious());
 
-            $prev = new \ReflectionProperty($wrapper instanceof \Exception ? \Exception::class : \Error::class, 'previous');
+            $prev = new ReflectionProperty($wrapper instanceof Exception ? Exception::class : Error::class, 'previous');
             $prev->setValue($wrapper, $throwable);
 
             throw $e;
@@ -147,21 +137,18 @@ class ErrorListener implements EventSubscriberInterface
         }
     }
 
-    /**
-     * @return void
-     */
-    public function onControllerArguments(ControllerArgumentsEvent $event)
+    public function onControllerArguments(ControllerArgumentsEvent $event): void
     {
         $e = $event->getRequest()->attributes->get('exception');
 
-        if (!$e instanceof \Throwable || false === $k = array_search($e, $event->getArguments(), true)) {
+        if (!$e instanceof Throwable || false === $k = array_search($e, $event->getArguments(), true)) {
             return;
         }
 
-        $r = new \ReflectionFunction($event->getController()(...));
+        $r = new ReflectionFunction($event->getController()(...));
         $r = $r->getParameters()[$k] ?? null;
 
-        if ($r && (!($r = $r->getType()) instanceof \ReflectionNamedType || FlattenException::class === $r->getName())) {
+        if ($r && (!($r = $r->getType()) instanceof ReflectionNamedType || FlattenException::class === $r->getName())) {
             $arguments = $event->getArguments();
             $arguments[$k] = FlattenException::createFromThrowable($e);
             $event->setArguments($arguments);
@@ -183,7 +170,7 @@ class ErrorListener implements EventSubscriberInterface
     /**
      * Logs an exception.
      */
-    protected function logException(\Throwable $exception, string $message, ?string $logLevel = null): void
+    protected function logException(Throwable $exception, string $message, ?string $logLevel = null): void
     {
         if (null === $this->logger) {
             return;
@@ -197,7 +184,7 @@ class ErrorListener implements EventSubscriberInterface
     /**
      * Resolves the level to be used when logging the exception.
      */
-    private function resolveLogLevel(\Throwable $throwable): string
+    private function resolveLogLevel(Throwable $throwable): string
     {
         foreach ($this->exceptionsMapping as $class => $config) {
             if ($throwable instanceof $class && $config['log_level']) {
@@ -205,16 +192,9 @@ class ErrorListener implements EventSubscriberInterface
             }
         }
 
-        $class = new \ReflectionClass($throwable);
-
-        do {
-            if ($attributes = $class->getAttributes(WithLogLevel::class)) {
-                /** @var WithLogLevel $instance */
-                $instance = $attributes[0]->newInstance();
-
-                return $instance->level;
-            }
-        } while ($class = $class->getParentClass());
+        if ($withLogLevel = $this->getInheritedAttribute($throwable::class, WithLogLevel::class)) {
+            return $withLogLevel->level;
+        }
 
         if (!$throwable instanceof HttpExceptionInterface || $throwable->getStatusCode() >= 500) {
             return LogLevel::CRITICAL;
@@ -226,7 +206,7 @@ class ErrorListener implements EventSubscriberInterface
     /**
      * Clones the request for the exception.
      */
-    protected function duplicateRequest(\Throwable $exception, Request $request): Request
+    protected function duplicateRequest(Throwable $exception, Request $request): Request
     {
         $attributes = [
             '_controller' => $this->controller,
@@ -237,5 +217,46 @@ class ErrorListener implements EventSubscriberInterface
         $request->setMethod('GET');
 
         return $request;
+    }
+
+    /**
+     * @template T
+     *
+     * @param class-string<T> $attribute
+     *
+     * @return T|null
+     */
+    private function getInheritedAttribute(string $class, string $attribute): ?object
+    {
+        $class = new ReflectionClass($class);
+        $interfaces = [];
+        $attributeReflector = null;
+        $parentInterfaces = [];
+        $ownInterfaces = [];
+
+        do {
+            if ($attributes = $class->getAttributes($attribute, ReflectionAttribute::IS_INSTANCEOF)) {
+                $attributeReflector = $attributes[0];
+                $parentInterfaces = class_implements($class->name);
+                break;
+            }
+
+            $interfaces[] = class_implements($class->name);
+        } while ($class = $class->getParentClass());
+
+        while ($interfaces) {
+            $ownInterfaces = array_diff_key(array_pop($interfaces), $parentInterfaces);
+            $parentInterfaces += $ownInterfaces;
+
+            foreach ($ownInterfaces as $interface) {
+                $class = new ReflectionClass($interface);
+
+                if ($attributes = $class->getAttributes($attribute, ReflectionAttribute::IS_INSTANCEOF)) {
+                    $attributeReflector = $attributes[0];
+                }
+            }
+        }
+
+        return $attributeReflector?->newInstance();
     }
 }

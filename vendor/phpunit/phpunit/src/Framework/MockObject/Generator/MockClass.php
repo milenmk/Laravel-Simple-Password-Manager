@@ -9,26 +9,25 @@
  */
 namespace PHPUnit\Framework\MockObject\Generator;
 
-use function call_user_func;
 use function class_exists;
 use PHPUnit\Framework\MockObject\ConfigurableMethod;
 
 /**
  * @internal This class is not covered by the backward compatibility promise for PHPUnit
  */
-final class MockClass implements MockType
+final readonly class MockClass implements MockType
 {
-    private readonly string $classCode;
+    private string $classCode;
 
     /**
      * @psalm-var class-string
      */
-    private readonly string $mockName;
+    private string $mockName;
 
     /**
      * @psalm-var list<ConfigurableMethod>
      */
-    private readonly array $configurableMethods;
+    private array $configurableMethods;
 
     /**
      * @psalm-param class-string $mockName
@@ -48,14 +47,6 @@ final class MockClass implements MockType
     {
         if (!class_exists($this->mockName, false)) {
             eval($this->classCode);
-
-            call_user_func(
-                [
-                    $this->mockName,
-                    '__phpunit_initConfigurableMethods',
-                ],
-                ...$this->configurableMethods,
-            );
         }
 
         return $this->mockName;
@@ -64,5 +55,13 @@ final class MockClass implements MockType
     public function classCode(): string
     {
         return $this->classCode;
+    }
+
+    /**
+     * @psalm-return list<ConfigurableMethod>
+     */
+    public function configurableMethods(): array
+    {
+        return $this->configurableMethods;
     }
 }

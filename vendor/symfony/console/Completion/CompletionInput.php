@@ -11,10 +11,14 @@
 
 namespace Symfony\Component\Console\Completion;
 
+use LogicException;
 use Symfony\Component\Console\Exception\RuntimeException;
 use Symfony\Component\Console\Input\ArgvInput;
 use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputOption;
+
+use function count;
+use function is_array;
 
 /**
  * An input specialized for shell completion.
@@ -53,7 +57,7 @@ final class CompletionInput extends ArgvInput
      * Create an input based on an COMP_WORDS token list.
      *
      * @param string[] $tokens       the set of split tokens (e.g. COMP_WORDS or argv)
-     * @param          $currentIndex the index of the cursor (e.g. COMP_CWORD)
+     * @param int      $currentIndex the index of the cursor (e.g. COMP_CWORD)
      */
     public static function fromTokens(array $tokens, int $currentIndex): self
     {
@@ -113,14 +117,14 @@ final class CompletionInput extends ArgvInput
 
             $argumentValue = $this->arguments[$argumentName];
             $this->completionName = $argumentName;
-            if (\is_array($argumentValue)) {
+            if (is_array($argumentValue)) {
                 $this->completionValue = $argumentValue ? $argumentValue[array_key_last($argumentValue)] : null;
             } else {
                 $this->completionValue = $argumentValue;
             }
         }
 
-        if ($this->currentIndex >= \count($this->tokens)) {
+        if ($this->currentIndex >= count($this->tokens)) {
             if (!isset($this->arguments[$argumentName]) || $this->definition->getArgument($argumentName)->isArray()) {
                 $this->completionName = $argumentName;
                 $this->completionValue = '';
@@ -218,9 +222,9 @@ final class CompletionInput extends ArgvInput
      */
     private function isCursorFree(): bool
     {
-        $nrOfTokens = \count($this->tokens);
+        $nrOfTokens = count($this->tokens);
         if ($this->currentIndex > $nrOfTokens) {
-            throw new \LogicException('Current index is invalid, it must be the number of input tokens or one more.');
+            throw new LogicException('Current index is invalid, it must be the number of input tokens or one more.');
         }
 
         return $this->currentIndex >= $nrOfTokens;

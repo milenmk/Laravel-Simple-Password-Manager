@@ -12,7 +12,9 @@ use Symfony\Component\HttpFoundation\File\UploadedFile as SymfonyUploadedFile;
 
 class UploadedFile extends SymfonyUploadedFile
 {
-    use FileHelpers, Macroable;
+
+    use FileHelpers;
+    use Macroable;
 
     /**
      * Begin creating a new file fake.
@@ -21,7 +23,7 @@ class UploadedFile extends SymfonyUploadedFile
      */
     public static function fake()
     {
-        return new FileFactory;
+        return new FileFactory();
     }
 
     /**
@@ -31,7 +33,7 @@ class UploadedFile extends SymfonyUploadedFile
      * @param  array|string  $options
      * @return string|false
      */
-    public function store($path, $options = [])
+    public function store($path = '', $options = [])
     {
         return $this->storeAs($path, $this->hashName(), $this->parseOptions($options));
     }
@@ -43,7 +45,7 @@ class UploadedFile extends SymfonyUploadedFile
      * @param  array|string  $options
      * @return string|false
      */
-    public function storePublicly($path, $options = [])
+    public function storePublicly($path = '', $options = [])
     {
         $options = $this->parseOptions($options);
 
@@ -60,8 +62,12 @@ class UploadedFile extends SymfonyUploadedFile
      * @param  array|string  $options
      * @return string|false
      */
-    public function storePubliclyAs($path, $name, $options = [])
+    public function storePubliclyAs($path, $name = null, $options = [])
     {
+        if (is_null($name) || is_array($name)) {
+            [$path, $name, $options] = ['', $path, $name ?? []];
+        }
+
         $options = $this->parseOptions($options);
 
         $options['visibility'] = 'public';
@@ -73,12 +79,16 @@ class UploadedFile extends SymfonyUploadedFile
      * Store the uploaded file on a filesystem disk.
      *
      * @param  string  $path
-     * @param  string  $name
+     * @param  string|array  $name
      * @param  array|string  $options
      * @return string|false
      */
-    public function storeAs($path, $name, $options = [])
+    public function storeAs($path, $name = null, $options = [])
     {
+        if (is_null($name) || is_array($name)) {
+            [$path, $name, $options] = ['', $path, $name ?? []];
+        }
+
         $options = $this->parseOptions($options);
 
         $disk = Arr::pull($options, 'disk');

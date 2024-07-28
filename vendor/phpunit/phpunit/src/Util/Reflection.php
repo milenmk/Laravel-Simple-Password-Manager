@@ -21,7 +21,7 @@ use ReflectionMethod;
 /**
  * @internal This class is not covered by the backward compatibility promise for PHPUnit
  */
-final class Reflection
+final readonly class Reflection
 {
     /**
      * @psalm-param class-string $className
@@ -48,6 +48,8 @@ final class Reflection
     }
 
     /**
+     * @psalm-param ReflectionClass<TestCase> $class
+     *
      * @psalm-return list<ReflectionMethod>
      */
     public static function publicMethodsInTestClass(ReflectionClass $class): array
@@ -56,6 +58,8 @@ final class Reflection
     }
 
     /**
+     * @psalm-param ReflectionClass<TestCase> $class
+     *
      * @psalm-return list<ReflectionMethod>
      */
     public static function methodsInTestClass(ReflectionClass $class): array
@@ -64,6 +68,8 @@ final class Reflection
     }
 
     /**
+     * @psalm-param ReflectionClass<TestCase> $class
+     *
      * @psalm-return list<ReflectionMethod>
      */
     private static function filterAndSortMethods(ReflectionClass $class, ?int $filter, bool $sortHighestToLowest): array

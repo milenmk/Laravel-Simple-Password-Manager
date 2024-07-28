@@ -11,9 +11,16 @@
 
 namespace Monolog\Formatter;
 
+use DateTimeInterface;
 use MongoDB\BSON\Type;
 use MongoDB\BSON\UTCDateTime;
 use Monolog\Utils;
+use Monolog\LogRecord;
+use Throwable;
+
+use function extension_loaded;
+use function is_array;
+use function is_object;
 
 /**
  * Formats a record for use with the MongoDBHandler.
@@ -22,15 +29,12 @@ use Monolog\Utils;
  */
 class MongoDBFormatter implements FormatterInterface
 {
-    /** @var bool */
-    private $exceptionTraceAsString;
-    /** @var int */
-    private $maxNestingLevel;
-    /** @var bool */
-    private $isLegacyMongoExt;
+    private bool $exceptionTraceAsString;
+    private int $maxNestingLevel;
+    private bool $isLegacyMongoExt;
 
     /**
-     * @param int  $maxNestingLevel        0 means infinite nesting, the $record itself is level 1, $record['context'] is 2
+     * @param int  $maxNestingLevel        0 means infinite nesting, the $record itself is level 1, $record->context is 2
      * @param bool $exceptionTraceAsString set to false to log exception traces as a sub documents instead of strings
      */
     public function __construct(int $maxNestingLevel = 3, bool $exceptionTraceAsString = true)
@@ -42,20 +46,20 @@ class MongoDBFormatter implements FormatterInterface
     }
 
     /**
-     * {@inheritDoc}
+     * @inheritDoc
      *
      * @return mixed[]
      */
-    public function format(array $record): array
+    public function format(LogRecord $record): array
     {
         /** @var mixed[] $res */
-        $res = $this->formatArray($record);
+        $res = $this->formatArray($record->toArray());
 
         return $res;
     }
 
     /**
-     * {@inheritDoc}
+     * @inheritDoc
      *
      * @return array<mixed[]>
      */
@@ -80,9 +84,9 @@ class MongoDBFormatter implements FormatterInterface
         }
 
         foreach ($array as $name => $value) {
-            if ($value instanceof \DateTimeInterface) {
+            if ($value instanceof DateTimeInterface) {
                 $array[$name] = $this->formatDate($value, $nestingLevel + 1);
-            } elseif ($value instanceof \Throwable) {
+            } elseif ($value instanceof Throwable) {
                 $array[$name] = $this->formatException($value, $nestingLevel + 1);
             } elseif (is_array($value)) {
                 $array[$name] = $this->formatArray($value, $nestingLevel + 1);
@@ -109,7 +113,7 @@ class MongoDBFormatter implements FormatterInterface
     /**
      * @return mixed[]|string
      */
-    protected function formatException(\Throwable $exception, int $nestingLevel)
+    protected function formatException(Throwable $exception, int $nestingLevel)
     {
         $formattedException = [
             'class' => Utils::getClass($exception),
@@ -127,7 +131,7 @@ class MongoDBFormatter implements FormatterInterface
         return $this->formatArray($formattedException, $nestingLevel);
     }
 
-    protected function formatDate(\DateTimeInterface $value, int $nestingLevel): UTCDateTime
+    protected function formatDate(DateTimeInterface $value, int $nestingLevel): UTCDateTime
     {
         if ($this->isLegacyMongoExt) {
             return $this->legacyGetMongoDbDateTime($value);
@@ -136,7 +140,7 @@ class MongoDBFormatter implements FormatterInterface
         return $this->getMongoDbDateTime($value);
     }
 
-    private function getMongoDbDateTime(\DateTimeInterface $value): UTCDateTime
+    private function getMongoDbDateTime(DateTimeInterface $value): UTCDateTime
     {
         return new UTCDateTime((int) floor(((float) $value->format('U.u')) * 1000));
     }
@@ -148,7 +152,7 @@ class MongoDBFormatter implements FormatterInterface
      *
      * It can probably be removed in 2.1 or later once MongoDB's 1.2 is released and widely adopted
      */
-    private function legacyGetMongoDbDateTime(\DateTimeInterface $value): UTCDateTime
+    private function legacyGetMongoDbDateTime(DateTimeInterface $value): UTCDateTime
     {
         $milliseconds = floor(((float) $value->format('U.u')) * 1000);
 
@@ -156,7 +160,6 @@ class MongoDBFormatter implements FormatterInterface
             ? (int) $milliseconds
             : (string) $milliseconds;
 
-        // @phpstan-ignore-next-line
         return new UTCDateTime($milliseconds);
     }
 }

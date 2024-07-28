@@ -16,6 +16,7 @@ use Symfony\Component\Mime\MimeTypes;
 
 class Filesystem
 {
+
     use Conditionable;
     use Macroable;
 
@@ -57,6 +58,21 @@ class Filesystem
         }
 
         throw new FileNotFoundException("File does not exist at path {$path}.");
+    }
+
+    /**
+     * Get the contents of a file as decoded JSON.
+     *
+     * @param  string  $path
+     * @param  int  $flags
+     * @param  bool  $lock
+     * @return array
+     *
+     * @throws \Illuminate\Contracts\Filesystem\FileNotFoundException
+     */
+    public function json($path, $flags = 0, $lock = false)
+    {
+        return json_decode($this->get($path, $lock), true, 512, $flags);
     }
 
     /**
@@ -253,11 +269,12 @@ class Filesystem
      *
      * @param  string  $path
      * @param  string  $data
+     * @param  bool  $lock
      * @return int
      */
-    public function append($path, $data)
+    public function append($path, $data, $lock = false)
     {
-        return file_put_contents($path, $data, FILE_APPEND);
+        return file_put_contents($path, $data, FILE_APPEND | ($lock ? LOCK_EX : 0));
     }
 
     /**
@@ -295,7 +312,7 @@ class Filesystem
                 } else {
                     $success = false;
                 }
-            } catch (ErrorException $e) {
+            } catch (ErrorException) {
                 $success = false;
             }
         }
@@ -332,7 +349,7 @@ class Filesystem
      *
      * @param  string  $target
      * @param  string  $link
-     * @return void
+     * @return bool|null
      */
     public function link($target, $link)
     {
@@ -362,7 +379,7 @@ class Filesystem
             );
         }
 
-        $relativeTarget = (new SymfonyFilesystem)->makePathRelative($target, dirname($link));
+        $relativeTarget = (new SymfonyFilesystem())->makePathRelative($target, dirname($link));
 
         $this->link($this->isFile($target) ? rtrim($relativeTarget, '/') : $relativeTarget, $link);
     }
@@ -427,7 +444,7 @@ class Filesystem
             );
         }
 
-        return (new MimeTypes)->getExtensions($this->mimeType($path))[0] ?? null;
+        return (new MimeTypes())->getExtensions($this->mimeType($path))[0] ?? null;
     }
 
     /**
@@ -530,7 +547,7 @@ class Filesystem
     {
         $hash = @md5_file($firstFile);
 
-        return $hash && $hash === @md5_file($secondFile);
+        return $hash && hash_equals($hash, (string) @md5_file($secondFile));
     }
 
     /**
@@ -733,6 +750,8 @@ class Filesystem
                 $this->delete($item->getPathname());
             }
         }
+
+        unset($items);
 
         if (! $preserve) {
             @rmdir($directory);

@@ -18,6 +18,8 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * @author Abdellatif Ait boudad <a.aitboudad@gmail.com>
+ *
+ * @final since Symfony 7.1
  */
 class DataCollectorTranslator implements TranslatorInterface, TranslatorBagInterface, LocaleAwareInterface, WarmableInterface
 {
@@ -48,10 +50,7 @@ class DataCollectorTranslator implements TranslatorInterface, TranslatorBagInter
         return $trans;
     }
 
-    /**
-     * @return void
-     */
-    public function setLocale(string $locale)
+    public function setLocale(string $locale): void
     {
         $this->translator->setLocale($locale);
     }
@@ -92,10 +91,7 @@ class DataCollectorTranslator implements TranslatorInterface, TranslatorBagInter
         return [];
     }
 
-    /**
-     * @return mixed
-     */
-    public function __call(string $method, array $args)
+    public function __call(string $method, array $args): mixed
     {
         return $this->translator->{$method}(...$args);
     }

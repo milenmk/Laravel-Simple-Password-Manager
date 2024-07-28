@@ -3,37 +3,22 @@
 namespace Spatie\LaravelIgnition\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Spatie\Ignition\Contracts\RunnableSolution;
-use Spatie\Ignition\Contracts\Solution;
-use Spatie\Ignition\Contracts\SolutionProviderRepository;
+use Spatie\ErrorSolutions\Contracts\RunnableSolution;
+use Spatie\ErrorSolutions\Contracts\Solution;
+use Spatie\ErrorSolutions\Contracts\SolutionProviderRepository;
 
 class ExecuteSolutionRequest extends FormRequest
 {
-
     public function rules(): array
     {
-
         return [
-            'solution'   => 'required',
+            'solution' => 'required',
             'parameters' => 'array',
         ];
     }
 
-    public function getRunnableSolution(): RunnableSolution
-    {
-
-        $solution = $this->getSolution();
-
-        if (!$solution instanceof RunnableSolution) {
-            abort(404, 'Runnable solution could not be found');
-        }
-
-        return $solution;
-    }
-
     public function getSolution(): Solution
     {
-
         $solution = app(SolutionProviderRepository::class)
             ->getSolutionForClass($this->get('solution'));
 
@@ -42,4 +27,14 @@ class ExecuteSolutionRequest extends FormRequest
         return $solution;
     }
 
+    public function getRunnableSolution(): RunnableSolution
+    {
+        $solution = $this->getSolution();
+
+        if (! $solution instanceof RunnableSolution) {
+            abort(404, 'Runnable solution could not be found');
+        }
+
+        return $solution;
+    }
 }

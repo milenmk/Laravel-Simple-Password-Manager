@@ -16,6 +16,7 @@ class MapGenerator {
     this.root = root
     this.opts = opts
     this.css = cssString
+    this.originalCSS = cssString
     this.usesFileUrls = !this.mapOpts.from && this.mapOpts.absolute
 
     this.memoizedFileURLs = new Map()
@@ -51,7 +52,7 @@ class MapGenerator {
       if (this.mapOpts.sourcesContent === false) {
         map = new SourceMapConsumer(prev.text)
         if (map.sourcesContent) {
-          map.sourcesContent = map.sourcesContent.map(() => null)
+          map.sourcesContent = null
         }
       } else {
         map = prev.consumer()
@@ -74,7 +75,7 @@ class MapGenerator {
         }
       }
     } else if (this.css) {
-      this.css = this.css.replace(/(\n)?\/\*#[\S\s]*?\*\/$/gm, '')
+      this.css = this.css.replace(/\n*?\/\*#[\S\s]*?\*\/$/gm, '')
     }
   }
 
@@ -97,9 +98,14 @@ class MapGenerator {
     } else if (this.previous().length === 1) {
       let prev = this.previous()[0].consumer()
       prev.file = this.outputFile()
-      this.map = SourceMapGenerator.fromSourceMap(prev)
+      this.map = SourceMapGenerator.fromSourceMap(prev, {
+        ignoreInvalidMapping: true
+      })
     } else {
-      this.map = new SourceMapGenerator({ file: this.outputFile() })
+      this.map = new SourceMapGenerator({
+        file: this.outputFile(),
+        ignoreInvalidMapping: true
+      })
       this.map.addMapping({
         generated: { column: 0, line: 1 },
         original: { column: 0, line: 1 },
@@ -122,7 +128,10 @@ class MapGenerator {
 
   generateString() {
     this.css = ''
-    this.map = new SourceMapGenerator({ file: this.outputFile() })
+    this.map = new SourceMapGenerator({
+      file: this.outputFile(),
+      ignoreInvalidMapping: true
+    })
 
     let line = 1
     let column = 1
@@ -276,7 +285,7 @@ class MapGenerator {
           }
         })
       } else {
-        let input = new Input(this.css, this.opts)
+        let input = new Input(this.originalCSS, this.opts)
         if (input.map) this.previousMaps.push(input.map)
       }
     }

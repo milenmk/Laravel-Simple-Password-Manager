@@ -13,6 +13,8 @@ namespace Symfony\Component\Console\Output;
 
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 
+use function strlen;
+
 /**
  * @author Fabien Potencier <fabien@symfony.com>
  * @author Julien Boudry <julien@condorcet.vote>
@@ -46,11 +48,11 @@ enum AnsiColorMode
     {
         $hexColor = str_replace('#', '', $hexColor);
 
-        if (3 === \strlen($hexColor)) {
+        if (3 === strlen($hexColor)) {
             $hexColor = $hexColor[0].$hexColor[0].$hexColor[1].$hexColor[1].$hexColor[2].$hexColor[2];
         }
 
-        if (6 !== \strlen($hexColor)) {
+        if (6 !== strlen($hexColor)) {
             throw new InvalidArgumentException(sprintf('Invalid "#%s" color.', $hexColor));
         }
 
@@ -63,7 +65,7 @@ enum AnsiColorMode
         return match ($this) {
             self::Ansi4 => (string) $this->convertFromRGB($r, $g, $b),
             self::Ansi8 => '8;5;'.((string) $this->convertFromRGB($r, $g, $b)),
-            self::Ansi24 => sprintf('8;2;%d;%d;%d', $r, $g, $b)
+            self::Ansi24 => sprintf('8;2;%d;%d;%d', $r, $g, $b),
         };
     }
 
@@ -72,7 +74,7 @@ enum AnsiColorMode
         return match ($this) {
             self::Ansi4 => $this->degradeHexColorToAnsi4($r, $g, $b),
             self::Ansi8 => $this->degradeHexColorToAnsi8($r, $g, $b),
-            default => throw new InvalidArgumentException("RGB cannot be converted to {$this->name}.")
+            default => throw new InvalidArgumentException("RGB cannot be converted to {$this->name}."),
         };
     }
 

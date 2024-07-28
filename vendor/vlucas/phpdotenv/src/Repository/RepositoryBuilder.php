@@ -17,6 +17,12 @@ use InvalidArgumentException;
 use PhpOption\Some;
 use ReflectionClass;
 
+use function array_merge;
+use function class_exists;
+use function is_string;
+use function iterator_to_array;
+use function sprintf;
+
 final class RepositoryBuilder
 {
     /**
@@ -65,7 +71,7 @@ final class RepositoryBuilder
      *
      * @return void
      */
-    private function __construct(array $readers = [], array $writers = [], bool $immutable = false, array $allowList = null)
+    private function __construct(array $readers = [], array $writers = [], bool $immutable = false, ?array $allowList = null)
     {
         $this->readers = $readers;
         $this->writers = $writers;
@@ -90,7 +96,7 @@ final class RepositoryBuilder
      */
     public static function createWithDefaultAdapters()
     {
-        $adapters = \iterator_to_array(self::defaultAdapters());
+        $adapters = iterator_to_array(self::defaultAdapters());
 
         return new self($adapters, $adapters);
     }
@@ -119,7 +125,7 @@ final class RepositoryBuilder
      */
     private static function isAnAdapterClass(string $name)
     {
-        if (!\class_exists($name)) {
+        if (!class_exists($name)) {
             return false;
         }
 
@@ -140,9 +146,9 @@ final class RepositoryBuilder
      */
     public function addReader($reader)
     {
-        if (!(\is_string($reader) && self::isAnAdapterClass($reader)) && !($reader instanceof ReaderInterface)) {
+        if (!(is_string($reader) && self::isAnAdapterClass($reader)) && !($reader instanceof ReaderInterface)) {
             throw new InvalidArgumentException(
-                \sprintf(
+                sprintf(
                     'Expected either an instance of %s or a class-string implementing %s',
                     ReaderInterface::class,
                     AdapterInterface::class
@@ -151,10 +157,10 @@ final class RepositoryBuilder
         }
 
         $optional = Some::create($reader)->flatMap(static function ($reader) {
-            return \is_string($reader) ? $reader::create() : Some::create($reader);
+            return is_string($reader) ? $reader::create() : Some::create($reader);
         });
 
-        $readers = \array_merge($this->readers, \iterator_to_array($optional));
+        $readers = array_merge($this->readers, iterator_to_array($optional));
 
         return new self($readers, $this->writers, $this->immutable, $this->allowList);
     }
@@ -173,9 +179,9 @@ final class RepositoryBuilder
      */
     public function addWriter($writer)
     {
-        if (!(\is_string($writer) && self::isAnAdapterClass($writer)) && !($writer instanceof WriterInterface)) {
+        if (!(is_string($writer) && self::isAnAdapterClass($writer)) && !($writer instanceof WriterInterface)) {
             throw new InvalidArgumentException(
-                \sprintf(
+                sprintf(
                     'Expected either an instance of %s or a class-string implementing %s',
                     WriterInterface::class,
                     AdapterInterface::class
@@ -184,10 +190,10 @@ final class RepositoryBuilder
         }
 
         $optional = Some::create($writer)->flatMap(static function ($writer) {
-            return \is_string($writer) ? $writer::create() : Some::create($writer);
+            return is_string($writer) ? $writer::create() : Some::create($writer);
         });
 
-        $writers = \array_merge($this->writers, \iterator_to_array($optional));
+        $writers = array_merge($this->writers, iterator_to_array($optional));
 
         return new self($this->readers, $writers, $this->immutable, $this->allowList);
     }
@@ -207,9 +213,9 @@ final class RepositoryBuilder
      */
     public function addAdapter($adapter)
     {
-        if (!(\is_string($adapter) && self::isAnAdapterClass($adapter)) && !($adapter instanceof AdapterInterface)) {
+        if (!(is_string($adapter) && self::isAnAdapterClass($adapter)) && !($adapter instanceof AdapterInterface)) {
             throw new InvalidArgumentException(
-                \sprintf(
+                sprintf(
                     'Expected either an instance of %s or a class-string implementing %s',
                     WriterInterface::class,
                     AdapterInterface::class
@@ -218,11 +224,11 @@ final class RepositoryBuilder
         }
 
         $optional = Some::create($adapter)->flatMap(static function ($adapter) {
-            return \is_string($adapter) ? $adapter::create() : Some::create($adapter);
+            return is_string($adapter) ? $adapter::create() : Some::create($adapter);
         });
 
-        $readers = \array_merge($this->readers, \iterator_to_array($optional));
-        $writers = \array_merge($this->writers, \iterator_to_array($optional));
+        $readers = array_merge($this->readers, iterator_to_array($optional));
+        $writers = array_merge($this->writers, iterator_to_array($optional));
 
         return new self($readers, $writers, $this->immutable, $this->allowList);
     }
@@ -244,7 +250,7 @@ final class RepositoryBuilder
      *
      * @return \Dotenv\Repository\RepositoryBuilder
      */
-    public function allowList(array $allowList = null)
+    public function allowList(?array $allowList = null)
     {
         return new self($this->readers, $this->writers, $this->immutable, $allowList);
     }

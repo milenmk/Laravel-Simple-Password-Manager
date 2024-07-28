@@ -7,7 +7,6 @@ use Illuminate\Database\Events\QueryExecuted;
 
 class QueryRecorder
 {
-
     /** @var \Spatie\LaravelIgnition\Recorders\QueryRecorder\Query[] */
     protected array $queries = [];
 
@@ -19,11 +18,9 @@ class QueryRecorder
 
     public function __construct(
         Application $app,
-        bool        $reportBindings = true,
-        ?int        $maxQueries = 200
-    )
-    {
-
+        bool $reportBindings = true,
+        ?int $maxQueries = 200
+    ) {
         $this->app = $app;
         $this->reportBindings = $reportBindings;
         $this->maxQueries = $maxQueries;
@@ -31,8 +28,7 @@ class QueryRecorder
 
     public function start(): self
     {
-
-        /** @phpstan-ignore-next-line */
+        /** @phpstan-ignore-next-line  */
         $this->app['events']->listen(QueryExecuted::class, [$this, 'record']);
 
         return $this;
@@ -40,7 +36,6 @@ class QueryRecorder
 
     public function record(QueryExecuted $queryExecuted): void
     {
-
         $this->queries[] = Query::fromQueryExecutedEvent($queryExecuted, $this->reportBindings);
 
         if (is_int($this->maxQueries)) {
@@ -53,7 +48,6 @@ class QueryRecorder
      */
     public function getQueries(): array
     {
-
         $queries = [];
 
         foreach ($this->queries as $query) {
@@ -65,19 +59,16 @@ class QueryRecorder
 
     public function reset(): void
     {
-
         $this->queries = [];
     }
 
     public function getReportBindings(): bool
     {
-
         return $this->reportBindings;
     }
 
     public function setReportBindings(bool $reportBindings): self
     {
-
         $this->reportBindings = $reportBindings;
 
         return $this;
@@ -85,16 +76,13 @@ class QueryRecorder
 
     public function getMaxQueries(): ?int
     {
-
         return $this->maxQueries;
     }
 
     public function setMaxQueries(?int $maxQueries): self
     {
-
         $this->maxQueries = $maxQueries;
 
         return $this;
     }
-
 }

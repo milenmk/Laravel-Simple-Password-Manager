@@ -13,6 +13,7 @@ namespace Symfony\Component\HttpKernel\Event;
 
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
+use Throwable;
 
 /**
  * Allows to create a response for a thrown exception.
@@ -29,17 +30,22 @@ use Symfony\Component\HttpKernel\HttpKernelInterface;
  */
 final class ExceptionEvent extends RequestEvent
 {
-    private \Throwable $throwable;
+    private Throwable $throwable;
     private bool $allowCustomResponseCode = false;
 
-    public function __construct(HttpKernelInterface $kernel, Request $request, int $requestType, \Throwable $e)
-    {
+    public function __construct(
+        HttpKernelInterface $kernel,
+        Request $request,
+        int $requestType,
+        Throwable $e,
+        private bool $isKernelTerminating = false,
+    ) {
         parent::__construct($kernel, $request, $requestType);
 
         $this->setThrowable($e);
     }
 
-    public function getThrowable(): \Throwable
+    public function getThrowable(): Throwable
     {
         return $this->throwable;
     }
@@ -49,7 +55,7 @@ final class ExceptionEvent extends RequestEvent
      *
      * This exception will be thrown if no response is set in the event.
      */
-    public function setThrowable(\Throwable $exception): void
+    public function setThrowable(Throwable $exception): void
     {
         $this->throwable = $exception;
     }
@@ -68,5 +74,10 @@ final class ExceptionEvent extends RequestEvent
     public function isAllowingCustomResponseCode(): bool
     {
         return $this->allowCustomResponseCode;
+    }
+
+    public function isKernelTerminating(): bool
+    {
+        return $this->isKernelTerminating;
     }
 }

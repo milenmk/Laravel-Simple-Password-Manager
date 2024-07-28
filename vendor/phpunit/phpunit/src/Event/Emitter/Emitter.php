@@ -11,9 +11,9 @@ namespace PHPUnit\Event;
 
 use PHPUnit\Event\Code\ClassMethod;
 use PHPUnit\Event\Code\ComparisonFailure;
+use PHPUnit\Event\Code\IssueTrigger\IssueTrigger;
 use PHPUnit\Event\Code\Throwable;
 use PHPUnit\Event\TestSuite\TestSuite;
-use PHPUnit\Framework\Constraint;
 use PHPUnit\TextUI\Configuration\Configuration;
 
 /**
@@ -21,16 +21,6 @@ use PHPUnit\TextUI\Configuration\Configuration;
  */
 interface Emitter
 {
-    /**
-     * @deprecated
-     */
-    public function exportObjects(): void;
-
-    /**
-     * @deprecated
-     */
-    public function exportsObjects(): bool;
-
     public function applicationStarted(): void;
 
     public function testRunnerStarted(): void;
@@ -116,16 +106,6 @@ interface Emitter
     public function testRegisteredComparator(string $className): void;
 
     /**
-     * @deprecated
-     */
-    public function testAssertionSucceeded(mixed $value, Constraint\Constraint $constraint, string $message): void;
-
-    /**
-     * @deprecated
-     */
-    public function testAssertionFailed(mixed $value, Constraint\Constraint $constraint, string $message): void;
-
-    /**
      * @psalm-param class-string $className
      */
     public function testCreatedMockObject(string $className): void;
@@ -192,21 +172,21 @@ interface Emitter
     /**
      * @psalm-param non-empty-string $message
      */
-    public function testTriggeredPhpunitDeprecation(Code\Test $test, string $message): void;
+    public function testTriggeredPhpunitDeprecation(?Code\Test $test, string $message): void;
 
     /**
      * @psalm-param non-empty-string $message
      * @psalm-param non-empty-string $file
      * @psalm-param positive-int $line
      */
-    public function testTriggeredPhpDeprecation(Code\Test $test, string $message, string $file, int $line, bool $suppressed, bool $ignoredByBaseline, bool $ignoredByTest): void;
+    public function testTriggeredPhpDeprecation(Code\Test $test, string $message, string $file, int $line, bool $suppressed, bool $ignoredByBaseline, bool $ignoredByTest, IssueTrigger $trigger): void;
 
     /**
      * @psalm-param non-empty-string $message
      * @psalm-param non-empty-string $file
      * @psalm-param positive-int $line
      */
-    public function testTriggeredDeprecation(Code\Test $test, string $message, string $file, int $line, bool $suppressed, bool $ignoredByBaseline, bool $ignoredByTest): void;
+    public function testTriggeredDeprecation(Code\Test $test, string $message, string $file, int $line, bool $suppressed, bool $ignoredByBaseline, bool $ignoredByTest, IssueTrigger $trigger): void;
 
     /**
      * @psalm-param non-empty-string $message

@@ -77,7 +77,9 @@ class RoutingServiceProvider extends ServiceProvider
             });
 
             $url->setKeyResolver(function () {
-                return $this->app->make('config')->get('app.key');
+                $config = $this->app->make('config');
+
+                return [$config->get('app.key'), ...($config->get('app.previous_keys') ?? [])];
             });
 
             // If the route collection is "rebound", for example, when the routes stay
@@ -128,17 +130,23 @@ class RoutingServiceProvider extends ServiceProvider
      * Register a binding for the PSR-7 request implementation.
      *
      * @return void
-     *
-     * @throws \Illuminate\Contracts\Container\BindingResolutionException
      */
     protected function registerPsrRequest()
     {
         $this->app->bind(ServerRequestInterface::class, function ($app) {
             if (class_exists(Psr17Factory::class) && class_exists(PsrHttpFactory::class)) {
-                $psr17Factory = new Psr17Factory;
+                $psr17Factory = new Psr17Factory();
 
-                return (new PsrHttpFactory($psr17Factory, $psr17Factory, $psr17Factory, $psr17Factory))
-                    ->createRequest($app->make('request'));
+                return with((new PsrHttpFactory($psr17Factory, $psr17Factory, $psr17Factory, $psr17Factory))
+                    ->createRequest($illuminateRequest = $app->make('request')), function (ServerRequestInterface $request) use ($illuminateRequest) {
+                        if ($illuminateRequest->getContentTypeFormat() !== 'json' && $illuminateRequest->request->count() === 0) {
+                            return $request;
+                        }
+
+                        return $request->withParsedBody(
+                            array_merge($request->getParsedBody() ?? [], $illuminateRequest->getPayload()->all())
+                        );
+                    });
             }
 
             throw new BindingResolutionException('Unable to resolve PSR request. Please install the symfony/psr-http-message-bridge and nyholm/psr7 packages.');
@@ -149,14 +157,12 @@ class RoutingServiceProvider extends ServiceProvider
      * Register a binding for the PSR-7 response implementation.
      *
      * @return void
-     *
-     * @throws \Illuminate\Contracts\Container\BindingResolutionException
      */
     protected function registerPsrResponse()
     {
         $this->app->bind(ResponseInterface::class, function () {
             if (class_exists(PsrResponse::class)) {
-                return new PsrResponse;
+                return new PsrResponse();
             }
 
             throw new BindingResolutionException('Unable to resolve PSR response. Please install the nyholm/psr7 package.');

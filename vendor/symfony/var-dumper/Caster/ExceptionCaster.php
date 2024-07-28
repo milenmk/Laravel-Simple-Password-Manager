@@ -11,10 +11,37 @@
 
 namespace Symfony\Component\VarDumper\Caster;
 
+use Error;
+use ErrorException;
+use Exception;
+use ReflectionClass;
+use ReflectionException;
+use ReflectionFunction;
+use ReflectionMethod;
+use stdClass;
 use Symfony\Component\ErrorHandler\Exception\FlattenException;
 use Symfony\Component\ErrorHandler\Exception\SilencedErrorContext;
 use Symfony\Component\VarDumper\Cloner\Stub;
 use Symfony\Component\VarDumper\Exception\ThrowingCasterException;
+
+use function array_slice;
+use function count;
+use function strlen;
+
+use const E_COMPILE_ERROR;
+use const E_COMPILE_WARNING;
+use const E_CORE_ERROR;
+use const E_CORE_WARNING;
+use const E_DEPRECATED;
+use const E_ERROR;
+use const E_NOTICE;
+use const E_PARSE;
+use const E_RECOVERABLE_ERROR;
+use const E_USER_DEPRECATED;
+use const E_USER_ERROR;
+use const E_USER_NOTICE;
+use const E_USER_WARNING;
+use const E_WARNING;
 
 /**
  * Casts common Exception classes to array representation.
@@ -28,45 +55,36 @@ class ExceptionCaster
     public static int $srcContext = 1;
     public static bool $traceArgs = true;
     public static array $errorTypes = [
-        \E_DEPRECATED => 'E_DEPRECATED',
-        \E_USER_DEPRECATED => 'E_USER_DEPRECATED',
-        \E_RECOVERABLE_ERROR => 'E_RECOVERABLE_ERROR',
-        \E_ERROR => 'E_ERROR',
-        \E_WARNING => 'E_WARNING',
-        \E_PARSE => 'E_PARSE',
-        \E_NOTICE => 'E_NOTICE',
-        \E_CORE_ERROR => 'E_CORE_ERROR',
-        \E_CORE_WARNING => 'E_CORE_WARNING',
-        \E_COMPILE_ERROR => 'E_COMPILE_ERROR',
-        \E_COMPILE_WARNING => 'E_COMPILE_WARNING',
-        \E_USER_ERROR => 'E_USER_ERROR',
-        \E_USER_WARNING => 'E_USER_WARNING',
-        \E_USER_NOTICE => 'E_USER_NOTICE',
-        \E_STRICT => 'E_STRICT',
+        E_DEPRECATED => 'E_DEPRECATED',
+        E_USER_DEPRECATED => 'E_USER_DEPRECATED',
+        E_RECOVERABLE_ERROR => 'E_RECOVERABLE_ERROR',
+        E_ERROR => 'E_ERROR',
+        E_WARNING => 'E_WARNING',
+        E_PARSE => 'E_PARSE',
+        E_NOTICE => 'E_NOTICE',
+        E_CORE_ERROR => 'E_CORE_ERROR',
+        E_CORE_WARNING => 'E_CORE_WARNING',
+        E_COMPILE_ERROR => 'E_COMPILE_ERROR',
+        E_COMPILE_WARNING => 'E_COMPILE_WARNING',
+        E_USER_ERROR => 'E_USER_ERROR',
+        E_USER_WARNING => 'E_USER_WARNING',
+        E_USER_NOTICE => 'E_USER_NOTICE',
+        2048 => 'E_STRICT',
     ];
 
     private static array $framesCache = [];
 
-    /**
-     * @return array
-     */
-    public static function castError(\Error $e, array $a, Stub $stub, bool $isNested, int $filter = 0)
+    public static function castError(Error $e, array $a, Stub $stub, bool $isNested, int $filter = 0): array
     {
         return self::filterExceptionArray($stub->class, $a, "\0Error\0", $filter);
     }
 
-    /**
-     * @return array
-     */
-    public static function castException(\Exception $e, array $a, Stub $stub, bool $isNested, int $filter = 0)
+    public static function castException(Exception $e, array $a, Stub $stub, bool $isNested, int $filter = 0): array
     {
         return self::filterExceptionArray($stub->class, $a, "\0Exception\0", $filter);
     }
 
-    /**
-     * @return array
-     */
-    public static function castErrorException(\ErrorException $e, array $a, Stub $stub, bool $isNested)
+    public static function castErrorException(ErrorException $e, array $a, Stub $stub, bool $isNested): array
     {
         if (isset($a[$s = Caster::PREFIX_PROTECTED.'severity'], self::$errorTypes[$a[$s]])) {
             $a[$s] = new ConstStub(self::$errorTypes[$a[$s]], $a[$s]);
@@ -75,20 +93,17 @@ class ExceptionCaster
         return $a;
     }
 
-    /**
-     * @return array
-     */
-    public static function castThrowingCasterException(ThrowingCasterException $e, array $a, Stub $stub, bool $isNested)
+    public static function castThrowingCasterException(ThrowingCasterException $e, array $a, Stub $stub, bool $isNested): array
     {
         $trace = Caster::PREFIX_VIRTUAL.'trace';
         $prefix = Caster::PREFIX_PROTECTED;
         $xPrefix = "\0Exception\0";
 
-        if (isset($a[$xPrefix.'previous'], $a[$trace]) && $a[$xPrefix.'previous'] instanceof \Exception) {
+        if (isset($a[$xPrefix.'previous'], $a[$trace]) && $a[$xPrefix.'previous'] instanceof Exception) {
             $b = (array) $a[$xPrefix.'previous'];
             $class = get_debug_type($a[$xPrefix.'previous']);
             self::traceUnshift($b[$xPrefix.'trace'], $class, $b[$prefix.'file'], $b[$prefix.'line']);
-            $a[$trace] = new TraceStub($b[$xPrefix.'trace'], false, 0, -\count($a[$trace]->value));
+            $a[$trace] = new TraceStub($b[$xPrefix.'trace'], false, 0, -count($a[$trace]->value));
         }
 
         unset($a[$xPrefix.'previous'], $a[$prefix.'code'], $a[$prefix.'file'], $a[$prefix.'line']);
@@ -96,10 +111,7 @@ class ExceptionCaster
         return $a;
     }
 
-    /**
-     * @return array
-     */
-    public static function castSilencedErrorContext(SilencedErrorContext $e, array $a, Stub $stub, bool $isNested)
+    public static function castSilencedErrorContext(SilencedErrorContext $e, array $a, Stub $stub, bool $isNested): array
     {
         $sPrefix = "\0".SilencedErrorContext::class."\0";
 
@@ -126,10 +138,7 @@ class ExceptionCaster
         return $a;
     }
 
-    /**
-     * @return array
-     */
-    public static function castTraceStub(TraceStub $trace, array $a, Stub $stub, bool $isNested)
+    public static function castTraceStub(TraceStub $trace, array $a, Stub $stub, bool $isNested): array
     {
         if (!$isNested) {
             return $a;
@@ -140,7 +149,7 @@ class ExceptionCaster
         $prefix = Caster::PREFIX_VIRTUAL;
 
         $a = [];
-        $j = \count($frames);
+        $j = count($frames);
         if (0 > $i = $trace->sliceOffset) {
             $i = max(0, $j + $i);
         }
@@ -197,16 +206,13 @@ class ExceptionCaster
             $lastCall = $call;
         }
         if (null !== $trace->sliceLength) {
-            $a = \array_slice($a, 0, $trace->sliceLength, true);
+            $a = array_slice($a, 0, $trace->sliceLength, true);
         }
 
         return $a;
     }
 
-    /**
-     * @return array
-     */
-    public static function castFrameStub(FrameStub $frame, array $a, Stub $stub, bool $isNested)
+    public static function castFrameStub(FrameStub $frame, array $a, Stub $stub, bool $isNested): array
     {
         if (!$isNested) {
             return $a;
@@ -224,7 +230,7 @@ class ExceptionCaster
                 $a[$prefix.'src'] = self::$framesCache[$cacheKey];
             } else {
                 if (preg_match('/\((\d+)\)(?:\([\da-f]{32}\))? : (?:eval\(\)\'d code|runtime-created function)$/', $f['file'], $match)) {
-                    $f['file'] = substr($f['file'], 0, -\strlen($match[0]));
+                    $f['file'] = substr($f['file'], 0, -strlen($match[0]));
                     $f['line'] = (int) $match[1];
                 }
                 $src = $f['line'];
@@ -235,12 +241,12 @@ class ExceptionCaster
                 $ellipsis = $ellipsis->attr['ellipsis'] ?? 0;
 
                 if (is_file($f['file']) && 0 <= self::$srcContext) {
-                    if (!empty($f['class']) && (is_subclass_of($f['class'], 'Twig\Template') || is_subclass_of($f['class'], 'Twig_Template')) && method_exists($f['class'], 'getDebugInfo')) {
+                    if (!empty($f['class']) && is_subclass_of($f['class'], 'Twig\Template')) {
                         $template = null;
                         if (isset($f['object'])) {
                             $template = $f['object'];
-                        } elseif ((new \ReflectionClass($f['class']))->isInstantiable()) {
-                            $template = unserialize(sprintf('O:%d:"%s":0:{}', \strlen($f['class']), $f['class']));
+                        } elseif ((new ReflectionClass($f['class']))->isInstantiable()) {
+                            $template = unserialize(sprintf('O:%d:"%s":0:{}', strlen($f['class']), $f['class']));
                         }
                         if (null !== $template) {
                             $ellipsis = 0;
@@ -261,7 +267,7 @@ class ExceptionCaster
                         $src = self::extractSource(file_get_contents($f['file']), $f['line'], self::$srcContext, 'php', $f['file'], $f);
                         $srcKey .= ':'.$f['line'];
                         if ($ellipsis) {
-                            $ellipsis += 1 + \strlen($f['line']);
+                            $ellipsis += 1 + strlen($f['line']);
                         }
                     }
                     $srcAttr .= sprintf('&separator= &file=%s&line=%d', rawurlencode($f['file']), $f['line']);
@@ -289,10 +295,7 @@ class ExceptionCaster
         return $a;
     }
 
-    /**
-     * @return array
-     */
-    public static function castFlattenException(FlattenException $e, array $a, Stub $stub, bool $isNested)
+    public static function castFlattenException(FlattenException $e, array $a, Stub $stub, bool $isNested): array
     {
         if ($isNested) {
             $k = sprintf(Caster::PATTERN_PRIVATE, FlattenException::class, 'traceAsString');
@@ -355,7 +358,7 @@ class ExceptionCaster
         }
 
         if ($frame['function'] ?? false) {
-            $stub = new CutStub(new \stdClass());
+            $stub = new CutStub(new stdClass());
             $stub->class = (isset($frame['class']) ? $frame['class'].$frame['type'] : '').$frame['function'];
             $stub->type = Stub::TYPE_OBJECT;
             $stub->attr['cut_hash'] = true;
@@ -363,14 +366,14 @@ class ExceptionCaster
             $stub->attr['line'] = $frame['line'];
 
             try {
-                $caller = isset($frame['class']) ? new \ReflectionMethod($frame['class'], $frame['function']) : new \ReflectionFunction($frame['function']);
+                $caller = isset($frame['class']) ? new ReflectionMethod($frame['class'], $frame['function']) : new ReflectionFunction($frame['function']);
                 $stub->class .= ReflectionCaster::getSignature(ReflectionCaster::castFunctionAbstract($caller, [], $stub, true, Caster::EXCLUDE_VERBOSE));
 
                 if ($f = $caller->getFileName()) {
                     $stub->attr['file'] = $f;
                     $stub->attr['line'] = $caller->getStartLine();
                 }
-            } catch (\ReflectionException) {
+            } catch (ReflectionException) {
                 // ignore fake class/function
             }
 

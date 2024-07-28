@@ -11,7 +11,70 @@
 
 namespace Symfony\Component\VarDumper\Caster;
 
+use Dom\Attr;
+use Dom\CharacterData;
+use Dom\DocumentType;
+use Dom\Element;
+use Dom\Entity;
+use Dom\Exception;
+use Dom\HTMLDocument;
+use Dom\Implementation;
+use Dom\Node;
+use Dom\Notation;
+use Dom\ProcessingInstruction;
+use Dom\Text;
+use Dom\XMLDocument;
+use Dom\XPath;
+use DOMAttr;
+use DOMCharacterData;
+use DOMDocument;
+use DOMDocumentType;
+use DOMElement;
+use DOMEntity;
+use DOMException;
+use DOMImplementation;
+use DOMNameSpaceNode;
+use DOMNode;
+use DOMNotation;
+use DOMProcessingInstruction;
+use DOMText;
+use DOMXPath;
 use Symfony\Component\VarDumper\Cloner\Stub;
+
+use const DOM_HIERARCHY_REQUEST_ERR;
+use const DOM_INDEX_SIZE_ERR;
+use const DOM_INUSE_ATTRIBUTE_ERR;
+use const DOM_INVALID_ACCESS_ERR;
+use const DOM_INVALID_CHARACTER_ERR;
+use const DOM_INVALID_MODIFICATION_ERR;
+use const DOM_INVALID_STATE_ERR;
+use const DOM_NAMESPACE_ERR;
+use const DOM_NO_DATA_ALLOWED_ERR;
+use const DOM_NO_MODIFICATION_ALLOWED_ERR;
+use const DOM_NOT_FOUND_ERR;
+use const DOM_NOT_SUPPORTED_ERR;
+use const DOM_SYNTAX_ERR;
+use const DOM_VALIDATION_ERR;
+use const DOM_WRONG_DOCUMENT_ERR;
+use const DOMSTRING_SIZE_ERR;
+use const XML_ATTRIBUTE_DECL_NODE;
+use const XML_ATTRIBUTE_NODE;
+use const XML_CDATA_SECTION_NODE;
+use const XML_COMMENT_NODE;
+use const XML_DOCUMENT_FRAG_NODE;
+use const XML_DOCUMENT_NODE;
+use const XML_DOCUMENT_TYPE_NODE;
+use const XML_DTD_NODE;
+use const XML_ELEMENT_DECL_NODE;
+use const XML_ELEMENT_NODE;
+use const XML_ENTITY_DECL_NODE;
+use const XML_ENTITY_NODE;
+use const XML_ENTITY_REF_NODE;
+use const XML_HTML_DOCUMENT_NODE;
+use const XML_NAMESPACE_DECL_NODE;
+use const XML_NOTATION_NODE;
+use const XML_PI_NODE;
+use const XML_TEXT_NODE;
 
 /**
  * Casts DOM related classes to array representation.
@@ -23,50 +86,47 @@ use Symfony\Component\VarDumper\Cloner\Stub;
 class DOMCaster
 {
     private const ERROR_CODES = [
-        \DOM_PHP_ERR => 'DOM_PHP_ERR',
-        \DOM_INDEX_SIZE_ERR => 'DOM_INDEX_SIZE_ERR',
-        \DOMSTRING_SIZE_ERR => 'DOMSTRING_SIZE_ERR',
-        \DOM_HIERARCHY_REQUEST_ERR => 'DOM_HIERARCHY_REQUEST_ERR',
-        \DOM_WRONG_DOCUMENT_ERR => 'DOM_WRONG_DOCUMENT_ERR',
-        \DOM_INVALID_CHARACTER_ERR => 'DOM_INVALID_CHARACTER_ERR',
-        \DOM_NO_DATA_ALLOWED_ERR => 'DOM_NO_DATA_ALLOWED_ERR',
-        \DOM_NO_MODIFICATION_ALLOWED_ERR => 'DOM_NO_MODIFICATION_ALLOWED_ERR',
-        \DOM_NOT_FOUND_ERR => 'DOM_NOT_FOUND_ERR',
-        \DOM_NOT_SUPPORTED_ERR => 'DOM_NOT_SUPPORTED_ERR',
-        \DOM_INUSE_ATTRIBUTE_ERR => 'DOM_INUSE_ATTRIBUTE_ERR',
-        \DOM_INVALID_STATE_ERR => 'DOM_INVALID_STATE_ERR',
-        \DOM_SYNTAX_ERR => 'DOM_SYNTAX_ERR',
-        \DOM_INVALID_MODIFICATION_ERR => 'DOM_INVALID_MODIFICATION_ERR',
-        \DOM_NAMESPACE_ERR => 'DOM_NAMESPACE_ERR',
-        \DOM_INVALID_ACCESS_ERR => 'DOM_INVALID_ACCESS_ERR',
-        \DOM_VALIDATION_ERR => 'DOM_VALIDATION_ERR',
+        0 => 'DOM_PHP_ERR',
+        DOM_INDEX_SIZE_ERR => 'DOM_INDEX_SIZE_ERR',
+        DOMSTRING_SIZE_ERR => 'DOMSTRING_SIZE_ERR',
+        DOM_HIERARCHY_REQUEST_ERR => 'DOM_HIERARCHY_REQUEST_ERR',
+        DOM_WRONG_DOCUMENT_ERR => 'DOM_WRONG_DOCUMENT_ERR',
+        DOM_INVALID_CHARACTER_ERR => 'DOM_INVALID_CHARACTER_ERR',
+        DOM_NO_DATA_ALLOWED_ERR => 'DOM_NO_DATA_ALLOWED_ERR',
+        DOM_NO_MODIFICATION_ALLOWED_ERR => 'DOM_NO_MODIFICATION_ALLOWED_ERR',
+        DOM_NOT_FOUND_ERR => 'DOM_NOT_FOUND_ERR',
+        DOM_NOT_SUPPORTED_ERR => 'DOM_NOT_SUPPORTED_ERR',
+        DOM_INUSE_ATTRIBUTE_ERR => 'DOM_INUSE_ATTRIBUTE_ERR',
+        DOM_INVALID_STATE_ERR => 'DOM_INVALID_STATE_ERR',
+        DOM_SYNTAX_ERR => 'DOM_SYNTAX_ERR',
+        DOM_INVALID_MODIFICATION_ERR => 'DOM_INVALID_MODIFICATION_ERR',
+        DOM_NAMESPACE_ERR => 'DOM_NAMESPACE_ERR',
+        DOM_INVALID_ACCESS_ERR => 'DOM_INVALID_ACCESS_ERR',
+        DOM_VALIDATION_ERR => 'DOM_VALIDATION_ERR',
     ];
 
     private const NODE_TYPES = [
-        \XML_ELEMENT_NODE => 'XML_ELEMENT_NODE',
-        \XML_ATTRIBUTE_NODE => 'XML_ATTRIBUTE_NODE',
-        \XML_TEXT_NODE => 'XML_TEXT_NODE',
-        \XML_CDATA_SECTION_NODE => 'XML_CDATA_SECTION_NODE',
-        \XML_ENTITY_REF_NODE => 'XML_ENTITY_REF_NODE',
-        \XML_ENTITY_NODE => 'XML_ENTITY_NODE',
-        \XML_PI_NODE => 'XML_PI_NODE',
-        \XML_COMMENT_NODE => 'XML_COMMENT_NODE',
-        \XML_DOCUMENT_NODE => 'XML_DOCUMENT_NODE',
-        \XML_DOCUMENT_TYPE_NODE => 'XML_DOCUMENT_TYPE_NODE',
-        \XML_DOCUMENT_FRAG_NODE => 'XML_DOCUMENT_FRAG_NODE',
-        \XML_NOTATION_NODE => 'XML_NOTATION_NODE',
-        \XML_HTML_DOCUMENT_NODE => 'XML_HTML_DOCUMENT_NODE',
-        \XML_DTD_NODE => 'XML_DTD_NODE',
-        \XML_ELEMENT_DECL_NODE => 'XML_ELEMENT_DECL_NODE',
-        \XML_ATTRIBUTE_DECL_NODE => 'XML_ATTRIBUTE_DECL_NODE',
-        \XML_ENTITY_DECL_NODE => 'XML_ENTITY_DECL_NODE',
-        \XML_NAMESPACE_DECL_NODE => 'XML_NAMESPACE_DECL_NODE',
+        XML_ELEMENT_NODE => 'XML_ELEMENT_NODE',
+        XML_ATTRIBUTE_NODE => 'XML_ATTRIBUTE_NODE',
+        XML_TEXT_NODE => 'XML_TEXT_NODE',
+        XML_CDATA_SECTION_NODE => 'XML_CDATA_SECTION_NODE',
+        XML_ENTITY_REF_NODE => 'XML_ENTITY_REF_NODE',
+        XML_ENTITY_NODE => 'XML_ENTITY_NODE',
+        XML_PI_NODE => 'XML_PI_NODE',
+        XML_COMMENT_NODE => 'XML_COMMENT_NODE',
+        XML_DOCUMENT_NODE => 'XML_DOCUMENT_NODE',
+        XML_DOCUMENT_TYPE_NODE => 'XML_DOCUMENT_TYPE_NODE',
+        XML_DOCUMENT_FRAG_NODE => 'XML_DOCUMENT_FRAG_NODE',
+        XML_NOTATION_NODE => 'XML_NOTATION_NODE',
+        XML_HTML_DOCUMENT_NODE => 'XML_HTML_DOCUMENT_NODE',
+        XML_DTD_NODE => 'XML_DTD_NODE',
+        XML_ELEMENT_DECL_NODE => 'XML_ELEMENT_DECL_NODE',
+        XML_ATTRIBUTE_DECL_NODE => 'XML_ATTRIBUTE_DECL_NODE',
+        XML_ENTITY_DECL_NODE => 'XML_ENTITY_DECL_NODE',
+        XML_NAMESPACE_DECL_NODE => 'XML_NAMESPACE_DECL_NODE',
     ];
 
-    /**
-     * @return array
-     */
-    public static function castException(\DOMException $e, array $a, Stub $stub, bool $isNested)
+    public static function castException(DOMException|Exception $e, array $a, Stub $stub, bool $isNested): array
     {
         $k = Caster::PREFIX_PROTECTED.'code';
         if (isset($a[$k], self::ERROR_CODES[$a[$k]])) {
@@ -76,10 +136,7 @@ class DOMCaster
         return $a;
     }
 
-    /**
-     * @return array
-     */
-    public static function castLength($dom, array $a, Stub $stub, bool $isNested)
+    public static function castLength($dom, array $a, Stub $stub, bool $isNested): array
     {
         $a += [
             'length' => $dom->length,
@@ -88,10 +145,7 @@ class DOMCaster
         return $a;
     }
 
-    /**
-     * @return array
-     */
-    public static function castImplementation(\DOMImplementation $dom, array $a, Stub $stub, bool $isNested)
+    public static function castImplementation(DOMImplementation|Implementation $dom, array $a, Stub $stub, bool $isNested): array
     {
         $a += [
             Caster::PREFIX_VIRTUAL.'Core' => '1.0',
@@ -101,10 +155,7 @@ class DOMCaster
         return $a;
     }
 
-    /**
-     * @return array
-     */
-    public static function castNode(\DOMNode $dom, array $a, Stub $stub, bool $isNested)
+    public static function castNode(DOMNode|Node $dom, array $a, Stub $stub, bool $isNested): array
     {
         $a += [
             'nodeName' => $dom->nodeName,
@@ -116,22 +167,24 @@ class DOMCaster
             'lastChild' => new CutStub($dom->lastChild),
             'previousSibling' => new CutStub($dom->previousSibling),
             'nextSibling' => new CutStub($dom->nextSibling),
-            'attributes' => $dom->attributes,
             'ownerDocument' => new CutStub($dom->ownerDocument),
-            'namespaceURI' => $dom->namespaceURI,
-            'prefix' => $dom->prefix,
-            'localName' => $dom->localName,
             'baseURI' => $dom->baseURI ? new LinkStub($dom->baseURI) : $dom->baseURI,
             'textContent' => new CutStub($dom->textContent),
         ];
 
+        if ($dom instanceof DOMNode || $dom instanceof Element) {
+            $a += [
+                'attributes' => $dom->attributes,
+                'namespaceURI' => $dom->namespaceURI,
+                'prefix' => $dom->prefix,
+                'localName' => $dom->localName,
+            ];
+        }
+
         return $a;
     }
 
-    /**
-     * @return array
-     */
-    public static function castNameSpaceNode(\DOMNameSpaceNode $dom, array $a, Stub $stub, bool $isNested)
+    public static function castNameSpaceNode(DOMNameSpaceNode $dom, array $a, Stub $stub, bool $isNested): array
     {
         $a += [
             'nodeName' => $dom->nodeName,
@@ -147,25 +200,18 @@ class DOMCaster
         return $a;
     }
 
-    /**
-     * @return array
-     */
-    public static function castDocument(\DOMDocument $dom, array $a, Stub $stub, bool $isNested, int $filter = 0)
+    public static function castDocument(DOMDocument $dom, array $a, Stub $stub, bool $isNested, int $filter = 0): array
     {
         $a += [
             'doctype' => $dom->doctype,
             'implementation' => $dom->implementation,
             'documentElement' => new CutStub($dom->documentElement),
-            'actualEncoding' => $dom->actualEncoding,
             'encoding' => $dom->encoding,
             'xmlEncoding' => $dom->xmlEncoding,
-            'standalone' => $dom->standalone,
             'xmlStandalone' => $dom->xmlStandalone,
-            'version' => $dom->version,
             'xmlVersion' => $dom->xmlVersion,
             'strictErrorChecking' => $dom->strictErrorChecking,
             'documentURI' => $dom->documentURI ? new LinkStub($dom->documentURI) : $dom->documentURI,
-            'config' => $dom->config,
             'formatOutput' => $dom->formatOutput,
             'validateOnParse' => $dom->validateOnParse,
             'resolveExternals' => $dom->resolveExternals,
@@ -184,10 +230,48 @@ class DOMCaster
         return $a;
     }
 
-    /**
-     * @return array
-     */
-    public static function castCharacterData(\DOMCharacterData $dom, array $a, Stub $stub, bool $isNested)
+    public static function castXMLDocument(XMLDocument $dom, array $a, Stub $stub, bool $isNested, int $filter = 0): array
+    {
+        $a += [
+            'doctype' => $dom->doctype,
+            'implementation' => $dom->implementation,
+            'documentElement' => new CutStub($dom->documentElement),
+            'inputEncoding' => $dom->inputEncoding,
+            'xmlEncoding' => $dom->xmlEncoding,
+            'xmlStandalone' => $dom->xmlStandalone,
+            'xmlVersion' => $dom->xmlVersion,
+            'documentURI' => $dom->documentURI ? new LinkStub($dom->documentURI) : $dom->documentURI,
+            'formatOutput' => $dom->formatOutput,
+        ];
+
+        if (!($filter & Caster::EXCLUDE_VERBOSE)) {
+            $formatOutput = $dom->formatOutput;
+            $dom->formatOutput = true;
+            $a += [Caster::PREFIX_VIRTUAL.'xml' => $dom->saveXML()];
+            $dom->formatOutput = $formatOutput;
+        }
+
+        return $a;
+    }
+
+    public static function castHTMLDocument(HTMLDocument $dom, array $a, Stub $stub, bool $isNested, int $filter = 0): array
+    {
+        $a += [
+            'doctype' => $dom->doctype,
+            'implementation' => $dom->implementation,
+            'documentElement' => new CutStub($dom->documentElement),
+            'inputEncoding' => $dom->inputEncoding,
+            'documentURI' => $dom->documentURI ? new LinkStub($dom->documentURI) : $dom->documentURI,
+        ];
+
+        if (!($filter & Caster::EXCLUDE_VERBOSE)) {
+            $a += [Caster::PREFIX_VIRTUAL.'html' => $dom->saveHTML()];
+        }
+
+        return $a;
+    }
+
+    public static function castCharacterData(DOMCharacterData|CharacterData $dom, array $a, Stub $stub, bool $isNested): array
     {
         $a += [
             'data' => $dom->data,
@@ -197,39 +281,40 @@ class DOMCaster
         return $a;
     }
 
-    /**
-     * @return array
-     */
-    public static function castAttr(\DOMAttr $dom, array $a, Stub $stub, bool $isNested)
+    public static function castAttr(DOMAttr|Attr $dom, array $a, Stub $stub, bool $isNested): array
     {
         $a += [
             'name' => $dom->name,
             'specified' => $dom->specified,
             'value' => $dom->value,
             'ownerElement' => $dom->ownerElement,
-            'schemaTypeInfo' => $dom->schemaTypeInfo,
         ];
+
+        if ($dom instanceof DOMAttr) {
+            $a += [
+                'schemaTypeInfo' => $dom->schemaTypeInfo,
+            ];
+        }
 
         return $a;
     }
 
-    /**
-     * @return array
-     */
-    public static function castElement(\DOMElement $dom, array $a, Stub $stub, bool $isNested)
+    public static function castElement(DOMElement|Element $dom, array $a, Stub $stub, bool $isNested): array
     {
         $a += [
             'tagName' => $dom->tagName,
-            'schemaTypeInfo' => $dom->schemaTypeInfo,
         ];
+
+        if ($dom instanceof DOMElement) {
+            $a += [
+                'schemaTypeInfo' => $dom->schemaTypeInfo,
+            ];
+        }
 
         return $a;
     }
 
-    /**
-     * @return array
-     */
-    public static function castText(\DOMText $dom, array $a, Stub $stub, bool $isNested)
+    public static function castText(DOMText|Text $dom, array $a, Stub $stub, bool $isNested): array
     {
         $a += [
             'wholeText' => $dom->wholeText,
@@ -238,10 +323,7 @@ class DOMCaster
         return $a;
     }
 
-    /**
-     * @return array
-     */
-    public static function castDocumentType(\DOMDocumentType $dom, array $a, Stub $stub, bool $isNested)
+    public static function castDocumentType(DOMDocumentType|DocumentType $dom, array $a, Stub $stub, bool $isNested): array
     {
         $a += [
             'name' => $dom->name,
@@ -255,10 +337,7 @@ class DOMCaster
         return $a;
     }
 
-    /**
-     * @return array
-     */
-    public static function castNotation(\DOMNotation $dom, array $a, Stub $stub, bool $isNested)
+    public static function castNotation(DOMNotation|Notation $dom, array $a, Stub $stub, bool $isNested): array
     {
         $a += [
             'publicId' => $dom->publicId,
@@ -268,27 +347,18 @@ class DOMCaster
         return $a;
     }
 
-    /**
-     * @return array
-     */
-    public static function castEntity(\DOMEntity $dom, array $a, Stub $stub, bool $isNested)
+    public static function castEntity(DOMEntity|Entity $dom, array $a, Stub $stub, bool $isNested): array
     {
         $a += [
             'publicId' => $dom->publicId,
             'systemId' => $dom->systemId,
             'notationName' => $dom->notationName,
-            'actualEncoding' => $dom->actualEncoding,
-            'encoding' => $dom->encoding,
-            'version' => $dom->version,
         ];
 
         return $a;
     }
 
-    /**
-     * @return array
-     */
-    public static function castProcessingInstruction(\DOMProcessingInstruction $dom, array $a, Stub $stub, bool $isNested)
+    public static function castProcessingInstruction(DOMProcessingInstruction|ProcessingInstruction $dom, array $a, Stub $stub, bool $isNested): array
     {
         $a += [
             'target' => $dom->target,
@@ -298,10 +368,7 @@ class DOMCaster
         return $a;
     }
 
-    /**
-     * @return array
-     */
-    public static function castXPath(\DOMXPath $dom, array $a, Stub $stub, bool $isNested)
+    public static function castXPath(DOMXPath|XPath $dom, array $a, Stub $stub, bool $isNested): array
     {
         $a += [
             'document' => $dom->document,

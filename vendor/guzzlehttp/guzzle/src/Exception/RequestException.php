@@ -4,10 +4,15 @@ namespace GuzzleHttp\Exception;
 
 use GuzzleHttp\BodySummarizer;
 use GuzzleHttp\BodySummarizerInterface;
+use GuzzleHttp\Psr7\Utils;
 use Psr\Http\Client\RequestExceptionInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\UriInterface;
+
+use Throwable;
+
+use function floor;
+use function sprintf;
 
 /**
  * HTTP Request exception
@@ -32,8 +37,8 @@ class RequestException extends TransferException implements RequestExceptionInte
     public function __construct(
         string $message,
         RequestInterface $request,
-        ResponseInterface $response = null,
-        \Throwable $previous = null,
+        ?ResponseInterface $response = null,
+        ?Throwable $previous = null,
         array $handlerContext = []
     ) {
         // Set the code of the exception if the response is set and not future.
@@ -47,7 +52,7 @@ class RequestException extends TransferException implements RequestExceptionInte
     /**
      * Wrap non-RequestExceptions with a RequestException
      */
-    public static function wrapException(RequestInterface $request, \Throwable $e): RequestException
+    public static function wrapException(RequestInterface $request, Throwable $e): RequestException
     {
         return $e instanceof RequestException ? $e : new RequestException($e->getMessage(), $request, null, $e);
     }
@@ -63,10 +68,10 @@ class RequestException extends TransferException implements RequestExceptionInte
      */
     public static function create(
         RequestInterface $request,
-        ResponseInterface $response = null,
-        \Throwable $previous = null,
+        ?ResponseInterface $response = null,
+        ?Throwable $previous = null,
         array $handlerContext = [],
-        BodySummarizerInterface $bodySummarizer = null
+        ?BodySummarizerInterface $bodySummarizer = null
     ): self {
         if (!$response) {
             return new self(
@@ -78,7 +83,7 @@ class RequestException extends TransferException implements RequestExceptionInte
             );
         }
 
-        $level = (int) \floor($response->getStatusCode() / 100);
+        $level = (int) floor($response->getStatusCode() / 100);
         if ($level === 4) {
             $label = 'Client error';
             $className = ClientException::class;
@@ -90,12 +95,11 @@ class RequestException extends TransferException implements RequestExceptionInte
             $className = __CLASS__;
         }
 
-        $uri = $request->getUri();
-        $uri = static::obfuscateUri($uri);
+        $uri = Utils::redactUserInfo($request->getUri());
 
         // Client Error: `GET /` resulted in a `404 Not Found` response:
         // <html> ... (truncated)
-        $message = \sprintf(
+        $message = sprintf(
             '%s: `%s %s` resulted in a `%s %s` response',
             $label,
             $request->getMethod(),
@@ -111,20 +115,6 @@ class RequestException extends TransferException implements RequestExceptionInte
         }
 
         return new $className($message, $request, $response, $previous, $handlerContext);
-    }
-
-    /**
-     * Obfuscates URI if there is a username and a password present
-     */
-    private static function obfuscateUri(UriInterface $uri): UriInterface
-    {
-        $userInfo = $uri->getUserInfo();
-
-        if (false !== ($pos = \strpos($userInfo, ':'))) {
-            return $uri->withUserInfo(\substr($userInfo, 0, $pos), '***');
-        }
-
-        return $uri;
     }
 
     /**

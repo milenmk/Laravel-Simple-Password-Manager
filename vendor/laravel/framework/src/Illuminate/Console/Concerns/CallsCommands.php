@@ -37,7 +37,7 @@ trait CallsCommands
      */
     public function callSilent($command, array $arguments = [])
     {
-        return $this->runCommand($command, $arguments, new NullOutput);
+        return $this->runCommand($command, $arguments, new NullOutput());
     }
 
     /**
@@ -64,9 +64,13 @@ trait CallsCommands
     {
         $arguments['command'] = $command;
 
-        return $this->resolveCommand($command)->run(
+        $result = $this->resolveCommand($command)->run(
             $this->createInputFromArguments($arguments), $output
         );
+
+        $this->restorePrompts();
+
+        return $result;
     }
 
     /**

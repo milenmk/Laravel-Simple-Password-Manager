@@ -33,7 +33,7 @@ return [
          * Subdirectories which will be excluded.
          * The values must be relative to the included directory paths.
          */
-        'exclude'   => [
+        'exclude' => [
             //
         ],
 
@@ -48,7 +48,7 @@ return [
          * Add here any custom defined functions.
          * NOTE: The translation string should always be the first argument.
          */
-        'functions' => ['__', 'trans', '@lang'],
+        'functions' => ['__', 'trans', '@lang']
     ],
 
     /**

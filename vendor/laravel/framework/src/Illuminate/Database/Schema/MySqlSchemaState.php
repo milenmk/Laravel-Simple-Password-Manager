@@ -5,6 +5,7 @@ namespace Illuminate\Database\Schema;
 use Exception;
 use Illuminate\Database\Connection;
 use Illuminate\Support\Str;
+use PDO;
 use Symfony\Component\Process\Process;
 
 class MySqlSchemaState extends SchemaState
@@ -26,7 +27,9 @@ class MySqlSchemaState extends SchemaState
 
         $this->removeAutoIncrementingState($path);
 
-        $this->appendMigrationData($path);
+        if ($this->hasMigrationTable()) {
+            $this->appendMigrationData($path);
+        }
     }
 
     /**
@@ -53,7 +56,7 @@ class MySqlSchemaState extends SchemaState
     protected function appendMigrationData(string $path)
     {
         $process = $this->executeDumpProcess($this->makeProcess(
-            $this->baseDumpCommand().' '.$this->migrationTable.' --no-create-info --skip-extended-insert --skip-routines --compact'
+            $this->baseDumpCommand().' '.$this->getMigrationTable().' --no-create-info --skip-extended-insert --skip-routines --compact --complete-insert'
         ), null, array_merge($this->baseVariables($this->connection->getConfig()), [
             //
         ]));
@@ -109,7 +112,7 @@ class MySqlSchemaState extends SchemaState
                         ? ' --socket="${:LARAVEL_LOAD_SOCKET}"'
                         : ' --host="${:LARAVEL_LOAD_HOST}" --port="${:LARAVEL_LOAD_PORT}"';
 
-        if (isset($config['options'][\PDO::MYSQL_ATTR_SSL_CA])) {
+        if (isset($config['options'][PDO::MYSQL_ATTR_SSL_CA])) {
             $value .= ' --ssl-ca="${:LARAVEL_LOAD_SSL_CA}"';
         }
 
@@ -133,7 +136,7 @@ class MySqlSchemaState extends SchemaState
             'LARAVEL_LOAD_USER' => $config['username'],
             'LARAVEL_LOAD_PASSWORD' => $config['password'] ?? '',
             'LARAVEL_LOAD_DATABASE' => $config['database'],
-            'LARAVEL_LOAD_SSL_CA' => $config['options'][\PDO::MYSQL_ATTR_SSL_CA] ?? '',
+            'LARAVEL_LOAD_SSL_CA' => $config['options'][PDO::MYSQL_ATTR_SSL_CA] ?? '',
         ];
     }
 

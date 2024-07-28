@@ -11,6 +11,8 @@
 
 namespace Symfony\Component\HttpKernel\DependencyInjection;
 
+use ReflectionAttribute;
+use ReflectionMethod;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\DependencyInjection\Attribute\AutowireCallable;
 use Symfony\Component\DependencyInjection\Attribute\Target;
@@ -27,6 +29,12 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\Session\SessionInterface;
 use Symfony\Component\VarExporter\ProxyHelper;
 
+use UnitEnum;
+
+use function count;
+
+use const JSON_UNESCAPED_UNICODE;
+
 /**
  * Creates the service-locators required by ServiceValueResolver.
  *
@@ -34,10 +42,7 @@ use Symfony\Component\VarExporter\ProxyHelper;
  */
 class RegisterControllerArgumentLocatorsPass implements CompilerPassInterface
 {
-    /**
-     * @return void
-     */
-    public function process(ContainerBuilder $container)
+    public function process(ContainerBuilder $container): void
     {
         if (!$container->hasDefinition('argument_resolver.service') && !$container->hasDefinition('argument_resolver.not_tagged_controller')) {
             return;
@@ -81,7 +86,7 @@ class RegisterControllerArgumentLocatorsPass implements CompilerPassInterface
             // get regular public methods
             $methods = [];
             $arguments = [];
-            foreach ($r->getMethods(\ReflectionMethod::IS_PUBLIC) as $r) {
+            foreach ($r->getMethods(ReflectionMethod::IS_PUBLIC) as $r) {
                 if ('setContainer' === $r->name) {
                     continue;
                 }
@@ -98,7 +103,7 @@ class RegisterControllerArgumentLocatorsPass implements CompilerPassInterface
                 }
                 foreach (['action', 'argument', 'id'] as $k) {
                     if (!isset($attributes[$k][0])) {
-                        throw new InvalidArgumentException(sprintf('Missing "%s" attribute on tag "controller.service_arguments" %s for service "%s".', $k, json_encode($attributes, \JSON_UNESCAPED_UNICODE), $id));
+                        throw new InvalidArgumentException(sprintf('Missing "%s" attribute on tag "controller.service_arguments" %s for service "%s".', $k, json_encode($attributes, JSON_UNESCAPED_UNICODE), $id));
                     }
                 }
                 if (!isset($methods[$action = strtolower($attributes['action'])])) {
@@ -127,6 +132,7 @@ class RegisterControllerArgumentLocatorsPass implements CompilerPassInterface
 
                 // create a per-method map of argument-names to service/type-references
                 $args = [];
+                $erroredIds = 0;
                 foreach ($parameters as $p) {
                     /** @var \ReflectionParameter $p */
                     $type = preg_replace('/(^|[(|&])\\\\/', '\1', $target = ltrim(ProxyHelper::exportType($p) ?? '', '?'));
@@ -157,9 +163,9 @@ class RegisterControllerArgumentLocatorsPass implements CompilerPassInterface
                         $args[$p->name] = $bindingValue;
 
                         continue;
-                    } elseif (!$autowire || (!($autowireAttributes ??= $p->getAttributes(Autowire::class, \ReflectionAttribute::IS_INSTANCEOF)) && (!$type || '\\' !== $target[0]))) {
+                    } elseif (!$autowire || (!($autowireAttributes ??= $p->getAttributes(Autowire::class, ReflectionAttribute::IS_INSTANCEOF)) && (!$type || '\\' !== $target[0]))) {
                         continue;
-                    } elseif (is_subclass_of($type, \UnitEnum::class)) {
+                    } elseif (is_subclass_of($type, UnitEnum::class)) {
                         // do not attempt to register enum typed arguments if not already present in bindings
                         continue;
                     } elseif (!$p->allowsNull()) {
@@ -175,10 +181,8 @@ class RegisterControllerArgumentLocatorsPass implements CompilerPassInterface
                         $value = $parameterBag->resolveValue($attribute->value);
 
                         if ($attribute instanceof AutowireCallable) {
-                            $value = $attribute->buildDefinition($value, $type, $p);
-                        }
-
-                        if ($value instanceof Reference) {
+                            $args[$p->name] = $attribute->buildDefinition($value, $type, $p);
+                        } elseif ($value instanceof Reference) {
                             $args[$p->name] = $type ? new TypedReference($value, $type, $invalidBehavior, $p->name) : new Reference($value, $invalidBehavior);
                         } else {
                             $args[$p->name] = new Reference('.value.'.$container->hash($value));
@@ -202,6 +206,7 @@ class RegisterControllerArgumentLocatorsPass implements CompilerPassInterface
                             ->addError($message);
 
                         $args[$p->name] = new Reference($erroredId, ContainerInterface::RUNTIME_EXCEPTION_ON_INVALID_REFERENCE);
+                        ++$erroredIds;
                     } else {
                         $target = preg_replace('/(^|[(|&])\\\\/', '\1', $target);
                         $args[$p->name] = $type ? new TypedReference($target, $type, $invalidBehavior, Target::parseName($p)) : new Reference($target, $invalidBehavior);
@@ -209,7 +214,7 @@ class RegisterControllerArgumentLocatorsPass implements CompilerPassInterface
                 }
                 // register the maps as a per-method service-locators
                 if ($args) {
-                    $controllers[$id.'::'.$r->name] = ServiceLocatorTagPass::register($container, $args);
+                    $controllers[$id.'::'.$r->name] = ServiceLocatorTagPass::register($container, $args, count($args) !== $erroredIds ? $id.'::'.$r->name.'()' : null);
 
                     foreach ($publicAliases[$id] ?? [] as $alias) {
                         $controllers[$alias.'::'.$r->name] = clone $controllers[$id.'::'.$r->name];

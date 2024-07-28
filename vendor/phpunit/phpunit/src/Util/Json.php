@@ -23,7 +23,7 @@ use function ksort;
 /**
  * @internal This class is not covered by the backward compatibility promise for PHPUnit
  */
-final class Json
+final readonly class Json
 {
     /**
      * @throws InvalidJsonException
@@ -33,7 +33,7 @@ final class Json
         $decodedJson = json_decode($json, false);
 
         if (json_last_error()) {
-            throw new InvalidJsonException;
+            throw new InvalidJsonException();
         }
 
         return json_encode($decodedJson, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);

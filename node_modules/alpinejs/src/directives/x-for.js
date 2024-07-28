@@ -4,9 +4,9 @@ import { directive } from '../directives'
 import { reactive } from '../reactivity'
 import { initTree } from '../lifecycle'
 import { mutateDom } from '../mutation'
-import { flushJobs } from '../scheduler'
 import { warn } from '../utils/warn'
 import { dequeueJob } from '../scheduler'
+import { skipDuringClone } from '../clone'
 
 directive('for', (el, { expression }, { effect, cleanup }) => {
     let iteratorNames = parseForExpression(expression)
@@ -60,7 +60,11 @@ function loop(el, iteratorNames, evaluateItems, evaluateKey) {
             items = Object.entries(items).map(([key, value]) => {
                 let scope = getIterationScopeVariables(iteratorNames, value, key, items)
 
-                evaluateKey(value => keys.push(value), { scope: { index: key, ...scope} })
+                evaluateKey(value => {
+                    if (keys.includes(value)) warn('Duplicate key on x-for', el)
+
+                    keys.push(value)
+                }, { scope: { index: key, ...scope} })
 
                 scopes.push(scope)
             })
@@ -68,7 +72,11 @@ function loop(el, iteratorNames, evaluateItems, evaluateKey) {
             for (let i = 0; i < items.length; i++) {
                 let scope = getIterationScopeVariables(iteratorNames, items[i], i, items)
 
-                evaluateKey(value => keys.push(value), { scope: { index: i, ...scope} })
+                evaluateKey(value => {
+                    if (keys.includes(value)) warn('Duplicate key on x-for', el)
+
+                    keys.push(value)
+                }, { scope: { index: i, ...scope} })
 
                 scopes.push(scope)
             }
@@ -158,7 +166,7 @@ function loop(el, iteratorNames, evaluateItems, evaluateKey) {
             let marker = document.createElement('div')
 
             mutateDom(() => {
-                if (! elForSpot) warn(`x-for ":key" is undefined or invalid`, templateEl)
+                if (! elForSpot) warn(`x-for ":key" is undefined or invalid`, templateEl, keyForSpot, lookup)
 
                 elForSpot.after(marker)
                 elInSpot.after(elForSpot)
@@ -198,7 +206,8 @@ function loop(el, iteratorNames, evaluateItems, evaluateKey) {
             mutateDom(() => {
                 lastEl.after(clone)
 
-                initTree(clone)
+                // These nodes will be "inited" as morph walks the tree...
+                skipDuringClone(() => initTree(clone))()
             })
 
             if (typeof key === 'object') {

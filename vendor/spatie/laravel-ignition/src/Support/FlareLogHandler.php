@@ -4,24 +4,26 @@ namespace Spatie\LaravelIgnition\Support;
 
 use InvalidArgumentException;
 use Monolog\Handler\AbstractProcessingHandler;
+use Monolog\Level;
 use Monolog\Logger;
+use Monolog\LogRecord;
 use Spatie\FlareClient\Flare;
 use Spatie\FlareClient\Report;
 use Throwable;
 
 class FlareLogHandler extends AbstractProcessingHandler
 {
-
     protected Flare $flare;
 
     protected SentReports $sentReports;
 
-    protected int $minimumReportLogLevel = Logger::ERROR;
+    protected int $minimumReportLogLevel;
 
-    public function __construct(Flare $flare, SentReports $sentReports, $level = Logger::DEBUG, $bubble = true)
+    public function __construct(Flare $flare, SentReports $sentReports, $level = Level::Debug, $bubble = true)
     {
-
         $this->flare = $flare;
+
+        $this->minimumReportLogLevel = Level::Error->value;
 
         $this->sentReports = $sentReports;
 
@@ -30,21 +32,19 @@ class FlareLogHandler extends AbstractProcessingHandler
 
     public function setMinimumReportLogLevel(int $level): void
     {
-
-        if (!in_array($level, Logger::getLevels())) {
+        if (! in_array($level, Level::VALUES)) {
             throw new InvalidArgumentException('The given minimum log level is not supported.');
         }
 
         $this->minimumReportLogLevel = $level;
     }
 
-    protected function write(array $record): void
+    protected function write(LogRecord $record): void
     {
-
-        if (!$this->shouldReport($record)) {
+        if (! $this->shouldReport($record->toArray())) {
             return;
         }
-        if ($this->hasException($record)) {
+        if ($this->hasException($record->toArray())) {
             $report = $this->flare->report($record['context']['exception']);
 
             if ($report) {
@@ -55,12 +55,11 @@ class FlareLogHandler extends AbstractProcessingHandler
         }
 
         if (config('flare.send_logs_as_events')) {
-            if ($this->hasValidLogLevel($record)) {
+            if ($this->hasValidLogLevel($record->toArray())) {
                 $this->flare->reportMessage(
                     $record['message'],
-                    'Log ' . Logger::getLevelName($record['level']),
+                    'Log ' . Logger::toMonologLevel($record['level'])->getName(),
                     function (Report $flareReport) use ($record) {
-
                         foreach ($record['context'] as $key => $value) {
                             $flareReport->context($key, $value);
                         }
@@ -77,8 +76,7 @@ class FlareLogHandler extends AbstractProcessingHandler
      */
     protected function shouldReport(array $report): bool
     {
-
-        if (!config('flare.key')) {
+        if (! config('flare.key')) {
             return false;
         }
 
@@ -92,7 +90,6 @@ class FlareLogHandler extends AbstractProcessingHandler
      */
     protected function hasException(array $report): bool
     {
-
         $context = $report['context'];
 
         return isset($context['exception']) && $context['exception'] instanceof Throwable;
@@ -105,8 +102,6 @@ class FlareLogHandler extends AbstractProcessingHandler
      */
     protected function hasValidLogLevel(array $report): bool
     {
-
         return $report['level'] >= $this->minimumReportLogLevel;
     }
-
 }

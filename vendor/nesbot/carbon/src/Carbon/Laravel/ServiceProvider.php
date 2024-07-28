@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * This file is part of the Carbon package.
  *
@@ -21,6 +23,9 @@ use Illuminate\Events\EventDispatcher;
 use Illuminate\Support\Carbon as IlluminateCarbon;
 use Illuminate\Support\Facades\Date;
 use Throwable;
+
+use function app;
+use function function_exists;
 
 class ServiceProvider extends \Illuminate\Support\ServiceProvider
 {
@@ -79,7 +84,7 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
             try {
                 $root = Date::getFacadeRoot();
                 $root->setLocale($locale);
-            } catch (Throwable $e) {
+            } catch (Throwable) {
                 // Non Carbon class in use in Date facade
             }
         }
@@ -115,7 +120,7 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
 
     protected function getGlobalApp(...$args)
     {
-        return \function_exists('app') ? \app(...$args) : null;
+        return function_exists('app') ? app(...$args) : null;
     }
 
     protected function isEventDispatcher($instance)

@@ -13,10 +13,16 @@ use function strtolower;
 
 final class SimpleType extends Type
 {
+    /**
+     * @var non-empty-string
+     */
     private string $name;
     private bool $allowsNull;
     private mixed $value;
 
+    /**
+     * @param non-empty-string $name
+     */
     public function __construct(string $name, bool $nullable, mixed $value = null)
     {
         $this->name       = $this->normalize($name);
@@ -45,6 +51,9 @@ final class SimpleType extends Type
         return false;
     }
 
+    /**
+     * @return non-empty-string
+     */
     public function name(): string
     {
         return $this->name;
@@ -60,14 +69,16 @@ final class SimpleType extends Type
         return $this->value;
     }
 
-    /**
-     * @psalm-assert-if-true SimpleType $this
-     */
     public function isSimple(): bool
     {
         return true;
     }
 
+    /**
+     * @param non-empty-string $name
+     *
+     * @return non-empty-string
+     */
     private function normalize(string $name): string
     {
         $name = strtolower($name);

@@ -13,6 +13,14 @@ namespace Symfony\Component\Console\Output;
 
 use Symfony\Component\Console\Formatter\OutputFormatterInterface;
 
+use function defined;
+
+use function function_exists;
+
+use const PHP_OS;
+use const STDERR;
+use const STDOUT;
+
 /**
  * ConsoleOutput is the default class for all CLI output. It uses STDOUT and STDERR.
  *
@@ -64,28 +72,19 @@ class ConsoleOutput extends StreamOutput implements ConsoleOutputInterface
         return new ConsoleSectionOutput($this->getStream(), $this->consoleSectionOutputs, $this->getVerbosity(), $this->isDecorated(), $this->getFormatter());
     }
 
-    /**
-     * @return void
-     */
-    public function setDecorated(bool $decorated)
+    public function setDecorated(bool $decorated): void
     {
         parent::setDecorated($decorated);
         $this->stderr->setDecorated($decorated);
     }
 
-    /**
-     * @return void
-     */
-    public function setFormatter(OutputFormatterInterface $formatter)
+    public function setFormatter(OutputFormatterInterface $formatter): void
     {
         parent::setFormatter($formatter);
         $this->stderr->setFormatter($formatter);
     }
 
-    /**
-     * @return void
-     */
-    public function setVerbosity(int $level)
+    public function setVerbosity(int $level): void
     {
         parent::setVerbosity($level);
         $this->stderr->setVerbosity($level);
@@ -96,10 +95,7 @@ class ConsoleOutput extends StreamOutput implements ConsoleOutputInterface
         return $this->stderr;
     }
 
-    /**
-     * @return void
-     */
-    public function setErrorOutput(OutputInterface $error)
+    public function setErrorOutput(OutputInterface $error): void
     {
         $this->stderr = $error;
     }
@@ -129,9 +125,9 @@ class ConsoleOutput extends StreamOutput implements ConsoleOutputInterface
     private function isRunningOS400(): bool
     {
         $checks = [
-            \function_exists('php_uname') ? php_uname('s') : '',
+            function_exists('php_uname') ? php_uname('s') : '',
             getenv('OSTYPE'),
-            \PHP_OS,
+            PHP_OS,
         ];
 
         return false !== stripos(implode(';', $checks), 'OS400');
@@ -147,7 +143,7 @@ class ConsoleOutput extends StreamOutput implements ConsoleOutputInterface
         }
 
         // Use STDOUT when possible to prevent from opening too many file descriptors
-        return \defined('STDOUT') ? \STDOUT : (@fopen('php://stdout', 'w') ?: fopen('php://output', 'w'));
+        return defined('STDOUT') ? STDOUT : (@fopen('php://stdout', 'w') ?: fopen('php://output', 'w'));
     }
 
     /**
@@ -160,6 +156,6 @@ class ConsoleOutput extends StreamOutput implements ConsoleOutputInterface
         }
 
         // Use STDERR when possible to prevent from opening too many file descriptors
-        return \defined('STDERR') ? \STDERR : (@fopen('php://stderr', 'w') ?: fopen('php://output', 'w'));
+        return defined('STDERR') ? STDERR : (@fopen('php://stderr', 'w') ?: fopen('php://output', 'w'));
     }
 }

@@ -14,6 +14,7 @@ namespace Symfony\Component\HttpKernel\DependencyInjection;
 use ProxyManager\Proxy\LazyLoadingInterface;
 use Symfony\Component\VarExporter\LazyObjectInterface;
 use Symfony\Contracts\Service\ResetInterface;
+use Traversable;
 
 /**
  * Resets provided services.
@@ -25,17 +26,14 @@ use Symfony\Contracts\Service\ResetInterface;
  */
 class ServicesResetter implements ResetInterface
 {
-    private \Traversable $resettableServices;
-    private array $resetMethods;
-
     /**
      * @param \Traversable<string, object>   $resettableServices
      * @param array<string, string|string[]> $resetMethods
      */
-    public function __construct(\Traversable $resettableServices, array $resetMethods)
-    {
-        $this->resettableServices = $resettableServices;
-        $this->resetMethods = $resetMethods;
+    public function __construct(
+        private Traversable $resettableServices,
+        private array $resetMethods,
+    ) {
     }
 
     public function reset(): void

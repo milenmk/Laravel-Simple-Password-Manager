@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import GuestLayout from '@/Layouts/GuestLayout';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
@@ -14,20 +13,12 @@ export default function Register() {
         password_confirmation: '',
     });
 
-    useEffect(() => {
-        return () => {
-            reset('password', 'password_confirmation');
-        };
-    }, []);
-
-    const handleOnChange = (event) => {
-        setData(event.target.name, event.target.type === 'checkbox' ? event.target.checked : event.target.value);
-    };
-
     const submit = (e) => {
         e.preventDefault();
 
-        post(route('register'));
+        post(route('register'), {
+            onFinish: () => reset('password', 'password_confirmation'),
+        });
     };
 
     return (
@@ -45,7 +36,7 @@ export default function Register() {
                         className="mt-1 block w-full"
                         autoComplete="name"
                         isFocused={true}
-                        onChange={handleOnChange}
+                        onChange={(e) => setData('name', e.target.value)}
                         required
                     />
 
@@ -62,7 +53,7 @@ export default function Register() {
                         value={data.email}
                         className="mt-1 block w-full"
                         autoComplete="username"
-                        onChange={handleOnChange}
+                        onChange={(e) => setData('email', e.target.value)}
                         required
                     />
 
@@ -79,7 +70,7 @@ export default function Register() {
                         value={data.password}
                         className="mt-1 block w-full"
                         autoComplete="new-password"
-                        onChange={handleOnChange}
+                        onChange={(e) => setData('password', e.target.value)}
                         required
                     />
 
@@ -96,7 +87,7 @@ export default function Register() {
                         value={data.password_confirmation}
                         className="mt-1 block w-full"
                         autoComplete="new-password"
-                        onChange={handleOnChange}
+                        onChange={(e) => setData('password_confirmation', e.target.value)}
                         required
                     />
 
@@ -111,7 +102,7 @@ export default function Register() {
                         Already registered?
                     </Link>
 
-                    <PrimaryButton className="ml-4" disabled={processing}>
+                    <PrimaryButton className="ms-4" disabled={processing}>
                         Register
                     </PrimaryButton>
                 </div>

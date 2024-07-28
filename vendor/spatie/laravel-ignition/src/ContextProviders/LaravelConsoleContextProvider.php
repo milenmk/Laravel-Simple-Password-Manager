@@ -6,5 +6,4 @@ use Spatie\FlareClient\Context\ConsoleContextProvider;
 
 class LaravelConsoleContextProvider extends ConsoleContextProvider
 {
-
 }

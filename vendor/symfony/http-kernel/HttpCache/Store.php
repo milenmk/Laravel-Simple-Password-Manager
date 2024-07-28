@@ -14,8 +14,19 @@
 
 namespace Symfony\Component\HttpKernel\HttpCache;
 
+use RuntimeException;
+use SplObjectStorage;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+
+use function assert;
+use function dirname;
+use function strlen;
+
+use const DIRECTORY_SEPARATOR;
+use const LOCK_EX;
+use const LOCK_NB;
+use const LOCK_UN;
 
 /**
  * Store implements all the logic for storing cache metadata (Request and Response headers).
@@ -24,12 +35,10 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class Store implements StoreInterface
 {
-    protected $root;
     /** @var \SplObjectStorage<Request, string> */
-    private \SplObjectStorage $keyCache;
+    private SplObjectStorage $keyCache;
     /** @var array<string, resource> */
     private array $locks = [];
-    private array $options;
 
     /**
      * Constructor.
@@ -41,28 +50,25 @@ class Store implements StoreInterface
      *
      * @throws \RuntimeException
      */
-    public function __construct(string $root, array $options = [])
-    {
-        $this->root = $root;
+    public function __construct(
+        protected string $root,
+        private array $options = [],
+    ) {
         if (!is_dir($this->root) && !@mkdir($this->root, 0777, true) && !is_dir($this->root)) {
-            throw new \RuntimeException(sprintf('Unable to create the store directory (%s).', $this->root));
+            throw new RuntimeException(sprintf('Unable to create the store directory (%s).', $this->root));
         }
-        $this->keyCache = new \SplObjectStorage();
-        $this->options = array_merge([
-            'private_headers' => ['Set-Cookie'],
-        ], $options);
+        $this->keyCache = new SplObjectStorage();
+        $this->options['private_headers'] ??= ['Set-Cookie'];
     }
 
     /**
      * Cleanups storage.
-     *
-     * @return void
      */
-    public function cleanup()
+    public function cleanup(): void
     {
         // unlock everything
         foreach ($this->locks as $lock) {
-            flock($lock, \LOCK_UN);
+            flock($lock, LOCK_UN);
             fclose($lock);
         }
 
@@ -80,11 +86,11 @@ class Store implements StoreInterface
 
         if (!isset($this->locks[$key])) {
             $path = $this->getPath($key);
-            if (!is_dir(\dirname($path)) && false === @mkdir(\dirname($path), 0777, true) && !is_dir(\dirname($path))) {
+            if (!is_dir(dirname($path)) && false === @mkdir(dirname($path), 0777, true) && !is_dir(dirname($path))) {
                 return $path;
             }
             $h = fopen($path, 'c');
-            if (!flock($h, \LOCK_EX | \LOCK_NB)) {
+            if (!flock($h, LOCK_EX | LOCK_NB)) {
                 fclose($h);
 
                 return $path;
@@ -106,7 +112,7 @@ class Store implements StoreInterface
         $key = $this->getCacheKey($request);
 
         if (isset($this->locks[$key])) {
-            flock($this->locks[$key], \LOCK_UN);
+            flock($this->locks[$key], LOCK_UN);
             fclose($this->locks[$key]);
             unset($this->locks[$key]);
 
@@ -129,8 +135,8 @@ class Store implements StoreInterface
         }
 
         $h = fopen($path, 'r');
-        flock($h, \LOCK_EX | \LOCK_NB, $wouldBlock);
-        flock($h, \LOCK_UN); // release the lock we just acquired
+        flock($h, LOCK_EX | LOCK_NB, $wouldBlock);
+        flock($h, LOCK_UN); // release the lock we just acquired
         fclose($h);
 
         return (bool) $wouldBlock;
@@ -188,12 +194,12 @@ class Store implements StoreInterface
         if ($response->headers->has('X-Body-File')) {
             // Assume the response came from disk, but at least perform some safeguard checks
             if (!$response->headers->has('X-Content-Digest')) {
-                throw new \RuntimeException('A restored response must have the X-Content-Digest header.');
+                throw new RuntimeException('A restored response must have the X-Content-Digest header.');
             }
 
             $digest = $response->headers->get('X-Content-Digest');
             if ($this->getPath($digest) !== $response->headers->get('X-Body-File')) {
-                throw new \RuntimeException('X-Body-File and X-Content-Digest do not match.');
+                throw new RuntimeException('X-Body-File and X-Content-Digest do not match.');
             }
         // Everything seems ok, omit writing content to disk
         } else {
@@ -201,11 +207,11 @@ class Store implements StoreInterface
             $response->headers->set('X-Content-Digest', $digest);
 
             if (!$this->save($digest, $response->getContent(), false)) {
-                throw new \RuntimeException('Unable to store the entity.');
+                throw new RuntimeException('Unable to store the entity.');
             }
 
             if (!$response->headers->has('Transfer-Encoding')) {
-                $response->headers->set('Content-Length', \strlen($response->getContent()));
+                $response->headers->set('Content-Length', strlen($response->getContent()));
             }
         }
 
@@ -232,7 +238,7 @@ class Store implements StoreInterface
         array_unshift($entries, [$storedEnv, $headers]);
 
         if (!$this->save($key, serialize($entries))) {
-            throw new \RuntimeException('Unable to store the metadata.');
+            throw new RuntimeException('Unable to store the metadata.');
         }
 
         return $key;
@@ -249,11 +255,9 @@ class Store implements StoreInterface
     /**
      * Invalidates all cache entries that match the request.
      *
-     * @return void
-     *
      * @throws \RuntimeException
      */
-    public function invalidate(Request $request)
+    public function invalidate(Request $request): void
     {
         $modified = false;
         $key = $this->getCacheKey($request);
@@ -271,7 +275,7 @@ class Store implements StoreInterface
         }
 
         if ($modified && !$this->save($key, serialize($entries))) {
-            throw new \RuntimeException('Unable to store the metadata.');
+            throw new RuntimeException('Unable to store the metadata.');
         }
     }
 
@@ -285,7 +289,7 @@ class Store implements StoreInterface
      */
     private function requestsMatch(?string $vary, array $env1, array $env2): bool
     {
-        if (empty($vary)) {
+        if (!$vary) {
             return true;
         }
 
@@ -340,7 +344,7 @@ class Store implements StoreInterface
     {
         $key = $this->getCacheKey(Request::create($url));
         if (isset($this->locks[$key])) {
-            flock($this->locks[$key], \LOCK_UN);
+            flock($this->locks[$key], LOCK_UN);
             fclose($this->locks[$key]);
             unset($this->locks[$key]);
         }
@@ -380,17 +384,17 @@ class Store implements StoreInterface
             @ftruncate($fp, 0);
             @fseek($fp, 0);
             $len = @fwrite($fp, $data);
-            if (\strlen($data) !== $len) {
+            if (strlen($data) !== $len) {
                 @ftruncate($fp, 0);
 
                 return false;
             }
         } else {
-            if (!is_dir(\dirname($path)) && false === @mkdir(\dirname($path), 0777, true) && !is_dir(\dirname($path))) {
+            if (!is_dir(dirname($path)) && false === @mkdir(dirname($path), 0777, true) && !is_dir(dirname($path))) {
                 return false;
             }
 
-            $tmpFile = tempnam(\dirname($path), basename($path));
+            $tmpFile = tempnam(dirname($path), basename($path));
             if (false === $fp = @fopen($tmpFile, 'w')) {
                 @unlink($tmpFile);
 
@@ -417,12 +421,9 @@ class Store implements StoreInterface
         return true;
     }
 
-    /**
-     * @return string
-     */
-    public function getPath(string $key)
+    public function getPath(string $key): string
     {
-        return $this->root.\DIRECTORY_SEPARATOR.substr($key, 0, 2).\DIRECTORY_SEPARATOR.substr($key, 2, 2).\DIRECTORY_SEPARATOR.substr($key, 4, 2).\DIRECTORY_SEPARATOR.substr($key, 6);
+        return $this->root . DIRECTORY_SEPARATOR . substr($key, 0, 2) . DIRECTORY_SEPARATOR . substr($key, 2, 2) . DIRECTORY_SEPARATOR . substr($key, 4, 2) . DIRECTORY_SEPARATOR . substr($key, 6);
     }
 
     /**
@@ -486,8 +487,8 @@ class Store implements StoreInterface
 
             if ($headers['X-Body-Eval'] ?? $headers['x-body-eval'] ?? false) {
                 $content = file_get_contents($path);
-                \assert(HttpCache::BODY_EVAL_BOUNDARY_LENGTH === 24);
-                if (48 > \strlen($content) || substr($content, -24) !== substr($content, 0, 24)) {
+                assert(HttpCache::BODY_EVAL_BOUNDARY_LENGTH === 24);
+                if (48 > strlen($content) || substr($content, -24) !== substr($content, 0, 24)) {
                     return null;
                 }
             }

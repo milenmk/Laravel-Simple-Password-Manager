@@ -4,10 +4,18 @@ declare(strict_types=1);
 
 namespace GuzzleHttp\Psr7;
 
+use InvalidArgumentException;
+use Iterator;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\UriInterface;
+use RuntimeException;
+use Throwable;
+
+use function stream_get_meta_data;
+use function strpos;
+use function substr;
 
 final class Utils
 {
@@ -231,7 +239,7 @@ final class Utils
      * @param StreamInterface $stream    Stream to read from
      * @param int|null        $maxLength Maximum buffer length
      */
-    public static function readLine(StreamInterface $stream, int $maxLength = null): string
+    public static function readLine(StreamInterface $stream, ?int $maxLength = null): string
     {
         $buffer = '';
         $size = 0;
@@ -248,6 +256,20 @@ final class Utils
         }
 
         return $buffer;
+    }
+
+    /**
+     * Redact the password in the user info part of a URI.
+     */
+    public static function redactUserInfo(UriInterface $uri): UriInterface
+    {
+        $userInfo = $uri->getUserInfo();
+
+        if (false !== ($pos = strpos($userInfo, ':'))) {
+            return $uri->withUserInfo(substr($userInfo, 0, $pos), '***');
+        }
+
+        return $uri;
     }
 
     /**
@@ -304,7 +326,7 @@ final class Utils
                  */
 
                 /** @var resource $resource */
-                if ((\stream_get_meta_data($resource)['uri'] ?? '') === 'php://input') {
+                if ((stream_get_meta_data($resource)['uri'] ?? '') === 'php://input') {
                     $stream = self::tryFopen('php://temp', 'w+');
                     stream_copy_to_stream($resource, $stream);
                     fseek($stream, 0);
@@ -316,7 +338,7 @@ final class Utils
                 /** @var object $resource */
                 if ($resource instanceof StreamInterface) {
                     return $resource;
-                } elseif ($resource instanceof \Iterator) {
+                } elseif ($resource instanceof Iterator) {
                     return new PumpStream(function () use ($resource) {
                         if (!$resource->valid()) {
                             return false;
@@ -338,7 +360,7 @@ final class Utils
             return new PumpStream($resource, $options);
         }
 
-        throw new \InvalidArgumentException('Invalid resource type: '.gettype($resource));
+        throw new InvalidArgumentException('Invalid resource type: '.gettype($resource));
     }
 
     /**
@@ -358,7 +380,7 @@ final class Utils
     {
         $ex = null;
         set_error_handler(static function (int $errno, string $errstr) use ($filename, $mode, &$ex): bool {
-            $ex = new \RuntimeException(sprintf(
+            $ex = new RuntimeException(sprintf(
                 'Unable to open "%s" using mode "%s": %s',
                 $filename,
                 $mode,
@@ -371,8 +393,8 @@ final class Utils
         try {
             /** @var resource $handle */
             $handle = fopen($filename, $mode);
-        } catch (\Throwable $e) {
-            $ex = new \RuntimeException(sprintf(
+        } catch (Throwable $e) {
+            $ex = new RuntimeException(sprintf(
                 'Unable to open "%s" using mode "%s": %s',
                 $filename,
                 $mode,
@@ -405,7 +427,7 @@ final class Utils
     {
         $ex = null;
         set_error_handler(static function (int $errno, string $errstr) use (&$ex): bool {
-            $ex = new \RuntimeException(sprintf(
+            $ex = new RuntimeException(sprintf(
                 'Unable to read stream contents: %s',
                 $errstr
             ));
@@ -418,10 +440,10 @@ final class Utils
             $contents = stream_get_contents($stream);
 
             if ($contents === false) {
-                $ex = new \RuntimeException('Unable to read stream contents');
+                $ex = new RuntimeException('Unable to read stream contents');
             }
-        } catch (\Throwable $e) {
-            $ex = new \RuntimeException(sprintf(
+        } catch (Throwable $e) {
+            $ex = new RuntimeException(sprintf(
                 'Unable to read stream contents: %s',
                 $e->getMessage()
             ), 0, $e);
@@ -458,6 +480,6 @@ final class Utils
             return new Uri($uri);
         }
 
-        throw new \InvalidArgumentException('URI must be a string or UriInterface');
+        throw new InvalidArgumentException('URI must be a string or UriInterface');
     }
 }

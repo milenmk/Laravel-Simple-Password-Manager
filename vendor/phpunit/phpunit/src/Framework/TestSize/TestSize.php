@@ -14,26 +14,26 @@ namespace PHPUnit\Framework\TestSize;
  *
  * @psalm-immutable
  */
-abstract class TestSize
+abstract readonly class TestSize
 {
     public static function unknown(): self
     {
-        return new Unknown;
+        return new Unknown();
     }
 
     public static function small(): self
     {
-        return new Small;
+        return new Small();
     }
 
     public static function medium(): self
     {
-        return new Medium;
+        return new Medium();
     }
 
     public static function large(): self
     {
-        return new Large;
+        return new Large();
     }
 
     /**

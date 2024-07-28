@@ -12,11 +12,14 @@
 namespace Monolog\Handler;
 
 use Elastica\Document;
+use InvalidArgumentException;
 use Monolog\Formatter\FormatterInterface;
 use Monolog\Formatter\ElasticaFormatter;
-use Monolog\Logger;
+use Monolog\Level;
 use Elastica\Client;
 use Elastica\Exception\ExceptionInterface;
+use Monolog\LogRecord;
+use RuntimeException;
 
 /**
  * Elastic Search handler
@@ -33,24 +36,34 @@ use Elastica\Exception\ExceptionInterface;
  *    $log->pushHandler($handler);
  *
  * @author Jelle Vink <jelle.vink@gmail.com>
+ * @phpstan-type Options array{
+ *     index: string,
+ *     type: string,
+ *     ignore_error: bool
+ * }
+ * @phpstan-type InputOptions array{
+ *     index?: string,
+ *     type?: string,
+ *     ignore_error?: bool
+ * }
  */
 class ElasticaHandler extends AbstractProcessingHandler
 {
-    /**
-     * @var Client
-     */
-    protected $client;
+    protected Client $client;
 
     /**
      * @var mixed[] Handler config options
+     * @phpstan-var Options
      */
-    protected $options = [];
+    protected array $options;
 
     /**
      * @param Client  $client  Elastica Client object
      * @param mixed[] $options Handler configuration
+     *
+     * @phpstan-param InputOptions $options
      */
-    public function __construct(Client $client, array $options = [], $level = Logger::DEBUG, bool $bubble = true)
+    public function __construct(Client $client, array $options = [], int|string|Level $level = Level::Debug, bool $bubble = true)
     {
         parent::__construct($level, $bubble);
         $this->client = $client;
@@ -65,15 +78,15 @@ class ElasticaHandler extends AbstractProcessingHandler
     }
 
     /**
-     * {@inheritDoc}
+     * @inheritDoc
      */
-    protected function write(array $record): void
+    protected function write(LogRecord $record): void
     {
-        $this->bulkSend([$record['formatted']]);
+        $this->bulkSend([$record->formatted]);
     }
 
     /**
-     * {@inheritDoc}
+     * @inheritDoc
      */
     public function setFormatter(FormatterInterface $formatter): HandlerInterface
     {
@@ -81,11 +94,13 @@ class ElasticaHandler extends AbstractProcessingHandler
             return parent::setFormatter($formatter);
         }
 
-        throw new \InvalidArgumentException('ElasticaHandler is only compatible with ElasticaFormatter');
+        throw new InvalidArgumentException('ElasticaHandler is only compatible with ElasticaFormatter');
     }
 
     /**
      * @return mixed[]
+     *
+     * @phpstan-return Options
      */
     public function getOptions(): array
     {
@@ -93,7 +108,7 @@ class ElasticaHandler extends AbstractProcessingHandler
     }
 
     /**
-     * {@inheritDoc}
+     * @inheritDoc
      */
     protected function getDefaultFormatter(): FormatterInterface
     {
@@ -101,7 +116,7 @@ class ElasticaHandler extends AbstractProcessingHandler
     }
 
     /**
-     * {@inheritDoc}
+     * @inheritDoc
      */
     public function handleBatch(array $records): void
     {
@@ -122,7 +137,7 @@ class ElasticaHandler extends AbstractProcessingHandler
             $this->client->addDocuments($documents);
         } catch (ExceptionInterface $e) {
             if (!$this->options['ignore_error']) {
-                throw new \RuntimeException("Error sending messages to Elasticsearch", 0, $e);
+                throw new RuntimeException('Error sending messages to Elasticsearch', 0, $e);
             }
         }
     }

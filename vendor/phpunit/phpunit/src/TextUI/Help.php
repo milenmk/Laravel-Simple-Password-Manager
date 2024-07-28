@@ -35,11 +35,11 @@ final class Help
     public function __construct(?int $width = null, ?bool $withColor = null)
     {
         if ($width === null) {
-            $width = (new Console)->getNumberOfColumns();
+            $width = (new Console())->getNumberOfColumns();
         }
 
         if ($withColor === null) {
-            $this->hasColor = (new Console)->hasColorSupport();
+            $this->hasColor = (new Console())->hasColorSupport();
         } else {
             $this->hasColor = $withColor;
         }
@@ -175,9 +175,11 @@ final class Help
                 ['arg' => '--exclude-group <name>', 'desc' => 'Exclude tests from the specified group(s)'],
                 ['arg' => '--covers <name>', 'desc' => 'Only run tests that intend to cover <name>'],
                 ['arg' => '--uses <name>', 'desc' => 'Only run tests that intend to use <name>'],
+                ['arg' => '--list-test-files', 'desc' => 'List available test files'],
                 ['arg' => '--list-tests', 'desc' => 'List available tests'],
                 ['arg' => '--list-tests-xml <file>', 'desc' => 'List available tests in XML format'],
                 ['arg' => '--filter <pattern>', 'desc' => 'Filter which tests to run'],
+                ['arg' => '--exclude-filter <pattern>', 'desc' => 'Exclude tests for the specified filter pattern'],
                 ['arg' => '--test-suffix <suffixes>', 'desc' => 'Only search for test in files with specified suffix(es). Default: Test.php,.phpt'],
             ],
 
@@ -268,6 +270,8 @@ final class Help
                 ['arg' => '--coverage-html <dir>', 'desc' => 'Write code coverage report in HTML format to directory'],
                 ['arg' => '--coverage-php <file>', 'desc' => 'Write serialized code coverage data to file'],
                 ['arg' => '--coverage-text=<file>', 'desc' => 'Write code coverage report in text format to file [default: standard output]'],
+                ['arg' => '--only-summary-for-coverage-text', 'desc' => 'Option for code coverage report in text format: only show summary'],
+                ['arg' => '--show-uncovered-for-coverage-text', 'desc' => 'Option for code coverage report in text format: show uncovered files'],
                 ['arg' => '--coverage-xml <dir>', 'desc' => 'Write code coverage report in XML format to directory'],
                 ['arg' => '--warm-coverage-cache', 'desc' => 'Warm static analysis cache'],
                 ['arg' => '--coverage-filter <dir>', 'desc' => 'Include <dir> in code coverage reporting'],

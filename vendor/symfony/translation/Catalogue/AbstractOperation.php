@@ -11,10 +11,13 @@
 
 namespace Symfony\Component\Translation\Catalogue;
 
+use MessageFormatter;
 use Symfony\Component\Translation\Exception\InvalidArgumentException;
 use Symfony\Component\Translation\Exception\LogicException;
 use Symfony\Component\Translation\MessageCatalogue;
 use Symfony\Component\Translation\MessageCatalogueInterface;
+
+use function in_array;
 
 /**
  * Base catalogues binary operation class.
@@ -30,9 +33,9 @@ abstract class AbstractOperation implements OperationInterface
     public const NEW_BATCH = 'new';
     public const ALL_BATCH = 'all';
 
-    protected $source;
-    protected $target;
-    protected $result;
+    protected MessageCatalogueInterface $source;
+    protected MessageCatalogueInterface $target;
+    protected MessageCatalogue $result;
 
     /**
      * This array stores 'all', 'new' and 'obsolete' messages for all valid domains.
@@ -55,7 +58,7 @@ abstract class AbstractOperation implements OperationInterface
      *
      * @var array The array that stores 'all', 'new' and 'obsolete' messages
      */
-    protected $messages;
+    protected array $messages;
 
     private array $domains;
 
@@ -96,7 +99,7 @@ abstract class AbstractOperation implements OperationInterface
 
     public function getMessages(string $domain): array
     {
-        if (!\in_array($domain, $this->getDomains())) {
+        if (!in_array($domain, $this->getDomains(), true)) {
             throw new InvalidArgumentException(sprintf('Invalid domain: "%s".', $domain));
         }
 
@@ -109,7 +112,7 @@ abstract class AbstractOperation implements OperationInterface
 
     public function getNewMessages(string $domain): array
     {
-        if (!\in_array($domain, $this->getDomains())) {
+        if (!in_array($domain, $this->getDomains(), true)) {
             throw new InvalidArgumentException(sprintf('Invalid domain: "%s".', $domain));
         }
 
@@ -122,7 +125,7 @@ abstract class AbstractOperation implements OperationInterface
 
     public function getObsoleteMessages(string $domain): array
     {
-        if (!\in_array($domain, $this->getDomains())) {
+        if (!in_array($domain, $this->getDomains(), true)) {
             throw new InvalidArgumentException(sprintf('Invalid domain: "%s".', $domain));
         }
 
@@ -150,7 +153,7 @@ abstract class AbstractOperation implements OperationInterface
     public function moveMessagesToIntlDomainsIfPossible(string $batch = self::ALL_BATCH): void
     {
         // If MessageFormatter class does not exists, intl domains are not supported.
-        if (!class_exists(\MessageFormatter::class)) {
+        if (!class_exists(MessageFormatter::class)) {
             return;
         }
 
@@ -180,8 +183,6 @@ abstract class AbstractOperation implements OperationInterface
      * stores the results.
      *
      * @param string $domain The domain which the operation will be performed for
-     *
-     * @return void
      */
-    abstract protected function processDomain(string $domain);
+    abstract protected function processDomain(string $domain): void;
 }

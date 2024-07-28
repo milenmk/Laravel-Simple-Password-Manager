@@ -354,11 +354,23 @@ final class Collector
             return;
         }
 
+        if ($this->source->ignoreSelfDeprecations() && $event->trigger()->isSelf()) {
+            return;
+        }
+
+        if ($this->source->ignoreDirectDeprecations() && $event->trigger()->isDirect()) {
+            return;
+        }
+
+        if ($this->source->ignoreIndirectDeprecations() && $event->trigger()->isIndirect()) {
+            return;
+        }
+
         if (!$this->source->ignoreSuppressionOfDeprecations() && $event->wasSuppressed()) {
             return;
         }
 
-        if ($this->source->restrictDeprecations() && !(new SourceFilter)->includes($this->source, $event->file())) {
+        if ($this->source->restrictDeprecations() && !(new SourceFilter())->includes($this->source, $event->file())) {
             return;
         }
 
@@ -390,11 +402,23 @@ final class Collector
             return;
         }
 
+        if ($this->source->ignoreSelfDeprecations() && $event->trigger()->isSelf()) {
+            return;
+        }
+
+        if ($this->source->ignoreDirectDeprecations() && $event->trigger()->isDirect()) {
+            return;
+        }
+
+        if ($this->source->ignoreIndirectDeprecations() && $event->trigger()->isIndirect()) {
+            return;
+        }
+
         if (!$this->source->ignoreSuppressionOfPhpDeprecations() && $event->wasSuppressed()) {
             return;
         }
 
-        if ($this->source->restrictDeprecations() && !(new SourceFilter)->includes($this->source, $event->file())) {
+        if ($this->source->restrictDeprecations() && !(new SourceFilter())->includes($this->source, $event->file())) {
             return;
         }
 
@@ -457,7 +481,7 @@ final class Collector
             return;
         }
 
-        if ($this->source->restrictNotices() && !(new SourceFilter)->includes($this->source, $event->file())) {
+        if ($this->source->restrictNotices() && !(new SourceFilter())->includes($this->source, $event->file())) {
             return;
         }
 
@@ -489,7 +513,7 @@ final class Collector
             return;
         }
 
-        if ($this->source->restrictNotices() && !(new SourceFilter)->includes($this->source, $event->file())) {
+        if ($this->source->restrictNotices() && !(new SourceFilter())->includes($this->source, $event->file())) {
             return;
         }
 
@@ -521,7 +545,7 @@ final class Collector
             return;
         }
 
-        if ($this->source->restrictWarnings() && !(new SourceFilter)->includes($this->source, $event->file())) {
+        if ($this->source->restrictWarnings() && !(new SourceFilter())->includes($this->source, $event->file())) {
             return;
         }
 
@@ -553,7 +577,7 @@ final class Collector
             return;
         }
 
-        if ($this->source->restrictWarnings() && !(new SourceFilter)->includes($this->source, $event->file())) {
+        if ($this->source->restrictWarnings() && !(new SourceFilter())->includes($this->source, $event->file())) {
             return;
         }
 

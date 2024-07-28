@@ -3,12 +3,13 @@
 namespace Illuminate\Mail\Transport;
 
 use Illuminate\Support\Collection;
+use Stringable;
 use Symfony\Component\Mailer\Envelope;
 use Symfony\Component\Mailer\SentMessage;
 use Symfony\Component\Mailer\Transport\TransportInterface;
 use Symfony\Component\Mime\RawMessage;
 
-class ArrayTransport implements TransportInterface
+class ArrayTransport implements Stringable, TransportInterface
 {
     /**
      * The collection of Symfony Messages.
@@ -24,13 +25,13 @@ class ArrayTransport implements TransportInterface
      */
     public function __construct()
     {
-        $this->messages = new Collection;
+        $this->messages = new Collection();
     }
 
     /**
      * {@inheritdoc}
      */
-    public function send(RawMessage $message, Envelope $envelope = null): ?SentMessage
+    public function send(RawMessage $message, ?Envelope $envelope = null): ?SentMessage
     {
         return $this->messages[] = new SentMessage($message, $envelope ?? Envelope::create($message));
     }
@@ -52,7 +53,7 @@ class ArrayTransport implements TransportInterface
      */
     public function flush()
     {
-        return $this->messages = new Collection;
+        return $this->messages = new Collection();
     }
 
     /**

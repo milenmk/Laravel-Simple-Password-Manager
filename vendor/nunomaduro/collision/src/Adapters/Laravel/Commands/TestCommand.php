@@ -13,7 +13,7 @@ use Illuminate\Support\Str;
 use NunoMaduro\Collision\Adapters\Laravel\Exceptions\RequirementsException;
 use NunoMaduro\Collision\Coverage;
 use ParaTest\Options;
-use PHPUnit\Runner\Version;
+use ParaTest\ParaTestCommand;
 use RuntimeException;
 use SebastianBergmann\Environment\Console;
 use Symfony\Component\Console\Input\ArgvInput;
@@ -71,18 +71,6 @@ class TestCommand extends Command
      */
     public function handle()
     {
-        $phpunitVersion = Version::id();
-
-        if ($phpunitVersion[0].$phpunitVersion[1] !== '10') {
-            throw new RequirementsException('Running Collision 7.x artisan test command requires at least PHPUnit 10.x.');
-        }
-
-        $laravelVersion = \Illuminate\Foundation\Application::VERSION;
-
-        if ($laravelVersion[0].$laravelVersion[1] !== '10') { // @phpstan-ignore-line
-            throw new RequirementsException('Running Collision 7.x artisan test command requires at least Laravel 10.x.');
-        }
-
         if ($this->option('coverage') && ! Coverage::isAvailable()) {
             $this->output->writeln(sprintf(
                 "\n  <fg=white;bg=red;options=bold> ERROR </> Code coverage driver not available.%s</>",
@@ -100,7 +88,7 @@ class TestCommand extends Command
         $usesParallel = $this->option('parallel');
 
         if ($usesParallel && ! $this->isParallelDependenciesInstalled()) {
-            throw new RequirementsException('Running Collision 7.x artisan test command in parallel requires at least ParaTest (brianium/paratest) 7.x.');
+            throw new RequirementsException('Running Collision 8.x artisan test command in parallel requires at least ParaTest (brianium/paratest) 7.x.');
         }
 
         $options = array_slice($_SERVER['argv'], $this->option('without-tty') ? 3 : 2);
@@ -195,9 +183,9 @@ class TestCommand extends Command
 
         if ($this->option('ansi')) {
             $arguments[] = '--colors=always';
-        } elseif ($this->option('no-ansi')) { // @phpstan-ignore-line
+        } elseif ($this->option('no-ansi')) {
             $arguments[] = '--colors=never';
-        } elseif ((new Console)->hasColorSupport()) {
+        } elseif ((new Console())->hasColorSupport()) {
             $arguments[] = '--colors=always';
         }
 
@@ -278,7 +266,7 @@ class TestCommand extends Command
 
         $options = array_merge($this->commonArguments(), [
             '--configuration='.$this->getConfigurationFile(),
-            "--runner=\Illuminate\Testing\ParallelRunner",
+            '--runner=\Illuminate\Testing\ParallelRunner',
         ], $options);
 
         $inputDefinition = new InputDefinition();
@@ -393,6 +381,6 @@ class TestCommand extends Command
      */
     protected function isParallelDependenciesInstalled()
     {
-        return class_exists(\ParaTest\ParaTestCommand::class);
+        return class_exists(ParaTestCommand::class);
     }
 }

@@ -11,6 +11,9 @@
 
 namespace Symfony\Component\Translation\Loader;
 
+use function in_array;
+use function is_array;
+
 /**
  * @copyright Copyright (c) 2010, Union of RAD https://github.com/UnionOfRAD/lithium
  * @copyright Copyright (c) 2012, Clemens Tolboom
@@ -76,7 +79,7 @@ class PoFileLoader extends FileLoader
 
             if ('' === $line) {
                 // Whitespace indicated current item is done
-                if (!\in_array('fuzzy', $flags)) {
+                if (!in_array('fuzzy', $flags, true)) {
                     $this->addMessage($messages, $item);
                 }
                 $item = $defaults;
@@ -94,7 +97,7 @@ class PoFileLoader extends FileLoader
             } elseif ('"' === $line[0]) {
                 $continues = isset($item['translated']) ? 'translated' : 'ids';
 
-                if (\is_array($item[$continues])) {
+                if (is_array($item[$continues])) {
                     end($item[$continues]);
                     $item[$continues][key($item[$continues])] .= substr($line, 1, -1);
                 } else {
@@ -108,7 +111,7 @@ class PoFileLoader extends FileLoader
             }
         }
         // save last item
-        if (!\in_array('fuzzy', $flags)) {
+        if (!in_array('fuzzy', $flags, true)) {
             $this->addMessage($messages, $item);
         }
         fclose($stream);

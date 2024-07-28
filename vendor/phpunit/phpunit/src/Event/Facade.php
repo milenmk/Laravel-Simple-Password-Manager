@@ -28,7 +28,7 @@ final class Facade
     public static function instance(): self
     {
         if (self::$instance === null) {
-            self::$instance = new self;
+            self::$instance = new self();
         }
 
         return self::$instance;
@@ -62,7 +62,7 @@ final class Facade
     public function registerSubscriber(Subscriber $subscriber): void
     {
         if ($this->sealed) {
-            throw new EventFacadeIsSealedException;
+            throw new EventFacadeIsSealedException();
         }
 
         $this->deferredDispatcher()->registerSubscriber($subscriber);
@@ -74,7 +74,7 @@ final class Facade
     public function registerTracer(Tracer\Tracer $tracer): void
     {
         if ($this->sealed) {
-            throw new EventFacadeIsSealedException;
+            throw new EventFacadeIsSealedException();
         }
 
         $this->deferredDispatcher()->registerTracer($tracer);
@@ -85,22 +85,18 @@ final class Facade
      *
      * @noinspection PhpUnused
      */
-    public function initForIsolation(HRTime $offset, bool $exportObjects): CollectingDispatcher
+    public function initForIsolation(HRTime $offset): CollectingDispatcher
     {
-        $dispatcher = new CollectingDispatcher;
+        $dispatcher = new CollectingDispatcher();
 
         $this->emitter = new DispatchingEmitter(
             $dispatcher,
             new Telemetry\System(
                 new Telemetry\SystemStopWatchWithOffset($offset),
-                new Telemetry\SystemMemoryMeter,
+                new Telemetry\SystemMemoryMeter(),
                 $this->garbageCollectorStatusProvider(),
             ),
         );
-
-        if ($exportObjects) {
-            $this->emitter->exportObjects();
-        }
 
         $this->sealed = true;
 
@@ -136,8 +132,8 @@ final class Facade
     private function createTelemetrySystem(): Telemetry\System
     {
         return new Telemetry\System(
-            new Telemetry\SystemStopWatch,
-            new Telemetry\SystemMemoryMeter,
+            new Telemetry\SystemStopWatch(),
+            new Telemetry\SystemMemoryMeter(),
             $this->garbageCollectorStatusProvider(),
         );
     }
@@ -156,7 +152,7 @@ final class Facade
     private function typeMap(): TypeMap
     {
         if ($this->typeMap === null) {
-            $typeMap = new TypeMap;
+            $typeMap = new TypeMap();
 
             $this->registerDefaultTypes($typeMap);
 
@@ -179,8 +175,6 @@ final class Facade
             Test\AfterLastTestMethodFinished::class,
             Test\AfterTestMethodCalled::class,
             Test\AfterTestMethodFinished::class,
-            Test\AssertionSucceeded::class,
-            Test\AssertionFailed::class,
             Test\BeforeFirstTestMethodCalled::class,
             Test\BeforeFirstTestMethodErrored::class,
             Test\BeforeFirstTestMethodFinished::class,
@@ -258,10 +252,10 @@ final class Facade
     {
         if (!isset(gc_status()['running'])) {
             // @codeCoverageIgnoreStart
-            return new Php81GarbageCollectorStatusProvider;
+            return new Php81GarbageCollectorStatusProvider();
             // @codeCoverageIgnoreEnd
         }
 
-        return new Php83GarbageCollectorStatusProvider;
+        return new Php83GarbageCollectorStatusProvider();
     }
 }

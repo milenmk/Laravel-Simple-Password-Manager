@@ -77,6 +77,16 @@ final class DefaultPrinter
     private static bool $profile = false;
 
     /**
+     * The issues link.
+     */
+    private static ?string $issuesLink = null;
+
+    /**
+     * The PRs link.
+     */
+    private static ?string $prsLink = null;
+
+    /**
      * When profiling, holds a list of slow tests.
      */
     private array $profileSlowTests = [];
@@ -110,7 +120,7 @@ final class DefaultPrinter
     /**
      * If the printer instances should be compact.
      */
-    public static function compact(bool $value = null): bool
+    public static function compact(?bool $value = null): bool
     {
         if (! is_null($value)) {
             self::$compact = $value;
@@ -120,9 +130,41 @@ final class DefaultPrinter
     }
 
     /**
+     * Links issues with the given prefix.
+     */
+    public static function linkIssuesWith(string $linkPrefix): void
+    {
+        self::$issuesLink = $linkPrefix;
+    }
+
+    /**
+     * Get the issues link.
+     */
+    public static function issuesLink(): ?string
+    {
+        return self::$issuesLink;
+    }
+
+    /**
+     * Links PRs with the given prefix.
+     */
+    public static function linkPrsWith(string $linkPrefix): void
+    {
+        self::$prsLink = $linkPrefix;
+    }
+
+    /**
+     * Get the PRs link.
+     */
+    public static function prsLink(): ?string
+    {
+        return self::$prsLink;
+    }
+
+    /**
      * If the printer instances should profile.
      */
-    public static function profile(bool $value = null): bool
+    public static function profile(?bool $value = null): bool
     {
         if (! is_null($value)) {
             self::$profile = $value;

@@ -82,7 +82,7 @@ abstract class Component
     protected function mutate($data, $mutators)
     {
         foreach ($mutators as $mutator) {
-            $mutator = new $mutator;
+            $mutator = new $mutator();
 
             if (is_iterable($data)) {
                 foreach ($data as $key => $value) {
@@ -108,13 +108,11 @@ abstract class Component
             ->getParentClass()
             ->getProperty('questionHelper');
 
-        $property->setAccessible(true);
-
         $currentHelper = $property->isInitialized($this->output)
             ? $property->getValue($this->output)
             : new SymfonyQuestionHelper();
 
-        $property->setValue($this->output, new QuestionHelper);
+        $property->setValue($this->output, new QuestionHelper());
 
         try {
             return $callable();

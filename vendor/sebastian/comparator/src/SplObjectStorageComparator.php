@@ -28,7 +28,7 @@ final class SplObjectStorageComparator extends Comparator
         assert($expected instanceof SplObjectStorage);
         assert($actual instanceof SplObjectStorage);
 
-        $exporter = new Exporter;
+        $exporter = new Exporter();
 
         foreach ($actual as $object) {
             if (!$expected->contains($object)) {
@@ -37,7 +37,7 @@ final class SplObjectStorageComparator extends Comparator
                     $actual,
                     $exporter->export($expected),
                     $exporter->export($actual),
-                    'Failed asserting that two objects are equal.'
+                    'Failed asserting that two objects are equal.',
                 );
             }
         }
@@ -49,7 +49,7 @@ final class SplObjectStorageComparator extends Comparator
                     $actual,
                     $exporter->export($expected),
                     $exporter->export($actual),
-                    'Failed asserting that two objects are equal.'
+                    'Failed asserting that two objects are equal.',
                 );
             }
         }

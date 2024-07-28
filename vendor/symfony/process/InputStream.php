@@ -11,7 +11,11 @@
 
 namespace Symfony\Component\Process;
 
+use Closure;
+use Iterator;
+use IteratorAggregate;
 use Symfony\Component\Process\Exception\RuntimeException;
+use Traversable;
 
 /**
  * Provides a way to continuously write to the input of a Process until the InputStream is closed.
@@ -20,18 +24,16 @@ use Symfony\Component\Process\Exception\RuntimeException;
  *
  * @implements \IteratorAggregate<int, string>
  */
-class InputStream implements \IteratorAggregate
+class InputStream implements IteratorAggregate
 {
-    private ?\Closure $onEmpty = null;
-    private array $input = [];
+    private ?Closure $onEmpty = null;
+    private array    $input   = [];
     private bool $open = true;
 
     /**
      * Sets a callback that is called when the write buffer becomes empty.
-     *
-     * @return void
      */
-    public function onEmpty(?callable $onEmpty = null)
+    public function onEmpty(?callable $onEmpty = null): void
     {
         $this->onEmpty = null !== $onEmpty ? $onEmpty(...) : null;
     }
@@ -41,10 +43,8 @@ class InputStream implements \IteratorAggregate
      *
      * @param resource|string|int|float|bool|\Traversable|null $input The input to append as scalar,
      *                                                                stream resource or \Traversable
-     *
-     * @return void
      */
-    public function write(mixed $input)
+    public function write(mixed $input): void
     {
         if (null === $input) {
             return;
@@ -57,25 +57,21 @@ class InputStream implements \IteratorAggregate
 
     /**
      * Closes the write buffer.
-     *
-     * @return void
      */
-    public function close()
+    public function close(): void
     {
         $this->open = false;
     }
 
     /**
      * Tells whether the write buffer is closed or not.
-     *
-     * @return bool
      */
-    public function isClosed()
+    public function isClosed(): bool
     {
         return !$this->open;
     }
 
-    public function getIterator(): \Traversable
+    public function getIterator(): Traversable
     {
         $this->open = true;
 
@@ -86,7 +82,7 @@ class InputStream implements \IteratorAggregate
             }
             $current = array_shift($this->input);
 
-            if ($current instanceof \Iterator) {
+            if ($current instanceof Iterator) {
                 yield from $current;
             } else {
                 yield $current;

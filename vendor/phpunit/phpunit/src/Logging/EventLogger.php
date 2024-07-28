@@ -23,10 +23,10 @@ use PHPUnit\Event\Tracer\Tracer;
 /**
  * @internal This class is not covered by the backward compatibility promise for PHPUnit
  */
-final class EventLogger implements Tracer
+final readonly class EventLogger implements Tracer
 {
-    private readonly string $path;
-    private readonly bool $includeTelemetryInfo;
+    private string $path;
+    private bool $includeTelemetryInfo;
 
     public function __construct(string $path, bool $includeTelemetryInfo)
     {
@@ -42,7 +42,8 @@ final class EventLogger implements Tracer
 
         $flags = FILE_APPEND;
 
-        if (PHP_OS_FAMILY !== 'Windows' || $this->path !== 'php://stdout') {
+        if (!(PHP_OS_FAMILY === 'Windows' || PHP_OS_FAMILY === 'Darwin') ||
+            $this->path !== 'php://stdout') {
             $flags |= LOCK_EX;
         }
 

@@ -14,57 +14,32 @@ namespace Symfony\Component\HttpKernel\Controller\ArgumentResolver;
 use Psr\Container\ContainerInterface;
 use Symfony\Component\DependencyInjection\Exception\RuntimeException;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpKernel\Controller\ArgumentValueResolverInterface;
 use Symfony\Component\HttpKernel\Controller\ValueResolverInterface;
 use Symfony\Component\HttpKernel\ControllerMetadata\ArgumentMetadata;
+
+use function is_array;
+use function is_callable;
+use function is_string;
 
 /**
  * Provides an intuitive error message when controller fails because it is not registered as a service.
  *
  * @author Simeon Kolev <simeon.kolev9@gmail.com>
  */
-final class NotTaggedControllerValueResolver implements ArgumentValueResolverInterface, ValueResolverInterface
+final class NotTaggedControllerValueResolver implements ValueResolverInterface
 {
-    private ContainerInterface $container;
-
-    public function __construct(ContainerInterface $container)
-    {
-        $this->container = $container;
-    }
-
-    /**
-     * @deprecated since Symfony 6.2, use resolve() instead
-     */
-    public function supports(Request $request, ArgumentMetadata $argument): bool
-    {
-        @trigger_deprecation('symfony/http-kernel', '6.2', 'The "%s()" method is deprecated, use "resolve()" instead.', __METHOD__);
-
-        $controller = $request->attributes->get('_controller');
-
-        if (\is_array($controller) && \is_callable($controller, true) && \is_string($controller[0])) {
-            $controller = $controller[0].'::'.$controller[1];
-        } elseif (!\is_string($controller) || '' === $controller) {
-            return false;
-        }
-
-        if ('\\' === $controller[0]) {
-            $controller = ltrim($controller, '\\');
-        }
-
-        if (!$this->container->has($controller) && false !== $i = strrpos($controller, ':')) {
-            $controller = substr($controller, 0, $i).strtolower(substr($controller, $i));
-        }
-
-        return false === $this->container->has($controller);
+    public function __construct(
+        private ContainerInterface $container,
+    ) {
     }
 
     public function resolve(Request $request, ArgumentMetadata $argument): array
     {
         $controller = $request->attributes->get('_controller');
 
-        if (\is_array($controller) && \is_callable($controller, true) && \is_string($controller[0])) {
+        if (is_array($controller) && is_callable($controller, true) && is_string($controller[0])) {
             $controller = $controller[0].'::'.$controller[1];
-        } elseif (!\is_string($controller) || '' === $controller) {
+        } elseif (!is_string($controller) || '' === $controller) {
             return [];
         }
 

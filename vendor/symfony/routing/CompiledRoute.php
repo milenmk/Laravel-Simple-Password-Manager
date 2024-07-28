@@ -11,22 +11,16 @@
 
 namespace Symfony\Component\Routing;
 
+use BadMethodCallException;
+use Serializable;
+
 /**
  * CompiledRoutes are returned by the RouteCompiler class.
  *
  * @author Fabien Potencier <fabien@symfony.com>
  */
-class CompiledRoute implements \Serializable
+class CompiledRoute implements Serializable
 {
-    private array $variables;
-    private array $tokens;
-    private string $staticPrefix;
-    private string $regex;
-    private array $pathVariables;
-    private array $hostVariables;
-    private ?string $hostRegex;
-    private array $hostTokens;
-
     /**
      * @param string      $staticPrefix  The static prefix of the compiled route
      * @param string      $regex         The regular expression to use to match this route
@@ -37,16 +31,16 @@ class CompiledRoute implements \Serializable
      * @param array       $hostVariables An array of host variables
      * @param array       $variables     An array of variables (variables defined in the path and in the host patterns)
      */
-    public function __construct(string $staticPrefix, string $regex, array $tokens, array $pathVariables, ?string $hostRegex = null, array $hostTokens = [], array $hostVariables = [], array $variables = [])
-    {
-        $this->staticPrefix = $staticPrefix;
-        $this->regex = $regex;
-        $this->tokens = $tokens;
-        $this->pathVariables = $pathVariables;
-        $this->hostRegex = $hostRegex;
-        $this->hostTokens = $hostTokens;
-        $this->hostVariables = $hostVariables;
-        $this->variables = $variables;
+    public function __construct(
+        private string $staticPrefix,
+        private string $regex,
+        private array $tokens,
+        private array $pathVariables,
+        private ?string $hostRegex = null,
+        private array $hostTokens = [],
+        private array $hostVariables = [],
+        private array $variables = [],
+    ) {
     }
 
     public function __serialize(): array
@@ -68,7 +62,7 @@ class CompiledRoute implements \Serializable
      */
     final public function serialize(): string
     {
-        throw new \BadMethodCallException('Cannot serialize '.__CLASS__);
+        throw new BadMethodCallException('Cannot serialize '.__CLASS__);
     }
 
     public function __unserialize(array $data): void

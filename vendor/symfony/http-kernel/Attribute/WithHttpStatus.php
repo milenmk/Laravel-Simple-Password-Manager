@@ -11,14 +11,19 @@
 
 namespace Symfony\Component\HttpKernel\Attribute;
 
+use Attribute;
+
 /**
+ * Defines the HTTP status code applied to an exception.
+ *
  * @author Dejan Angelov <angelovdejan@protonmail.com>
  */
-#[\Attribute(\Attribute::TARGET_CLASS)]
+#[Attribute(Attribute::TARGET_CLASS)]
 class WithHttpStatus
 {
     /**
-     * @param array<string, string> $headers
+     * @param int                   $statusCode The HTTP status code to use
+     * @param array<string, string> $headers    The HTTP headers to add to the response
      */
     public function __construct(
         public readonly int $statusCode,

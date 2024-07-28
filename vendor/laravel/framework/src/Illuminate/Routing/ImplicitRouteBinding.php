@@ -56,10 +56,10 @@ class ImplicitRouteBinding
                 if (! $model = $parent->{$childRouteBindingMethod}(
                     $parameterName, $parameterValue, $route->bindingFieldFor($parameterName)
                 )) {
-                    throw (new ModelNotFoundException)->setModel(get_class($instance), [$parameterValue]);
+                    throw (new ModelNotFoundException())->setModel(get_class($instance), [$parameterValue]);
                 }
             } elseif (! $model = $instance->{$routeBindingMethod}($parameterValue, $route->bindingFieldFor($parameterName))) {
-                throw (new ModelNotFoundException)->setModel(get_class($instance), [$parameterValue]);
+                throw (new ModelNotFoundException())->setModel(get_class($instance), [$parameterValue]);
             }
 
             $route->setParameter($parameterName, $model);
@@ -84,9 +84,15 @@ class ImplicitRouteBinding
 
             $parameterValue = $parameters[$parameterName];
 
-            $backedEnumClass = (string) $parameter->getType();
+            if ($parameterValue === null) {
+                continue;
+            }
 
-            $backedEnum = $backedEnumClass::tryFrom((string) $parameterValue);
+            $backedEnumClass = $parameter->getType()?->getName();
+
+            $backedEnum = $parameterValue instanceof $backedEnumClass
+                ? $parameterValue
+                : $backedEnumClass::tryFrom((string) $parameterValue);
 
             if (is_null($backedEnum)) {
                 throw new BackedEnumCaseNotFoundException($backedEnumClass, $parameterValue);

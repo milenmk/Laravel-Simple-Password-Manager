@@ -16,6 +16,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\KernelInterface;
 use Symfony\Component\Stopwatch\Stopwatch;
 use Symfony\Component\Stopwatch\StopwatchEvent;
+use Throwable;
 
 /**
  * @author Fabien Potencier <fabien@symfony.com>
@@ -24,17 +25,14 @@ use Symfony\Component\Stopwatch\StopwatchEvent;
  */
 class TimeDataCollector extends DataCollector implements LateDataCollectorInterface
 {
-    private ?KernelInterface $kernel;
-    private ?Stopwatch $stopwatch;
-
-    public function __construct(?KernelInterface $kernel = null, ?Stopwatch $stopwatch = null)
-    {
-        $this->kernel = $kernel;
-        $this->stopwatch = $stopwatch;
+    public function __construct(
+        private readonly ?KernelInterface $kernel = null,
+        private readonly ?Stopwatch $stopwatch = null,
+    ) {
         $this->data = ['events' => [], 'stopwatch_installed' => false, 'start_time' => 0];
     }
 
-    public function collect(Request $request, Response $response, ?\Throwable $exception = null): void
+    public function collect(Request $request, Response $response, ?Throwable $exception = null): void
     {
         if (null !== $this->kernel) {
             $startTime = $this->kernel->getStartTime();

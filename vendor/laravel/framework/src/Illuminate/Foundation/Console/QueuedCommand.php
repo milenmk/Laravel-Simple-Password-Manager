@@ -9,7 +9,9 @@ use Illuminate\Foundation\Bus\Dispatchable;
 
 class QueuedCommand implements ShouldQueue
 {
-    use Dispatchable, Queueable;
+
+    use Dispatchable;
+    use Queueable;
 
     /**
      * The data to pass to the Artisan command.
@@ -38,5 +40,15 @@ class QueuedCommand implements ShouldQueue
     public function handle(KernelContract $kernel)
     {
         $kernel->call(...array_values($this->data));
+    }
+
+    /**
+     * Get the display name for the queued job.
+     *
+     * @return string
+     */
+    public function displayName()
+    {
+        return array_values($this->data)[0];
     }
 }

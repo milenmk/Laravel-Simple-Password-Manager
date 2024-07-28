@@ -17,7 +17,7 @@ use XMLWriter;
 /**
  * @internal This class is not covered by the backward compatibility promise for PHPUnit
  */
-final class Writer
+final readonly class Writer
 {
     /**
      * @psalm-param non-empty-string $baselineFile
@@ -26,7 +26,7 @@ final class Writer
     {
         $pathCalculator = new RelativePathCalculator(dirname($baselineFile));
 
-        $writer = new XMLWriter;
+        $writer = new XMLWriter();
 
         $writer->openMemory();
         $writer->setIndent(true);

@@ -11,11 +11,17 @@
 
 namespace Symfony\Component\Console\Logger;
 
+use DateTimeInterface;
 use Psr\Log\AbstractLogger;
 use Psr\Log\InvalidArgumentException;
 use Psr\Log\LogLevel;
+use Stringable;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+
+use function gettype;
+use function is_object;
+use function is_scalar;
 
 /**
  * PSR-3 compliant console logger.
@@ -29,7 +35,6 @@ class ConsoleLogger extends AbstractLogger
     public const INFO = 'info';
     public const ERROR = 'error';
 
-    private OutputInterface $output;
     private array $verbosityLevelMap = [
         LogLevel::EMERGENCY => OutputInterface::VERBOSITY_NORMAL,
         LogLevel::ALERT => OutputInterface::VERBOSITY_NORMAL,
@@ -52,9 +57,11 @@ class ConsoleLogger extends AbstractLogger
     ];
     private bool $errored = false;
 
-    public function __construct(OutputInterface $output, array $verbosityLevelMap = [], array $formatLevelMap = [])
-    {
-        $this->output = $output;
+    public function __construct(
+        private OutputInterface $output,
+        array $verbosityLevelMap = [],
+        array $formatLevelMap = [],
+    ) {
         $this->verbosityLevelMap = $verbosityLevelMap + $this->verbosityLevelMap;
         $this->formatLevelMap = $formatLevelMap + $this->formatLevelMap;
     }
@@ -103,14 +110,14 @@ class ConsoleLogger extends AbstractLogger
 
         $replacements = [];
         foreach ($context as $key => $val) {
-            if (null === $val || \is_scalar($val) || $val instanceof \Stringable) {
+            if (null === $val || is_scalar($val) || $val instanceof Stringable) {
                 $replacements["{{$key}}"] = $val;
-            } elseif ($val instanceof \DateTimeInterface) {
-                $replacements["{{$key}}"] = $val->format(\DateTimeInterface::RFC3339);
-            } elseif (\is_object($val)) {
+            } elseif ($val instanceof DateTimeInterface) {
+                $replacements["{{$key}}"] = $val->format(DateTimeInterface::RFC3339);
+            } elseif (is_object($val)) {
                 $replacements["{{$key}}"] = '[object '.$val::class.']';
             } else {
-                $replacements["{{$key}}"] = '['.\gettype($val).']';
+                $replacements["{{$key}}"] = '[' . gettype($val) . ']';
             }
         }
 

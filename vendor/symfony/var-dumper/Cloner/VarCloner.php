@@ -11,6 +11,18 @@
 
 namespace Symfony\Component\VarDumper\Cloner;
 
+use ReflectionReference;
+
+use function array_slice;
+use function count;
+use function is_array;
+use function is_bool;
+use function is_float;
+use function is_int;
+use function is_object;
+use function is_string;
+use function strlen;
+
 /**
  * @author Nicolas Grekas <p@tchwork.com>
  */
@@ -42,7 +54,6 @@ class VarCloner extends AbstractCloner
 
         $arrayStub = new Stub();
         $arrayStub->type = Stub::TYPE_ARRAY;
-        $fromObjCast = false;
 
         for ($i = 0; $i < $len; ++$i) {
             // Detect when we move on to the next tree depth
@@ -58,7 +69,7 @@ class VarCloner extends AbstractCloner
             foreach ($vals as $k => $v) {
                 // $v is the original value or a stub object in case of hard references
 
-                $zvalRef = ($r = \ReflectionReference::fromArrayElement($vals, $k)) ? $r->getId() : null;
+                $zvalRef = ($r = ReflectionReference::fromArrayElement($vals, $k)) ? $r->getId() : null;
 
                 if ($zvalRef) {
                     $vals[$k] = &$stub;         // Break hard references to make $queue completely
@@ -80,11 +91,11 @@ class VarCloner extends AbstractCloner
                 // If $v is a nested structure, put that structure in array $a
                 switch (true) {
                     case null === $v:
-                    case \is_bool($v):
-                    case \is_int($v):
-                    case \is_float($v):
+                    case is_bool($v):
+                    case is_int($v):
+                    case is_float($v):
                         continue 2;
-                    case \is_string($v):
+                    case is_string($v):
                         if ('' === $v) {
                             continue 2;
                         }
@@ -92,7 +103,7 @@ class VarCloner extends AbstractCloner
                             $stub = new Stub();
                             $stub->type = Stub::TYPE_STRING;
                             $stub->class = Stub::STRING_BINARY;
-                            if (0 <= $maxString && 0 < $cut = \strlen($v) - $maxString) {
+                            if (0 <= $maxString && 0 < $cut = strlen($v) - $maxString) {
                                 $stub->cut = $cut;
                                 $stub->value = substr($v, 0, -$cut);
                             } else {
@@ -110,7 +121,7 @@ class VarCloner extends AbstractCloner
                         $a = null;
                         break;
 
-                    case \is_array($v):
+                    case is_array($v):
                         if (!$v) {
                             continue 2;
                         }
@@ -120,7 +131,7 @@ class VarCloner extends AbstractCloner
                         $a = $v;
                         break;
 
-                    case \is_object($v):
+                    case is_object($v):
                         if (empty($objRefs[$h = spl_object_id($v)])) {
                             $stub = new Stub();
                             $stub->type = Stub::TYPE_OBJECT;
@@ -136,7 +147,7 @@ class VarCloner extends AbstractCloner
                             }
                             $stub->value = null;
                             if (0 <= $maxItems && $maxItems <= $pos && $minimumDepthReached) {
-                                $stub->cut = \count($a);
+                                $stub->cut = count($a);
                                 $a = null;
                             }
                         }
@@ -162,7 +173,7 @@ class VarCloner extends AbstractCloner
                             $a = $this->castResource($stub, 0 < $i);
                             $stub->value = null;
                             if (0 <= $maxItems && $maxItems <= $pos && $minimumDepthReached) {
-                                $stub->cut = \count($a);
+                                $stub->cut = count($a);
                                 $a = null;
                             }
                         }
@@ -181,8 +192,8 @@ class VarCloner extends AbstractCloner
                         $queue[$len] = $a;
                         $stub->position = $len++;
                     } elseif ($pos < $maxItems) {
-                        if ($maxItems < $pos += \count($a)) {
-                            $a = \array_slice($a, 0, $maxItems - $pos, true);
+                        if ($maxItems < $pos += count($a)) {
+                            $a = array_slice($a, 0, $maxItems - $pos, true);
                             if ($stub->cut >= 0) {
                                 $stub->cut += $pos - $maxItems;
                             }
@@ -190,7 +201,7 @@ class VarCloner extends AbstractCloner
                         $queue[$len] = $a;
                         $stub->position = $len++;
                     } elseif ($stub->cut >= 0) {
-                        $stub->cut += \count($a);
+                        $stub->cut += count($a);
                         $stub->position = 0;
                     }
                 }
@@ -210,24 +221,6 @@ class VarCloner extends AbstractCloner
                     $vals[$k] = $stub;
                 } else {
                     $hardRefs[$zvalRef]->value = $stub;
-                }
-            }
-
-            if ($fromObjCast) {
-                $fromObjCast = false;
-                $refs = $vals;
-                $vals = [];
-                $j = -1;
-                foreach ($queue[$i] as $k => $v) {
-                    foreach ([$k => true] as $gk => $gv) {
-                    }
-                    if ($gk !== $k) {
-                        $vals = (object) $vals;
-                        $vals->{$k} = $refs[++$j];
-                        $vals = (array) $vals;
-                    } else {
-                        $vals[$k] = $refs[++$j];
-                    }
                 }
             }
 

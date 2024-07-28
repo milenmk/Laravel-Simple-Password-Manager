@@ -14,6 +14,8 @@ namespace Symfony\Component\Console\Helper;
 use Symfony\Component\Console\Formatter\OutputFormatterInterface;
 use Symfony\Component\String\UnicodeString;
 
+use function strlen;
+
 /**
  * Helper is the base class for all helper classes.
  *
@@ -21,16 +23,10 @@ use Symfony\Component\String\UnicodeString;
  */
 abstract class Helper implements HelperInterface
 {
-    protected $helperSet;
+    protected ?HelperSet $helperSet = null;
 
-    /**
-     * @return void
-     */
-    public function setHelperSet(?HelperSet $helperSet = null)
+    public function setHelperSet(?HelperSet $helperSet): void
     {
-        if (1 > \func_num_args()) {
-            trigger_deprecation('symfony/console', '6.2', 'Calling "%s()" without any arguments is deprecated, pass null explicitly instead.', __METHOD__);
-        }
         $this->helperSet = $helperSet;
     }
 
@@ -52,7 +48,7 @@ abstract class Helper implements HelperInterface
         }
 
         if (false === $encoding = mb_detect_encoding($string, null, true)) {
-            return \strlen($string);
+            return strlen($string);
         }
 
         return mb_strwidth($string, $encoding);
@@ -71,7 +67,7 @@ abstract class Helper implements HelperInterface
         }
 
         if (false === $encoding = mb_detect_encoding($string, null, true)) {
-            return \strlen($string);
+            return strlen($string);
         }
 
         return mb_strlen($string, $encoding);
@@ -91,10 +87,7 @@ abstract class Helper implements HelperInterface
         return mb_substr($string, $from, $length, $encoding);
     }
 
-    /**
-     * @return string
-     */
-    public static function formatTime(int|float $secs, int $precision = 1)
+    public static function formatTime(int|float $secs, int $precision = 1): string
     {
         $secs = (int) floor($secs);
 
@@ -134,10 +127,7 @@ abstract class Helper implements HelperInterface
         return implode(', ', array_reverse($times));
     }
 
-    /**
-     * @return string
-     */
-    public static function formatMemory(int $memory)
+    public static function formatMemory(int $memory): string
     {
         if ($memory >= 1024 * 1024 * 1024) {
             return sprintf('%.1f GiB', $memory / 1024 / 1024 / 1024);
@@ -154,10 +144,7 @@ abstract class Helper implements HelperInterface
         return sprintf('%d B', $memory);
     }
 
-    /**
-     * @return string
-     */
-    public static function removeDecoration(OutputFormatterInterface $formatter, ?string $string)
+    public static function removeDecoration(OutputFormatterInterface $formatter, ?string $string): string
     {
         $isDecorated = $formatter->isDecorated();
         $formatter->setDecorated(false);

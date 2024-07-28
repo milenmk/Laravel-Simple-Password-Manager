@@ -15,6 +15,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Routing\Events\PreparingResponse;
+use Illuminate\Routing\Events\ResponsePrepared;
 use Illuminate\Routing\Events\RouteMatched;
 use Illuminate\Routing\Events\Routing;
 use Illuminate\Support\Arr;
@@ -22,12 +24,16 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\Support\Stringable;
 use Illuminate\Support\Traits\Macroable;
+use Illuminate\Support\Traits\Tappable;
 use JsonSerializable;
 use Psr\Http\Message\ResponseInterface as PsrResponseInterface;
 use ReflectionClass;
 use stdClass;
 use Symfony\Bridge\PsrHttpMessage\Factory\HttpFoundationFactory;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
+
+use function is_object;
+use function spl_object_id;
 
 /**
  * @mixin \Illuminate\Routing\RouteRegistrar
@@ -37,6 +43,7 @@ class Router implements BindingRegistrar, RegistrarContract
     use Macroable {
         __call as macroCall;
     }
+    use Tappable;
 
     /**
      * The event dispatcher instance.
@@ -118,6 +125,13 @@ class Router implements BindingRegistrar, RegistrarContract
     protected $groupStack = [];
 
     /**
+     * The registered custom implicit binding callback.
+     *
+     * @var array
+     */
+    protected $implicitBindingCallback;
+
+    /**
      * All of the verbs supported by the router.
      *
      * @var string[]
@@ -131,11 +145,11 @@ class Router implements BindingRegistrar, RegistrarContract
      * @param  \Illuminate\Container\Container|null  $container
      * @return void
      */
-    public function __construct(Dispatcher $events, Container $container = null)
+    public function __construct(Dispatcher $events, ?Container $container = null)
     {
         $this->events = $events;
-        $this->routes = new RouteCollection;
-        $this->container = $container ?: new Container;
+        $this->routes = new RouteCollection();
+        $this->container = $container ?: new Container();
     }
 
     /**
@@ -223,7 +237,7 @@ class Router implements BindingRegistrar, RegistrarContract
     }
 
     /**
-     * Register a new Fallback route with the router.
+     * Register a new fallback route with the router.
      *
      * @param  array|string|callable|null  $action
      * @return \Illuminate\Routing\Route
@@ -427,7 +441,7 @@ class Router implements BindingRegistrar, RegistrarContract
      */
     public function apiSingleton($name, $controller, array $options = [])
     {
-        $only = ['show', 'update', 'destroy'];
+        $only = ['store', 'show', 'update', 'destroy'];
 
         if (isset($options['except'])) {
             $only = array_diff($only, (array) $options['except']);
@@ -435,7 +449,6 @@ class Router implements BindingRegistrar, RegistrarContract
 
         return $this->singleton($name, $controller, array_merge([
             'only' => $only,
-            'apiSingleton' => true,
         ], $options));
     }
 
@@ -872,7 +885,11 @@ class Router implements BindingRegistrar, RegistrarContract
      */
     public function prepareResponse($request, $response)
     {
-        return static::toResponse($request, $response);
+        $this->events->dispatch(new PreparingResponse($request, $response));
+
+        return tap(static::toResponse($request, $response), function ($response) use ($request) {
+            $this->events->dispatch(new ResponsePrepared($request, $response));
+        });
     }
 
     /**
@@ -889,7 +906,7 @@ class Router implements BindingRegistrar, RegistrarContract
         }
 
         if ($response instanceof PsrResponseInterface) {
-            $response = (new HttpFoundationFactory)->createResponse($response);
+            $response = (new HttpFoundationFactory())->createResponse($response);
         } elseif ($response instanceof Model && $response->wasRecentlyCreated) {
             $response = new JsonResponse($response, 201);
         } elseif ($response instanceof Stringable) {
@@ -944,7 +961,24 @@ class Router implements BindingRegistrar, RegistrarContract
      */
     public function substituteImplicitBindings($route)
     {
-        ImplicitRouteBinding::resolveForRoute($this->container, $route);
+        $default = fn () => ImplicitRouteBinding::resolveForRoute($this->container, $route);
+
+        return call_user_func(
+            $this->implicitBindingCallback ?? $default, $this->container, $route, $default
+        );
+    }
+
+    /**
+     * Register a callback to run after implicit bindings are substituted.
+     *
+     * @param  callable  $callback
+     * @return $this
+     */
+    public function substituteImplicitBindingsUsing($callback)
+    {
+        $this->implicitBindingCallback = $callback;
+
+        return $this;
     }
 
     /**
@@ -1132,7 +1166,7 @@ class Router implements BindingRegistrar, RegistrarContract
      * @param  \Closure|null  $callback
      * @return void
      */
-    public function model($key, $class, Closure $callback = null)
+    public function model($key, $class, ?Closure $callback = null)
     {
         $this->bind($key, RouteBinding::forModel($this->container, $class, $callback));
     }
@@ -1425,7 +1459,7 @@ class Router implements BindingRegistrar, RegistrarContract
         $result = [];
 
         foreach ($middleware as $value) {
-            $key = \is_object($value) ? \spl_object_id($value) : $value;
+            $key = is_object($value) ? spl_object_id($value) : $value;
 
             if (! isset($seen[$key])) {
                 $seen[$key] = true;

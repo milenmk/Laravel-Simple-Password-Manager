@@ -17,6 +17,13 @@ use Symfony\Component\HttpFoundation\UriSigner;
 use Symfony\Component\HttpKernel\Controller\ControllerReference;
 use Twig\Environment;
 
+use function count;
+
+use function is_array;
+
+use const ENT_QUOTES;
+use const ENT_SUBSTITUTE;
+
 /**
  * Implements the Hinclude rendering strategy.
  *
@@ -24,20 +31,15 @@ use Twig\Environment;
  */
 class HIncludeFragmentRenderer extends RoutableFragmentRenderer
 {
-    private ?string $globalDefaultTemplate;
-    private ?UriSigner $signer;
-    private ?Environment $twig;
-    private string $charset;
-
     /**
      * @param string|null $globalDefaultTemplate The global default content (it can be a template name or the content)
      */
-    public function __construct(?Environment $twig = null, ?UriSigner $signer = null, ?string $globalDefaultTemplate = null, string $charset = 'utf-8')
-    {
-        $this->twig = $twig;
-        $this->globalDefaultTemplate = $globalDefaultTemplate;
-        $this->signer = $signer;
-        $this->charset = $charset;
+    public function __construct(
+        private ?Environment $twig = null,
+        private ?UriSigner $signer = null,
+        private ?string $globalDefaultTemplate = null,
+        private string $charset = 'utf-8',
+    ) {
     }
 
     /**
@@ -71,13 +73,13 @@ class HIncludeFragmentRenderer extends RoutableFragmentRenderer
             $content = $template;
         }
 
-        $attributes = isset($options['attributes']) && \is_array($options['attributes']) ? $options['attributes'] : [];
+        $attributes = isset($options['attributes']) && is_array($options['attributes']) ? $options['attributes'] : [];
         if (isset($options['id']) && $options['id']) {
             $attributes['id'] = $options['id'];
         }
         $renderedAttributes = '';
-        if (\count($attributes) > 0) {
-            $flags = \ENT_QUOTES | \ENT_SUBSTITUTE;
+        if (count($attributes) > 0) {
+            $flags = ENT_QUOTES | ENT_SUBSTITUTE;
             foreach ($attributes as $attribute => $value) {
                 $renderedAttributes .= sprintf(
                     ' %s="%s"',

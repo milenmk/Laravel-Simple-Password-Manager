@@ -11,26 +11,39 @@
 
 namespace Psy\CodeCleaner;
 
+use InvalidArgumentException;
 use PhpParser\Node;
 use PhpParser\Node\Expr\Closure;
 use PhpParser\Node\Expr\ConstFetch;
 use PhpParser\Node\Identifier;
+use PhpParser\Node\IntersectionType;
+use PhpParser\Node\Name;
 use PhpParser\Node\NullableType;
 use PhpParser\Node\Stmt\Function_;
 use PhpParser\Node\Stmt\Return_;
 use PhpParser\Node\UnionType;
 use Psy\Exception\FatalErrorException;
 
+use function array_map;
+use function array_pop;
+use function end;
+use function implode;
+
+use function strtolower;
+
+use const E_ERROR;
+
 /**
  * Add runtime validation for return types.
  */
 class ReturnTypePass extends CodeCleanerPass
 {
-    const MESSAGE = 'A function with return type must return a value';
-    const NULLABLE_MESSAGE = 'A function with return type must return a value (did you mean "return null;" instead of "return;"?)';
-    const VOID_MESSAGE = 'A void function must not return a value';
-    const VOID_NULL_MESSAGE = 'A void function must not return a value (did you mean "return;" instead of "return null;"?)';
-    const NULLABLE_VOID_MESSAGE = 'Void type cannot be nullable';
+
+    public const MESSAGE = 'A function with return type must return a value';
+    public const NULLABLE_MESSAGE = 'A function with return type must return a value (did you mean "return null;" instead of "return;"?)';
+    public const VOID_MESSAGE     = 'A void function must not return a value';
+    public const VOID_NULL_MESSAGE = 'A void function must not return a value (did you mean "return;" instead of "return null;"?)';
+    public const NULLABLE_VOID_MESSAGE = 'Void type cannot be nullable';
 
     private $returnTypeStack = [];
 
@@ -48,7 +61,7 @@ class ReturnTypePass extends CodeCleanerPass
         }
 
         if (!empty($this->returnTypeStack) && $node instanceof Return_) {
-            $expectedType = \end($this->returnTypeStack);
+            $expectedType = end($this->returnTypeStack);
             if ($expectedType === null) {
                 return;
             }
@@ -59,7 +72,7 @@ class ReturnTypePass extends CodeCleanerPass
                 // Void functions
                 if ($expectedType instanceof NullableType) {
                     $msg = self::NULLABLE_VOID_MESSAGE;
-                } elseif ($node->expr instanceof ConstFetch && \strtolower($node->expr->name) === 'null') {
+                } elseif ($node->expr instanceof ConstFetch && strtolower($node->expr->name) === 'null') {
                     $msg = self::VOID_NULL_MESSAGE;
                 } elseif ($node->expr !== null) {
                     $msg = self::VOID_MESSAGE;
@@ -72,7 +85,7 @@ class ReturnTypePass extends CodeCleanerPass
             }
 
             if ($msg !== null) {
-                throw new FatalErrorException($msg, 0, \E_ERROR, null, $node->getStartLine());
+                throw new FatalErrorException($msg, 0, E_ERROR, null, $node->getStartLine());
             }
         }
     }
@@ -85,7 +98,7 @@ class ReturnTypePass extends CodeCleanerPass
     public function leaveNode(Node $node)
     {
         if (!empty($this->returnTypeStack) && $this->isFunctionNode($node)) {
-            \array_pop($this->returnTypeStack);
+            array_pop($this->returnTypeStack);
         }
     }
 
@@ -97,17 +110,21 @@ class ReturnTypePass extends CodeCleanerPass
     private function typeName(Node $node): string
     {
         if ($node instanceof UnionType) {
-            return \implode('|', \array_map([$this, 'typeName'], $node->types));
+            return implode('|', array_map([$this, 'typeName'], $node->types));
+        }
+
+        if ($node instanceof IntersectionType) {
+            return implode('&', array_map([$this, 'typeName'], $node->types));
         }
 
         if ($node instanceof NullableType) {
-            return \strtolower($node->type->name);
+            return $this->typeName($node->type);
         }
 
-        if ($node instanceof Identifier) {
-            return \strtolower($node->name);
+        if ($node instanceof Identifier || $node instanceof Name) {
+            return $node->toLowerString();
         }
 
-        throw new \InvalidArgumentException('Unable to find type name');
+        throw new InvalidArgumentException('Unable to find type name');
     }
 }

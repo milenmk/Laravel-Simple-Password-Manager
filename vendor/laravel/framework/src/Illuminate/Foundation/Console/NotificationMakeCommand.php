@@ -20,17 +20,6 @@ class NotificationMakeCommand extends GeneratorCommand
     protected $name = 'make:notification';
 
     /**
-     * The name of the console command.
-     *
-     * This name is used to identify the command during lazy loading.
-     *
-     * @var string|null
-     *
-     * @deprecated
-     */
-    protected static $defaultName = 'make:notification';
-
-    /**
      * The console command description.
      *
      * @var string
@@ -76,6 +65,8 @@ class NotificationMakeCommand extends GeneratorCommand
         }
 
         $this->files->put($path, file_get_contents(__DIR__.'/stubs/markdown.stub'));
+
+        $this->components->info(sprintf('%s [%s] created successfully.', 'Markdown', $path));
     }
 
     /**

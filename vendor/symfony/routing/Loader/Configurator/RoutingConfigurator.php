@@ -14,6 +14,9 @@ namespace Symfony\Component\Routing\Loader\Configurator;
 use Symfony\Component\Routing\Loader\PhpFileLoader;
 use Symfony\Component\Routing\RouteCollection;
 
+use function dirname;
+use function is_array;
+
 /**
  * @author Nicolas Grekas <p@tchwork.com>
  */
@@ -21,18 +24,14 @@ class RoutingConfigurator
 {
     use Traits\AddTrait;
 
-    private PhpFileLoader $loader;
-    private string $path;
-    private string $file;
-    private ?string $env;
-
-    public function __construct(RouteCollection $collection, PhpFileLoader $loader, string $path, string $file, ?string $env = null)
-    {
+    public function __construct(
+        RouteCollection $collection,
+        private PhpFileLoader $loader,
+        private string $path,
+        private string $file,
+        private ?string $env = null,
+    ) {
         $this->collection = $collection;
-        $this->loader = $loader;
-        $this->path = $path;
-        $this->file = $file;
-        $this->env = $env;
     }
 
     /**
@@ -40,10 +39,10 @@ class RoutingConfigurator
      */
     final public function import(string|array $resource, ?string $type = null, bool $ignoreErrors = false, string|array|null $exclude = null): ImportConfigurator
     {
-        $this->loader->setCurrentDir(\dirname($this->path));
+        $this->loader->setCurrentDir(dirname($this->path));
 
         $imported = $this->loader->import($resource, $type, $ignoreErrors, $this->file, $exclude) ?: [];
-        if (!\is_array($imported)) {
+        if (!is_array($imported)) {
             return new ImportConfigurator($this->collection, $imported);
         }
 

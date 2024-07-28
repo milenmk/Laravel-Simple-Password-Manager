@@ -9,6 +9,7 @@
  */
 namespace PHPUnit\Runner;
 
+use const DEBUG_BACKTRACE_IGNORE_ARGS;
 use const E_COMPILE_ERROR;
 use const E_COMPILE_WARNING;
 use const E_CORE_ERROR;
@@ -24,13 +25,21 @@ use const E_USER_ERROR;
 use const E_USER_NOTICE;
 use const E_USER_WARNING;
 use const E_WARNING;
+use function array_keys;
+use function array_values;
+use function debug_backtrace;
 use function error_reporting;
 use function restore_error_handler;
 use function set_error_handler;
 use PHPUnit\Event;
+use PHPUnit\Event\Code\IssueTrigger\IssueTrigger;
 use PHPUnit\Event\Code\NoTestCaseObjectOnCallStackException;
+use PHPUnit\Event\Code\TestMethod;
 use PHPUnit\Runner\Baseline\Baseline;
 use PHPUnit\Runner\Baseline\Issue;
+use PHPUnit\TextUI\Configuration\Registry;
+use PHPUnit\TextUI\Configuration\Source;
+use PHPUnit\TextUI\Configuration\SourceFilter;
 use PHPUnit\Util\ExcludeList;
 
 /**
@@ -44,10 +53,23 @@ final class ErrorHandler
     private ?Baseline $baseline               = null;
     private bool $enabled                     = false;
     private ?int $originalErrorReportingLevel = null;
+    private readonly Source $source;
+    private readonly SourceFilter $sourceFilter;
+
+    /**
+     * @psalm-var array{functions: list<non-empty-string>, methods: list<array{className: class-string, methodName: non-empty-string}>}
+     */
+    private ?array $deprecationTriggers = null;
 
     public static function instance(): self
     {
-        return self::$instance ?? self::$instance = new self;
+        return self::$instance ?? self::$instance = new self(Registry::get()->source());
+    }
+
+    private function __construct(Source $source)
+    {
+        $this->source       = $source;
+        $this->sourceFilter = new SourceFilter();
     }
 
     /**
@@ -57,7 +79,7 @@ final class ErrorHandler
     {
         $suppressed = (error_reporting() & ~self::INSUPPRESSIBLE_LEVELS) === 0;
 
-        if ($suppressed && (new ExcludeList)->isExcluded($errorFile)) {
+        if ($suppressed && (new ExcludeList())->isExcluded($errorFile)) {
             return false;
         }
 
@@ -125,6 +147,7 @@ final class ErrorHandler
                     $suppressed,
                     $ignoredByBaseline,
                     $ignoredByTest,
+                    $this->trigger($test, false),
                 );
 
                 break;
@@ -138,6 +161,7 @@ final class ErrorHandler
                     $suppressed,
                     $ignoredByBaseline,
                     $ignoredByTest,
+                    $this->trigger($test, true),
                 );
 
                 break;
@@ -194,9 +218,17 @@ final class ErrorHandler
         $this->originalErrorReportingLevel = null;
     }
 
-    public function use(Baseline $baseline): void
+    public function useBaseline(Baseline $baseline): void
     {
         $this->baseline = $baseline;
+    }
+
+    /**
+     * @psalm-param array{functions: list<non-empty-string>, methods: list<array{className: class-string, methodName: non-empty-string}>} $deprecationTriggers
+     */
+    public function useDeprecationTriggers(array $deprecationTriggers): void
+    {
+        $this->deprecationTriggers = $deprecationTriggers;
     }
 
     /**
@@ -211,5 +243,76 @@ final class ErrorHandler
         }
 
         return $this->baseline->has(Issue::from($file, $line, null, $description));
+    }
+
+    private function trigger(TestMethod $test, bool $filterTrigger): IssueTrigger
+    {
+        if (!$this->source->notEmpty()) {
+            return IssueTrigger::unknown();
+        }
+
+        $trace = $this->filteredStackTrace($filterTrigger);
+
+        $triggeredInFirstPartyCode       = false;
+        $triggerCalledFromFirstPartyCode = false;
+
+        if (isset($trace[0]['file']) &&
+            ($trace[0]['file'] === $test->file() ||
+            $this->sourceFilter->includes($this->source, $trace[0]['file']))) {
+            $triggeredInFirstPartyCode = true;
+        }
+
+        if (isset($trace[1]['file']) &&
+            ($trace[1]['file'] === $test->file() ||
+            $this->sourceFilter->includes($this->source, $trace[1]['file']))) {
+            $triggerCalledFromFirstPartyCode = true;
+        }
+
+        if ($triggerCalledFromFirstPartyCode) {
+            if ($triggeredInFirstPartyCode) {
+                return IssueTrigger::self();
+            }
+
+            return IssueTrigger::direct();
+        }
+
+        return IssueTrigger::indirect();
+    }
+
+    private function filteredStackTrace(bool $filterDeprecationTriggers): array
+    {
+        $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
+
+        // self::filteredStackTrace(), self::trigger(), self::__invoke()
+        unset($trace[0], $trace[1], $trace[2]);
+
+        if ($this->deprecationTriggers === null || !$filterDeprecationTriggers) {
+            return array_values($trace);
+        }
+
+        foreach (array_keys($trace) as $frame) {
+            foreach ($this->deprecationTriggers['functions'] as $function) {
+                if (!isset($trace[$frame]['class']) &&
+                    isset($trace[$frame]['function']) &&
+                    $trace[$frame]['function'] === $function) {
+                    unset($trace[$frame]);
+
+                    continue 2;
+                }
+            }
+
+            foreach ($this->deprecationTriggers['methods'] as $method) {
+                if (isset($trace[$frame]['class']) &&
+                    $trace[$frame]['class'] === $method['className'] &&
+                    isset($trace[$frame]['function']) &&
+                    $trace[$frame]['function'] === $method['methodName']) {
+                    unset($trace[$frame]);
+
+                    continue 2;
+                }
+            }
+        }
+
+        return array_values($trace);
     }
 }

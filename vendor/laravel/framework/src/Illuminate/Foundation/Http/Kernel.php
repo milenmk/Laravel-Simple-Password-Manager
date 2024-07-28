@@ -4,15 +4,33 @@ namespace Illuminate\Foundation\Http;
 
 use Carbon\CarbonInterval;
 use DateTimeInterface;
+use Illuminate\Auth\Middleware\Authorize;
+use Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests;
 use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\Http\Kernel as KernelContract;
+use Illuminate\Contracts\Session\Middleware\AuthenticatesSessions;
+use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
+use Illuminate\Cookie\Middleware\EncryptCookies;
+use Illuminate\Foundation\Bootstrap\BootProviders;
+use Illuminate\Foundation\Bootstrap\HandleExceptions;
+use Illuminate\Foundation\Bootstrap\LoadConfiguration;
+use Illuminate\Foundation\Bootstrap\LoadEnvironmentVariables;
+use Illuminate\Foundation\Bootstrap\RegisterFacades;
+use Illuminate\Foundation\Bootstrap\RegisterProviders;
+use Illuminate\Foundation\Events\Terminating;
 use Illuminate\Foundation\Http\Events\RequestHandled;
+use Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests;
+use Illuminate\Routing\Middleware\SubstituteBindings;
+use Illuminate\Routing\Middleware\ThrottleRequests;
+use Illuminate\Routing\Middleware\ThrottleRequestsWithRedis;
 use Illuminate\Routing\Pipeline;
 use Illuminate\Routing\Router;
+use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Facade;
 use Illuminate\Support\InteractsWithTime;
+use Illuminate\View\Middleware\ShareErrorsFromSession;
 use InvalidArgumentException;
 use Throwable;
 
@@ -40,12 +58,12 @@ class Kernel implements KernelContract
      * @var string[]
      */
     protected $bootstrappers = [
-        \Illuminate\Foundation\Bootstrap\LoadEnvironmentVariables::class,
-        \Illuminate\Foundation\Bootstrap\LoadConfiguration::class,
-        \Illuminate\Foundation\Bootstrap\HandleExceptions::class,
-        \Illuminate\Foundation\Bootstrap\RegisterFacades::class,
-        \Illuminate\Foundation\Bootstrap\RegisterProviders::class,
-        \Illuminate\Foundation\Bootstrap\BootProviders::class,
+        LoadEnvironmentVariables::class,
+        LoadConfiguration::class,
+        HandleExceptions::class,
+        RegisterFacades::class,
+        RegisterProviders::class,
+        BootProviders::class,
     ];
 
     /**
@@ -66,8 +84,17 @@ class Kernel implements KernelContract
      * The application's route middleware.
      *
      * @var array<string, class-string|string>
+     *
+     * @deprecated
      */
     protected $routeMiddleware = [];
+
+    /**
+     * The application's middleware aliases.
+     *
+     * @var array<string, class-string|string>
+     */
+    protected $middlewareAliases = [];
 
     /**
      * All of the registered request duration handlers.
@@ -91,16 +118,17 @@ class Kernel implements KernelContract
      * @var string[]
      */
     protected $middlewarePriority = [
-        \Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests::class,
-        \Illuminate\Cookie\Middleware\EncryptCookies::class,
-        \Illuminate\Session\Middleware\StartSession::class,
-        \Illuminate\View\Middleware\ShareErrorsFromSession::class,
-        \Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests::class,
-        \Illuminate\Routing\Middleware\ThrottleRequests::class,
-        \Illuminate\Routing\Middleware\ThrottleRequestsWithRedis::class,
-        \Illuminate\Contracts\Session\Middleware\AuthenticatesSessions::class,
-        \Illuminate\Routing\Middleware\SubstituteBindings::class,
-        \Illuminate\Auth\Middleware\Authorize::class,
+        HandlePrecognitiveRequests::class,
+        EncryptCookies::class,
+        AddQueuedCookiesToResponse::class,
+        StartSession::class,
+        ShareErrorsFromSession::class,
+        AuthenticatesRequests::class,
+        ThrottleRequests::class,
+        ThrottleRequestsWithRedis::class,
+        AuthenticatesSessions::class,
+        SubstituteBindings::class,
+        Authorize::class,
     ];
 
     /**
@@ -200,9 +228,17 @@ class Kernel implements KernelContract
      */
     public function terminate($request, $response)
     {
+        $this->app['events']->dispatch(new Terminating());
+
         $this->terminateMiddleware($request, $response);
 
         $this->app->terminate();
+
+        if ($this->requestStartedAt === null) {
+            return;
+        }
+
+        $this->requestStartedAt->setTimezone($this->app['config']->get('app.timezone') ?? 'UTC');
 
         foreach ($this->requestLifecycleDurationHandlers as ['threshold' => $threshold, 'handler' => $handler]) {
             $end ??= Carbon::now();
@@ -445,7 +481,7 @@ class Kernel implements KernelContract
             $this->router->middlewareGroup($key, $middleware);
         }
 
-        foreach ($this->routeMiddleware as $key => $middleware) {
+        foreach (array_merge($this->routeMiddleware, $this->middlewareAliases) as $key => $middleware) {
             $this->router->aliasMiddleware($key, $middleware);
         }
     }
@@ -494,6 +530,31 @@ class Kernel implements KernelContract
     }
 
     /**
+     * Get the application's global middleware.
+     *
+     * @return array
+     */
+    public function getGlobalMiddleware()
+    {
+        return $this->middleware;
+    }
+
+    /**
+     * Set the application's global middleware.
+     *
+     * @param  array  $middleware
+     * @return $this
+     */
+    public function setGlobalMiddleware(array $middleware)
+    {
+        $this->middleware = $middleware;
+
+        $this->syncMiddlewareToRouter();
+
+        return $this;
+    }
+
+    /**
      * Get the application's route middleware groups.
      *
      * @return array
@@ -504,13 +565,70 @@ class Kernel implements KernelContract
     }
 
     /**
-     * Get the application's route middleware.
+     * Set the application's middleware groups.
+     *
+     * @param  array  $groups
+     * @return $this
+     */
+    public function setMiddlewareGroups(array $groups)
+    {
+        $this->middlewareGroups = $groups;
+
+        $this->syncMiddlewareToRouter();
+
+        return $this;
+    }
+
+    /**
+     * Get the application's route middleware aliases.
      *
      * @return array
+     *
+     * @deprecated
      */
     public function getRouteMiddleware()
     {
-        return $this->routeMiddleware;
+        return $this->getMiddlewareAliases();
+    }
+
+    /**
+     * Get the application's route middleware aliases.
+     *
+     * @return array
+     */
+    public function getMiddlewareAliases()
+    {
+        return array_merge($this->routeMiddleware, $this->middlewareAliases);
+    }
+
+    /**
+     * Set the application's route middleware aliases.
+     *
+     * @param  array  $aliases
+     * @return $this
+     */
+    public function setMiddlewareAliases(array $aliases)
+    {
+        $this->middlewareAliases = $aliases;
+
+        $this->syncMiddlewareToRouter();
+
+        return $this;
+    }
+
+    /**
+     * Set the application's middleware priority.
+     *
+     * @param  array  $priority
+     * @return $this
+     */
+    public function setMiddlewarePriority(array $priority)
+    {
+        $this->middlewarePriority = $priority;
+
+        $this->syncMiddlewareToRouter();
+
+        return $this;
     }
 
     /**

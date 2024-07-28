@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types = 1);
+declare(strict_types=1);
 
 /*
  * This file is a part of dflydev/dot-access-data.
@@ -18,12 +18,18 @@ use Dflydev\DotAccessData\Exception\DataException;
 use Dflydev\DotAccessData\Exception\InvalidPathException;
 use Dflydev\DotAccessData\Exception\MissingPathException;
 
+use ReturnTypeWillChange;
+
+use function explode;
+use function func_num_args;
+use function str_replace;
+use function strlen;
+
 /**
  * @implements ArrayAccess<string, mixed>
  */
 class Data implements DataInterface, ArrayAccess
 {
-
     private const DELIMITERS = ['.', '/'];
 
     /**
@@ -40,7 +46,6 @@ class Data implements DataInterface, ArrayAccess
      */
     public function __construct(array $data = [])
     {
-
         $this->data = $data;
     }
 
@@ -49,13 +54,12 @@ class Data implements DataInterface, ArrayAccess
      */
     public function append(string $key, $value = null): void
     {
-
         $currentValue =& $this->data;
         $keyPath = self::keyToPathArray($key);
 
         $endKey = array_pop($keyPath);
         foreach ($keyPath as $currentKey) {
-            if (!isset($currentValue[$currentKey])) {
+            if (! isset($currentValue[$currentKey])) {
                 $currentValue[$currentKey] = [];
             }
             $currentValue =& $currentValue[$currentKey];
@@ -75,40 +79,42 @@ class Data implements DataInterface, ArrayAccess
     }
 
     /**
-     * @param string $path
-     *
-     * @return string[]
-     *
-     * @psalm-return non-empty-list<string>
-     *
-     * @psalm-pure
+     * {@inheritdoc}
      */
-    protected static function keyToPathArray(string $path): array
+    public function set(string $key, $value = null): void
     {
+        $currentValue =& $this->data;
+        $keyPath = self::keyToPathArray($key);
 
-        if (\strlen($path) === 0) {
-            throw new InvalidPathException('Path cannot be an empty string');
+        $endKey = array_pop($keyPath);
+        foreach ($keyPath as $currentKey) {
+            if (!isset($currentValue[$currentKey])) {
+                $currentValue[$currentKey] = [];
+            }
+            if (!is_array($currentValue[$currentKey])) {
+                throw new DataException(sprintf('Key path "%s" within "%s" cannot be indexed into (is not an array)', $currentKey, self::formatPath($key)));
+            }
+            $currentValue =& $currentValue[$currentKey];
         }
-
-        $path = \str_replace(self::DELIMITERS, '.', $path);
-
-        return \explode('.', $path);
+        $currentValue[$endKey] = $value;
     }
 
     /**
      * {@inheritdoc}
-     *
-     * @psalm-mutation-free
      */
-    public function getData(string $key): DataInterface
+    public function remove(string $key): void
     {
+        $currentValue =& $this->data;
+        $keyPath = self::keyToPathArray($key);
 
-        $value = $this->get($key);
-        if (is_array($value) && Util::isAssoc($value)) {
-            return new Data($value);
+        $endKey = array_pop($keyPath);
+        foreach ($keyPath as $currentKey) {
+            if (!isset($currentValue[$currentKey])) {
+                return;
+            }
+            $currentValue =& $currentValue[$currentKey];
         }
-
-        throw new DataException(sprintf('Value at "%s" could not be represented as a DataInterface', self::formatPath($key)));
+        unset($currentValue[$endKey]);
     }
 
     /**
@@ -118,9 +124,8 @@ class Data implements DataInterface, ArrayAccess
      */
     public function get(string $key, $default = null)
     {
-
         /** @psalm-suppress ImpureFunctionCall */
-        $hasDefault = \func_num_args() > 1;
+        $hasDefault = func_num_args() > 1;
 
         $currentValue = $this->data;
         $keyPath = self::keyToPathArray($key);
@@ -141,71 +146,12 @@ class Data implements DataInterface, ArrayAccess
     }
 
     /**
-     * @param string|string[] $path
-     *
-     * @return string
-     *
-     * @psalm-pure
-     */
-    protected static function formatPath($path): string
-    {
-
-        if (is_string($path)) {
-            $path = self::keyToPathArray($path);
-        }
-
-        return implode(' » ', $path);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function importData(DataInterface $data, int $mode = self::REPLACE): void
-    {
-
-        $this->import($data->export(), $mode);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function import(array $data, int $mode = self::REPLACE): void
-    {
-
-        $this->data = Util::mergeAssocArray($this->data, $data, $mode);
-    }
-
-    /**
-     * {@inheritdoc}
-     *
-     * @psalm-mutation-free
-     */
-    public function export(): array
-    {
-
-        return $this->data;
-    }
-
-    /**
-     * {@inheritdoc}
-     *
-     * @return bool
-     */
-    #[\ReturnTypeWillChange]
-    public function offsetExists($key)
-    {
-
-        return $this->has($key);
-    }
-
-    /**
      * {@inheritdoc}
      *
      * @psalm-mutation-free
      */
     public function has(string $key): bool
     {
-
         $currentValue = $this->data;
 
         foreach (self::keyToPathArray($key) as $currentKey) {
@@ -224,12 +170,63 @@ class Data implements DataInterface, ArrayAccess
     /**
      * {@inheritdoc}
      *
+     * @psalm-mutation-free
+     */
+    public function getData(string $key): DataInterface
+    {
+        $value = $this->get($key);
+        if (is_array($value) && Util::isAssoc($value)) {
+            return new Data($value);
+        }
+
+        throw new DataException(sprintf('Value at "%s" could not be represented as a DataInterface', self::formatPath($key)));
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function import(array $data, int $mode = self::REPLACE): void
+    {
+        $this->data = Util::mergeAssocArray($this->data, $data, $mode);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function importData(DataInterface $data, int $mode = self::REPLACE): void
+    {
+        $this->import($data->export(), $mode);
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @psalm-mutation-free
+     */
+    public function export(): array
+    {
+        return $this->data;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @return bool
+     */
+    #[ReturnTypeWillChange]
+    public function offsetExists($key)
+    {
+        return $this->has($key);
+    }
+
+    /**
+     * {@inheritdoc}
+     *
      * @return mixed
      */
-    #[\ReturnTypeWillChange]
+    #[ReturnTypeWillChange]
     public function offsetGet($key)
     {
-
         return $this->get($key, null);
     }
 
@@ -237,68 +234,60 @@ class Data implements DataInterface, ArrayAccess
      * {@inheritdoc}
      *
      * @param string $key
-     * @param mixed  $value
+     * @param mixed $value
      *
      * @return void
      */
-    #[\ReturnTypeWillChange]
+    #[ReturnTypeWillChange]
     public function offsetSet($key, $value)
     {
-
         $this->set($key, $value);
     }
 
     /**
      * {@inheritdoc}
-     */
-    public function set(string $key, $value = null): void
-    {
-
-        $currentValue =& $this->data;
-        $keyPath = self::keyToPathArray($key);
-
-        $endKey = array_pop($keyPath);
-        foreach ($keyPath as $currentKey) {
-            if (!isset($currentValue[$currentKey])) {
-                $currentValue[$currentKey] = [];
-            }
-            if (!is_array($currentValue[$currentKey])) {
-                throw new DataException(sprintf('Key path "%s" within "%s" cannot be indexed into (is not an array)', $currentKey, self::formatPath($key)));
-            }
-            $currentValue =& $currentValue[$currentKey];
-        }
-        $currentValue[$endKey] = $value;
-    }
-
-    /**
-     * {@inheritdoc}
      *
      * @return void
      */
-    #[\ReturnTypeWillChange]
+    #[ReturnTypeWillChange]
     public function offsetUnset($key)
     {
-
         $this->remove($key);
     }
 
     /**
-     * {@inheritdoc}
+     * @param string $path
+     *
+     * @return string[]
+     *
+     * @psalm-return non-empty-list<string>
+     *
+     * @psalm-pure
      */
-    public function remove(string $key): void
+    protected static function keyToPathArray(string $path): array
     {
-
-        $currentValue =& $this->data;
-        $keyPath = self::keyToPathArray($key);
-
-        $endKey = array_pop($keyPath);
-        foreach ($keyPath as $currentKey) {
-            if (!isset($currentValue[$currentKey])) {
-                return;
-            }
-            $currentValue =& $currentValue[$currentKey];
+        if (strlen($path) === 0) {
+            throw new InvalidPathException('Path cannot be an empty string');
         }
-        unset($currentValue[$endKey]);
+
+        $path = str_replace(self::DELIMITERS, '.', $path);
+
+        return explode('.', $path);
     }
 
+    /**
+     * @param string|string[] $path
+     *
+     * @return string
+     *
+     * @psalm-pure
+     */
+    protected static function formatPath($path): string
+    {
+        if (is_string($path)) {
+            $path = self::keyToPathArray($path);
+        }
+
+        return implode(' » ', $path);
+    }
 }

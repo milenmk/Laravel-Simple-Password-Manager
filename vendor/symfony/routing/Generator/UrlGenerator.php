@@ -18,6 +18,14 @@ use Symfony\Component\Routing\Exception\RouteNotFoundException;
 use Symfony\Component\Routing\RequestContext;
 use Symfony\Component\Routing\RouteCollection;
 
+use function array_key_exists;
+use function count;
+
+use function in_array;
+use function is_object;
+
+use const PHP_QUERY_RFC3986;
+
 /**
  * UrlGenerator can generate a URL or a path for any route in the RouteCollection
  * based on the passed parameters.
@@ -42,17 +50,7 @@ class UrlGenerator implements UrlGeneratorInterface, ConfigurableRequirementsInt
         '%2A' => '*',
     ];
 
-    protected $routes;
-    protected $context;
-
-    /**
-     * @var bool|null
-     */
-    protected $strictRequirements = true;
-
-    protected $logger;
-
-    private ?string $defaultLocale;
+    protected ?bool $strictRequirements = true;
 
     /**
      * This array defines the characters (besides alphanumeric ones) that will not be percent-encoded in the path segment of the generated URL.
@@ -62,7 +60,7 @@ class UrlGenerator implements UrlGeneratorInterface, ConfigurableRequirementsInt
      * "?" and "#" (would be interpreted wrongly as query and fragment identifier),
      * "'" and """ (are used as delimiters in HTML).
      */
-    protected $decodedChars = [
+    protected array $decodedChars = [
         // the slash can be used to designate a hierarchical structure and we want allow using it with this meaning
         // some webservers don't allow the slash in encoded form in the path for security reasons anyway
         // see http://stackoverflow.com/questions/4069002/http-400-if-2f-part-of-get-url-in-jboss
@@ -83,18 +81,15 @@ class UrlGenerator implements UrlGeneratorInterface, ConfigurableRequirementsInt
         '%7C' => '|',
     ];
 
-    public function __construct(RouteCollection $routes, RequestContext $context, ?LoggerInterface $logger = null, ?string $defaultLocale = null)
-    {
-        $this->routes = $routes;
-        $this->context = $context;
-        $this->logger = $logger;
-        $this->defaultLocale = $defaultLocale;
+    public function __construct(
+        protected RouteCollection $routes,
+        protected RequestContext $context,
+        protected ?LoggerInterface $logger = null,
+        private ?string $defaultLocale = null,
+    ) {
     }
 
-    /**
-     * @return void
-     */
-    public function setContext(RequestContext $context)
+    public function setContext(RequestContext $context): void
     {
         $this->context = $context;
     }
@@ -104,10 +99,7 @@ class UrlGenerator implements UrlGeneratorInterface, ConfigurableRequirementsInt
         return $this->context;
     }
 
-    /**
-     * @return void
-     */
-    public function setStrictRequirements(?bool $enabled)
+    public function setStrictRequirements(?bool $enabled): void
     {
         $this->strictRequirements = $enabled;
     }
@@ -141,7 +133,7 @@ class UrlGenerator implements UrlGeneratorInterface, ConfigurableRequirementsInt
         $variables = $compiledRoute->getVariables();
 
         if (isset($defaults['_canonical_route']) && isset($defaults['_locale'])) {
-            if (!\in_array('_locale', $variables, true)) {
+            if (!in_array('_locale', $variables, true)) {
                 unset($parameters['_locale']);
             } elseif (!isset($parameters['_locale'])) {
                 $parameters['_locale'] = $defaults['_locale'];
@@ -175,7 +167,7 @@ class UrlGenerator implements UrlGeneratorInterface, ConfigurableRequirementsInt
                 // variable is not important by default
                 $important = $token[5] ?? false;
 
-                if (!$optional || $important || !\array_key_exists($varName, $defaults) || (null !== $mergedParams[$varName] && (string) $mergedParams[$varName] !== (string) $defaults[$varName])) {
+                if (!$optional || $important || !array_key_exists($varName, $defaults) || (null !== $mergedParams[$varName] && (string)$mergedParams[$varName] !== (string)$defaults[$varName])) {
                     // check requirement (while ignoring look-around patterns)
                     if (null !== $this->strictRequirements && !preg_match('#^'.preg_replace('/\(\?(?:=|<=|!|<!)((?:[^()\\\\]+|\\\\.|\((?1)\))*)\)/', '', $token[2]).'$#i'.(empty($token[4]) ? '' : 'u'), $mergedParams[$token[3]] ?? '')) {
                         if ($this->strictRequirements) {
@@ -219,7 +211,7 @@ class UrlGenerator implements UrlGeneratorInterface, ConfigurableRequirementsInt
         $scheme = $this->context->getScheme();
 
         if ($requiredSchemes) {
-            if (!\in_array($scheme, $requiredSchemes, true)) {
+            if (!in_array($scheme, $requiredSchemes, true)) {
                 $referenceType = self::ABSOLUTE_URL;
                 $scheme = current($requiredSchemes);
             }
@@ -278,7 +270,7 @@ class UrlGenerator implements UrlGeneratorInterface, ConfigurableRequirementsInt
         $extra = array_udiff_assoc(array_diff_key($parameters, $variables), $defaults, fn ($a, $b) => $a == $b ? 0 : 1);
 
         array_walk_recursive($extra, $caster = static function (&$v) use (&$caster) {
-            if (\is_object($v)) {
+            if (is_object($v)) {
                 if ($vars = get_object_vars($v)) {
                     array_walk_recursive($vars, $caster);
                     $v = $vars;
@@ -296,7 +288,7 @@ class UrlGenerator implements UrlGeneratorInterface, ConfigurableRequirementsInt
             unset($extra['_fragment']);
         }
 
-        if ($extra && $query = http_build_query($extra, '', '&', \PHP_QUERY_RFC3986)) {
+        if ($extra && $query = http_build_query($extra, '', '&', PHP_QUERY_RFC3986)) {
             $url .= '?'.strtr($query, self::QUERY_FRAGMENT_DECODED);
         }
 
@@ -345,7 +337,7 @@ class UrlGenerator implements UrlGeneratorInterface, ConfigurableRequirementsInt
         }
 
         $targetDirs[] = $targetFile;
-        $path = str_repeat('../', \count($sourceDirs)).implode('/', $targetDirs);
+        $path = str_repeat('../', count($sourceDirs)).implode('/', $targetDirs);
 
         // A reference to the same base directory or an empty subdirectory must be prefixed with "./".
         // This also applies to a segment with a colon character (e.g., "file:colon") that cannot be used

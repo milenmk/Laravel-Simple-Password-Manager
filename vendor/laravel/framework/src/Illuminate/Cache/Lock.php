@@ -5,6 +5,7 @@ namespace Illuminate\Cache;
 use Illuminate\Contracts\Cache\Lock as LockContract;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Support\InteractsWithTime;
+use Illuminate\Support\Sleep;
 use Illuminate\Support\Str;
 
 abstract class Lock implements LockContract
@@ -114,10 +115,10 @@ abstract class Lock implements LockContract
         $starting = $this->currentTime();
 
         while (! $this->acquire()) {
-            usleep($this->sleepMilliseconds * 1000);
+            Sleep::usleep($this->sleepMilliseconds * 1000);
 
             if ($this->currentTime() - $seconds >= $starting) {
-                throw new LockTimeoutException;
+                throw new LockTimeoutException();
             }
         }
 
@@ -147,9 +148,20 @@ abstract class Lock implements LockContract
      *
      * @return bool
      */
-    protected function isOwnedByCurrentProcess()
+    public function isOwnedByCurrentProcess()
     {
-        return $this->getCurrentOwner() === $this->owner;
+        return $this->isOwnedBy($this->owner);
+    }
+
+    /**
+     * Determine whether this lock is owned by the given identifier.
+     *
+     * @param  string|null  $owner
+     * @return bool
+     */
+    public function isOwnedBy($owner)
+    {
+        return $this->getCurrentOwner() === $owner;
     }
 
     /**

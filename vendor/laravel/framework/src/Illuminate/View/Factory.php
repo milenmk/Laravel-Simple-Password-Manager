@@ -13,14 +13,15 @@ use InvalidArgumentException;
 
 class Factory implements FactoryContract
 {
-    use Macroable,
-        Concerns\ManagesComponents,
-        Concerns\ManagesEvents,
-        Concerns\ManagesFragments,
-        Concerns\ManagesLayouts,
-        Concerns\ManagesLoops,
-        Concerns\ManagesStacks,
-        Concerns\ManagesTranslations;
+
+    use Concerns\ManagesComponents;
+    use Concerns\ManagesEvents;
+    use Concerns\ManagesFragments;
+    use Concerns\ManagesLayouts;
+    use Concerns\ManagesLoops;
+    use Concerns\ManagesStacks;
+    use Concerns\ManagesTranslations;
+    use Macroable;
 
     /**
      * The engine implementation.
@@ -89,6 +90,20 @@ class Factory implements FactoryContract
      * @var array
      */
     protected $renderedOnce = [];
+
+    /**
+     * The cached array of engines for paths.
+     *
+     * @var array
+     */
+    protected $pathEngineCache = [];
+
+    /**
+     * The cache of normalized names for views.
+     *
+     * @var array
+     */
+    protected $normalizedNameCache = [];
 
     /**
      * Create a new view factory instance.
@@ -247,7 +262,7 @@ class Factory implements FactoryContract
      */
     protected function normalizeName($name)
     {
-        return ViewName::normalize($name);
+        return $this->normalizedNameCache[$name] ??= ViewName::normalize($name);
     }
 
     /**
@@ -284,7 +299,7 @@ class Factory implements FactoryContract
     {
         try {
             $this->finder->find($view);
-        } catch (InvalidArgumentException $e) {
+        } catch (InvalidArgumentException) {
             return false;
         }
 
@@ -301,13 +316,17 @@ class Factory implements FactoryContract
      */
     public function getEngineFromPath($path)
     {
+        if (isset($this->pathEngineCache[$path])) {
+            return $this->engines->resolve($this->pathEngineCache[$path]);
+        }
+
         if (! $extension = $this->getExtension($path)) {
             throw new InvalidArgumentException("Unrecognized extension in file: {$path}.");
         }
 
-        $engine = $this->extensions[$extension];
-
-        return $this->engines->resolve($engine);
+        return $this->engines->resolve(
+            $this->pathEngineCache[$path] = $this->extensions[$extension]
+        );
     }
 
     /**
@@ -467,6 +486,8 @@ class Factory implements FactoryContract
         unset($this->extensions[$extension]);
 
         $this->extensions = array_merge([$extension => $engine], $this->extensions);
+
+        $this->pathEngineCache = [];
     }
 
     /**

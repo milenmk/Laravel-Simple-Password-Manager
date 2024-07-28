@@ -169,8 +169,8 @@ class RedisManager implements Factory
         }
 
         return match ($this->driver) {
-            'predis' => new PredisConnector,
-            'phpredis' => new PhpRedisConnector,
+            'predis' => new PredisConnector(),
+            'phpredis' => new PhpRedisConnector(),
             default => null,
         };
     }
@@ -183,7 +183,7 @@ class RedisManager implements Factory
      */
     protected function parseConnectionConfiguration($config)
     {
-        $parsed = (new ConfigurationUrlParser)->parseConfiguration($config);
+        $parsed = (new ConfigurationUrlParser())->parseConfiguration($config);
 
         $driver = strtolower($parsed['driver'] ?? '');
 
@@ -192,7 +192,7 @@ class RedisManager implements Factory
         }
 
         return array_filter($parsed, function ($key) {
-            return ! in_array($key, ['driver'], true);
+            return $key !== 'driver';
         }, ARRAY_FILTER_USE_KEY);
     }
 

@@ -14,7 +14,7 @@ use function version_compare;
 /**
  * @internal This class is not covered by the backward compatibility promise for PHPUnit
  */
-final class MigrationBuilder
+final readonly class MigrationBuilder
 {
     private const AVAILABLE_MIGRATIONS = [
         '8.5' => [
@@ -61,6 +61,19 @@ final class MigrationBuilder
         '10.0' => [
             MoveCoverageDirectoriesToSource::class,
         ],
+
+        '10.5' => [
+            RemoveRegisterMockObjectsFromTestArgumentsRecursivelyAttribute::class,
+        ],
+
+        '11.0' => [
+            ReplaceRestrictDeprecationsWithIgnoreDeprecations::class,
+        ],
+
+        '11.1' => [
+            RemoveCacheResultFileAttribute::class,
+            RemoveCoverageElementCacheDirectoryAttribute::class,
+        ],
     ];
 
     /**
@@ -68,7 +81,7 @@ final class MigrationBuilder
      */
     public function build(string $fromVersion): array
     {
-        $stack = [new UpdateSchemaLocation];
+        $stack = [new UpdateSchemaLocation()];
 
         foreach (self::AVAILABLE_MIGRATIONS as $version => $migrations) {
             if (version_compare($version, $fromVersion, '<')) {
@@ -76,7 +89,7 @@ final class MigrationBuilder
             }
 
             foreach ($migrations as $migration) {
-                $stack[] = new $migration;
+                $stack[] = new $migration();
             }
         }
 

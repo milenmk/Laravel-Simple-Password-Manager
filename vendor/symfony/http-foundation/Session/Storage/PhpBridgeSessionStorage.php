@@ -11,7 +11,11 @@
 
 namespace Symfony\Component\HttpFoundation\Session\Storage;
 
+use LogicException;
+use SessionHandlerInterface;
 use Symfony\Component\HttpFoundation\Session\Storage\Proxy\AbstractProxy;
+
+use function extension_loaded;
 
 /**
  * Allows session to be started by PHP and managed by Symfony.
@@ -20,10 +24,10 @@ use Symfony\Component\HttpFoundation\Session\Storage\Proxy\AbstractProxy;
  */
 class PhpBridgeSessionStorage extends NativeSessionStorage
 {
-    public function __construct(AbstractProxy|\SessionHandlerInterface|null $handler = null, ?MetadataBag $metaBag = null)
+    public function __construct(AbstractProxy|SessionHandlerInterface|null $handler = null, ?MetadataBag $metaBag = null)
     {
-        if (!\extension_loaded('session')) {
-            throw new \LogicException('PHP extension "session" is required.');
+        if (!extension_loaded('session')) {
+            throw new LogicException('PHP extension "session" is required.');
         }
 
         $this->setMetadataBag($metaBag);
@@ -41,10 +45,7 @@ class PhpBridgeSessionStorage extends NativeSessionStorage
         return true;
     }
 
-    /**
-     * @return void
-     */
-    public function clear()
+    public function clear(): void
     {
         // clear out the bags and nothing else that may be set
         // since the purpose of this driver is to share a handler

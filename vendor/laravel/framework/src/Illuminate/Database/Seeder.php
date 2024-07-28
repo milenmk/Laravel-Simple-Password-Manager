@@ -61,7 +61,7 @@ abstract class Seeder
             $seeder->__invoke($parameters);
 
             if ($silent === false && isset($this->command)) {
-                $runTime = number_format((microtime(true) - $startTime) * 1000, 2);
+                $runTime = number_format((microtime(true) - $startTime) * 1000);
 
                 with(new TwoColumnDetail($this->command->getOutput()))->render(
                     $name,
@@ -130,7 +130,7 @@ abstract class Seeder
 
             $instance->setContainer($this->container);
         } else {
-            $instance = new $class;
+            $instance = new $class();
         }
 
         if (isset($this->command)) {

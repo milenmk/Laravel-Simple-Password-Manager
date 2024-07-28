@@ -18,17 +18,16 @@ use RuntimeException;
 
 class JobRecorder
 {
-
     protected ?Job $job = null;
 
     public function __construct(
         protected Application $app,
-        protected int         $maxChainedJobReportingDepth = 5,
-    ) {}
+        protected int $maxChainedJobReportingDepth = 5,
+    ) {
+    }
 
     public function start(): self
     {
-
         /** @phpstan-ignore-next-line */
         $this->app['events']->listen(JobExceptionOccurred::class, [$this, 'record']);
 
@@ -37,7 +36,6 @@ class JobRecorder
 
     public function record(JobExceptionOccurred $event): void
     {
-
         $this->job = $event->job;
     }
 
@@ -46,7 +44,6 @@ class JobRecorder
      */
     public function getJob(): ?array
     {
-
         if ($this->job === null) {
             return null;
         }
@@ -54,24 +51,35 @@ class JobRecorder
         return array_merge(
             $this->getJobProperties(),
             [
-                'name'       => $this->job->resolveName(),
+                'name' => $this->job->resolveName(),
                 'connection' => $this->job->getConnectionName(),
-                'queue'      => $this->job->getQueue(),
+                'queue' => $this->job->getQueue(),
             ]
         );
     }
 
+    public function reset(): void
+    {
+        $this->job = null;
+    }
+
     protected function getJobProperties(): array
     {
-
         $payload = collect($this->resolveJobPayload());
 
         $properties = [];
 
         foreach ($payload as $key => $value) {
-            if (!in_array($key, ['job', 'data', 'displayName'])) {
+            if (! in_array($key, ['job', 'data', 'displayName'])) {
                 $properties[$key] = $value;
             }
+        }
+
+        try {
+            if (is_string($payload['data'])) {
+                $properties['data'] = json_decode($payload['data'], true, 512, JSON_THROW_ON_ERROR);
+            }
+        } catch (Exception $exception) {
         }
 
         if ($pushedAt = DateTime::createFromFormat('U.u', $payload->get('pushedAt', ''))) {
@@ -83,8 +91,7 @@ class JobRecorder
                 $this->resolveObjectFromCommand($payload['data']['command']),
                 $this->maxChainedJobReportingDepth
             );
-        }
-        catch (Exception $exception) {
+        } catch (Exception $exception) {
         }
 
         return $properties;
@@ -92,44 +99,34 @@ class JobRecorder
 
     protected function resolveJobPayload(): array
     {
-
-        if (!$this->job instanceof RedisJob) {
+        if (! $this->job instanceof RedisJob) {
             return $this->job->payload();
         }
 
         try {
             return json_decode($this->job->getReservedJob(), true, 512, JSON_THROW_ON_ERROR);
-        }
-        catch (Exception $e) {
+        } catch (Exception $e) {
             return $this->job->payload();
         }
     }
 
     protected function resolveCommandProperties(object $command, int $maxChainDepth): array
     {
-
         $propertiesToIgnore = ['job', 'closure'];
 
         $properties = collect((new ReflectionClass($command))->getProperties())
-            ->reject(
-                function (ReflectionProperty $property) use ($propertiesToIgnore) {
+            ->reject(function (ReflectionProperty $property) use ($propertiesToIgnore) {
+                return in_array($property->name, $propertiesToIgnore);
+            })
+            ->mapWithKeys(function (ReflectionProperty $property) use ($command) {
+                try {
+                    $property->setAccessible(true);
 
-                    return in_array($property->name, $propertiesToIgnore);
+                    return [$property->name => $property->getValue($command)];
+                } catch (Error $error) {
+                    return [$property->name => 'uninitialized'];
                 }
-            )
-            ->mapWithKeys(
-                function (ReflectionProperty $property) use ($command) {
-
-                    try {
-                        $property->setAccessible(true);
-
-                        return [$property->name => $property->getValue($command)];
-                    }
-                    catch (Error $error) {
-                        return [$property->name => 'uninitialized'];
-                    }
-                }
-            );
+            });
 
         if ($properties->has('chained')) {
             $properties['chained'] = $this->resolveJobChain($properties->get('chained'), $maxChainDepth);
@@ -140,20 +137,18 @@ class JobRecorder
 
     /**
      * @param array<string, mixed> $chainedCommands
-     * @param int                  $maxDepth
+     * @param int $maxDepth
      *
      * @return array
      */
     protected function resolveJobChain(array $chainedCommands, int $maxDepth): array
     {
-
         if ($maxDepth === 0) {
             return ['Ignition stopped recording jobs after this point since the max chain depth was reached'];
         }
 
         return array_map(
             function (string $command) use ($maxDepth) {
-
                 $commandObject = $this->resolveObjectFromCommand($command);
 
                 return [
@@ -165,9 +160,9 @@ class JobRecorder
         );
     }
 
+    // Taken from Illuminate\Queue\CallQueuedHandler
     protected function resolveObjectFromCommand(string $command): object
     {
-
         if (Str::startsWith($command, 'O:')) {
             return unserialize($command);
         }
@@ -179,13 +174,4 @@ class JobRecorder
 
         throw new RuntimeException('Unable to extract job payload.');
     }
-
-    // Taken from Illuminate\Queue\CallQueuedHandler
-
-    public function reset(): void
-    {
-
-        $this->job = null;
-    }
-
 }

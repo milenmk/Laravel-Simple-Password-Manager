@@ -13,6 +13,34 @@ namespace Symfony\Component\VarDumper\Caster;
 
 use Symfony\Component\VarDumper\Cloner\Stub;
 
+use const PGSQL_BAD_RESPONSE;
+use const PGSQL_COMMAND_OK;
+use const PGSQL_CONNECTION_OK;
+use const PGSQL_COPY_IN;
+use const PGSQL_COPY_OUT;
+use const PGSQL_DIAG_CONTEXT;
+use const PGSQL_DIAG_INTERNAL_POSITION;
+use const PGSQL_DIAG_INTERNAL_QUERY;
+use const PGSQL_DIAG_MESSAGE_DETAIL;
+use const PGSQL_DIAG_MESSAGE_HINT;
+use const PGSQL_DIAG_MESSAGE_PRIMARY;
+use const PGSQL_DIAG_SEVERITY;
+use const PGSQL_DIAG_SOURCE_FILE;
+use const PGSQL_DIAG_SOURCE_FUNCTION;
+use const PGSQL_DIAG_SOURCE_LINE;
+use const PGSQL_DIAG_SQLSTATE;
+use const PGSQL_DIAG_STATEMENT_POSITION;
+use const PGSQL_EMPTY_QUERY;
+use const PGSQL_FATAL_ERROR;
+use const PGSQL_NONFATAL_ERROR;
+use const PGSQL_STATUS_STRING;
+use const PGSQL_TRANSACTION_ACTIVE;
+use const PGSQL_TRANSACTION_IDLE;
+use const PGSQL_TRANSACTION_INERROR;
+use const PGSQL_TRANSACTION_INTRANS;
+use const PGSQL_TRANSACTION_UNKNOWN;
+use const PGSQL_TUPLES_OK;
+
 /**
  * Casts pqsql resources to array representation.
  *
@@ -36,56 +64,50 @@ class PgSqlCaster
     ];
 
     private const TRANSACTION_STATUS = [
-        \PGSQL_TRANSACTION_IDLE => 'PGSQL_TRANSACTION_IDLE',
-        \PGSQL_TRANSACTION_ACTIVE => 'PGSQL_TRANSACTION_ACTIVE',
-        \PGSQL_TRANSACTION_INTRANS => 'PGSQL_TRANSACTION_INTRANS',
-        \PGSQL_TRANSACTION_INERROR => 'PGSQL_TRANSACTION_INERROR',
-        \PGSQL_TRANSACTION_UNKNOWN => 'PGSQL_TRANSACTION_UNKNOWN',
+        PGSQL_TRANSACTION_IDLE => 'PGSQL_TRANSACTION_IDLE',
+        PGSQL_TRANSACTION_ACTIVE => 'PGSQL_TRANSACTION_ACTIVE',
+        PGSQL_TRANSACTION_INTRANS => 'PGSQL_TRANSACTION_INTRANS',
+        PGSQL_TRANSACTION_INERROR => 'PGSQL_TRANSACTION_INERROR',
+        PGSQL_TRANSACTION_UNKNOWN => 'PGSQL_TRANSACTION_UNKNOWN',
     ];
 
     private const RESULT_STATUS = [
-        \PGSQL_EMPTY_QUERY => 'PGSQL_EMPTY_QUERY',
-        \PGSQL_COMMAND_OK => 'PGSQL_COMMAND_OK',
-        \PGSQL_TUPLES_OK => 'PGSQL_TUPLES_OK',
-        \PGSQL_COPY_OUT => 'PGSQL_COPY_OUT',
-        \PGSQL_COPY_IN => 'PGSQL_COPY_IN',
-        \PGSQL_BAD_RESPONSE => 'PGSQL_BAD_RESPONSE',
-        \PGSQL_NONFATAL_ERROR => 'PGSQL_NONFATAL_ERROR',
-        \PGSQL_FATAL_ERROR => 'PGSQL_FATAL_ERROR',
+        PGSQL_EMPTY_QUERY => 'PGSQL_EMPTY_QUERY',
+        PGSQL_COMMAND_OK => 'PGSQL_COMMAND_OK',
+        PGSQL_TUPLES_OK => 'PGSQL_TUPLES_OK',
+        PGSQL_COPY_OUT => 'PGSQL_COPY_OUT',
+        PGSQL_COPY_IN => 'PGSQL_COPY_IN',
+        PGSQL_BAD_RESPONSE => 'PGSQL_BAD_RESPONSE',
+        PGSQL_NONFATAL_ERROR => 'PGSQL_NONFATAL_ERROR',
+        PGSQL_FATAL_ERROR => 'PGSQL_FATAL_ERROR',
     ];
 
     private const DIAG_CODES = [
-        'severity' => \PGSQL_DIAG_SEVERITY,
-        'sqlstate' => \PGSQL_DIAG_SQLSTATE,
-        'message' => \PGSQL_DIAG_MESSAGE_PRIMARY,
-        'detail' => \PGSQL_DIAG_MESSAGE_DETAIL,
-        'hint' => \PGSQL_DIAG_MESSAGE_HINT,
-        'statement position' => \PGSQL_DIAG_STATEMENT_POSITION,
-        'internal position' => \PGSQL_DIAG_INTERNAL_POSITION,
-        'internal query' => \PGSQL_DIAG_INTERNAL_QUERY,
-        'context' => \PGSQL_DIAG_CONTEXT,
-        'file' => \PGSQL_DIAG_SOURCE_FILE,
-        'line' => \PGSQL_DIAG_SOURCE_LINE,
-        'function' => \PGSQL_DIAG_SOURCE_FUNCTION,
+        'severity' => PGSQL_DIAG_SEVERITY,
+        'sqlstate' => PGSQL_DIAG_SQLSTATE,
+        'message' => PGSQL_DIAG_MESSAGE_PRIMARY,
+        'detail' => PGSQL_DIAG_MESSAGE_DETAIL,
+        'hint' => PGSQL_DIAG_MESSAGE_HINT,
+        'statement position' => PGSQL_DIAG_STATEMENT_POSITION,
+        'internal position' => PGSQL_DIAG_INTERNAL_POSITION,
+        'internal query' => PGSQL_DIAG_INTERNAL_QUERY,
+        'context' => PGSQL_DIAG_CONTEXT,
+        'file' => PGSQL_DIAG_SOURCE_FILE,
+        'line' => PGSQL_DIAG_SOURCE_LINE,
+        'function' => PGSQL_DIAG_SOURCE_FUNCTION,
     ];
 
-    /**
-     * @return array
-     */
-    public static function castLargeObject($lo, array $a, Stub $stub, bool $isNested)
+    public static function castLargeObject($lo, array $a, Stub $stub, bool $isNested): array
     {
         $a['seek position'] = pg_lo_tell($lo);
 
         return $a;
     }
 
-    /**
-     * @return array
-     */
-    public static function castLink($link, array $a, Stub $stub, bool $isNested)
+    public static function castLink($link, array $a, Stub $stub, bool $isNested): array
     {
         $a['status'] = pg_connection_status($link);
-        $a['status'] = new ConstStub(\PGSQL_CONNECTION_OK === $a['status'] ? 'PGSQL_CONNECTION_OK' : 'PGSQL_CONNECTION_BAD', $a['status']);
+        $a['status'] = new ConstStub(PGSQL_CONNECTION_OK === $a['status'] ? 'PGSQL_CONNECTION_OK' : 'PGSQL_CONNECTION_BAD', $a['status']);
         $a['busy'] = pg_connection_busy($link);
 
         $a['transaction'] = pg_transaction_status($link);
@@ -114,17 +136,14 @@ class PgSqlCaster
         return $a;
     }
 
-    /**
-     * @return array
-     */
-    public static function castResult($result, array $a, Stub $stub, bool $isNested)
+    public static function castResult($result, array $a, Stub $stub, bool $isNested): array
     {
         $a['num rows'] = pg_num_rows($result);
         $a['status'] = pg_result_status($result);
         if (isset(self::RESULT_STATUS[$a['status']])) {
             $a['status'] = new ConstStub(self::RESULT_STATUS[$a['status']], $a['status']);
         }
-        $a['command-completion tag'] = pg_result_status($result, \PGSQL_STATUS_STRING);
+        $a['command-completion tag'] = pg_result_status($result, PGSQL_STATUS_STRING);
 
         if (-1 === $a['num rows']) {
             foreach (self::DIAG_CODES as $k => $v) {

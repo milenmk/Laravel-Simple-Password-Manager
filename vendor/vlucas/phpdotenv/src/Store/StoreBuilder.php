@@ -6,6 +6,8 @@ namespace Dotenv\Store;
 
 use Dotenv\Store\File\Paths;
 
+use function array_merge;
+
 final class StoreBuilder
 {
     /**
@@ -51,7 +53,7 @@ final class StoreBuilder
      *
      * @return void
      */
-    private function __construct(array $paths = [], array $names = [], bool $shortCircuit = false, string $fileEncoding = null)
+    private function __construct(array $paths = [], array $names = [], bool $shortCircuit = false, ?string $fileEncoding = null)
     {
         $this->paths = $paths;
         $this->names = $names;
@@ -88,7 +90,7 @@ final class StoreBuilder
      */
     public function addPath(string $path)
     {
-        return new self(\array_merge($this->paths, [$path]), $this->names, $this->shortCircuit, $this->fileEncoding);
+        return new self(array_merge($this->paths, [$path]), $this->names, $this->shortCircuit, $this->fileEncoding);
     }
 
     /**
@@ -100,7 +102,7 @@ final class StoreBuilder
      */
     public function addName(string $name)
     {
-        return new self($this->paths, \array_merge($this->names, [$name]), $this->shortCircuit, $this->fileEncoding);
+        return new self($this->paths, array_merge($this->names, [$name]), $this->shortCircuit, $this->fileEncoding);
     }
 
     /**
@@ -120,7 +122,7 @@ final class StoreBuilder
      *
      * @return \Dotenv\Store\StoreBuilder
      */
-    public function fileEncoding(string $fileEncoding = null)
+    public function fileEncoding(?string $fileEncoding = null)
     {
         return new self($this->paths, $this->names, $this->shortCircuit, $fileEncoding);
     }

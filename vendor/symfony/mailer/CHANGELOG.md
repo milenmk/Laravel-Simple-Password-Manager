@@ -1,6 +1,18 @@
 CHANGELOG
 =========
 
+7.1
+---
+
+ * Dispatch Postmark's "406 - Inactive recipient" API error code as a `PostmarkDeliveryEvent` instead of throwing an exception
+ * Add DSN param `auto_tls` to disable automatic STARTTLS
+ * Add support for allowing some users even if `recipients` is defined in `EnvelopeListener`
+
+7.0
+---
+
+ * Remove the OhMySmtp bridge in favor of the MailPace bridge
+
 6.4
 ---
 

@@ -27,17 +27,6 @@ class EnvironmentDecryptCommand extends Command
                     {--filename= : Filename of the decrypted file}';
 
     /**
-     * The name of the console command.
-     *
-     * This name is used to identify the command during lazy loading.
-     *
-     * @var string|null
-     *
-     * @deprecated
-     */
-    protected static $defaultName = 'env:decrypt';
-
-    /**
      * The console command description.
      *
      * @var string
@@ -84,7 +73,7 @@ class EnvironmentDecryptCommand extends Command
         $key = $this->parseKey($key);
 
         $encryptedFile = ($this->option('env')
-                    ? base_path('.env').'.'.$this->option('env')
+                    ? Str::finish(dirname($this->laravel->environmentFilePath()), DIRECTORY_SEPARATOR).'.env.'.$this->option('env')
                     : $this->laravel->environmentFilePath()).'.encrypted';
 
         $outputFile = $this->outputFilePath();
@@ -149,7 +138,7 @@ class EnvironmentDecryptCommand extends Command
      */
     protected function outputFilePath()
     {
-        $path = Str::finish($this->option('path') ?: base_path(), DIRECTORY_SEPARATOR);
+        $path = Str::finish($this->option('path') ?: dirname($this->laravel->environmentFilePath()), DIRECTORY_SEPARATOR);
 
         $outputFile = $this->option('filename') ?: ('.env'.($this->option('env') ? '.'.$this->option('env') : ''));
         $outputFile = ltrim($outputFile, DIRECTORY_SEPARATOR);

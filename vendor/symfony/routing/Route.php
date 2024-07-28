@@ -11,13 +11,22 @@
 
 namespace Symfony\Component\Routing;
 
+use BadMethodCallException;
+use InvalidArgumentException;
+
+use Serializable;
+
+use function array_key_exists;
+use function in_array;
+use function strlen;
+
 /**
  * A Route describes a route and its parameters.
  *
  * @author Fabien Potencier <fabien@symfony.com>
  * @author Tobias Schultze <http://tobion.de>
  */
-class Route implements \Serializable
+class Route implements Serializable
 {
     private string $path = '/';
     private string $host = '';
@@ -78,7 +87,7 @@ class Route implements \Serializable
      */
     final public function serialize(): string
     {
-        throw new \BadMethodCallException('Cannot serialize '.__CLASS__);
+        throw new BadMethodCallException('Cannot serialize '.__CLASS__);
     }
 
     public function __unserialize(array $data): void
@@ -175,7 +184,7 @@ class Route implements \Serializable
      */
     public function hasScheme(string $scheme): bool
     {
-        return \in_array(strtolower($scheme), $this->schemes, true);
+        return in_array(strtolower($scheme), $this->schemes, true);
     }
 
     /**
@@ -258,7 +267,7 @@ class Route implements \Serializable
 
     public function hasOption(string $name): bool
     {
-        return \array_key_exists($name, $this->options);
+        return array_key_exists($name, $this->options);
     }
 
     public function getDefaults(): array
@@ -300,7 +309,7 @@ class Route implements \Serializable
 
     public function hasDefault(string $name): bool
     {
-        return \array_key_exists($name, $this->defaults);
+        return array_key_exists($name, $this->defaults);
     }
 
     /**
@@ -357,7 +366,7 @@ class Route implements \Serializable
 
     public function hasRequirement(string $key): bool
     {
-        return \array_key_exists($key, $this->requirements);
+        return array_key_exists($key, $this->requirements);
     }
 
     /**
@@ -412,20 +421,31 @@ class Route implements \Serializable
 
     private function extractInlineDefaultsAndRequirements(string $pattern): string
     {
-        if (false === strpbrk($pattern, '?<')) {
+        if (false === strpbrk($pattern, '?<:')) {
             return $pattern;
         }
 
-        return preg_replace_callback('#\{(!?)([\w\x80-\xFF]++)(<.*?>)?(\?[^\}]*+)?\}#', function ($m) {
+        $mapping = $this->getDefault('_route_mapping') ?? [];
+
+        $pattern = preg_replace_callback('#\{(!?)([\w\x80-\xFF]++)(:[\w\x80-\xFF]++)?(<.*?>)?(\?[^\}]*+)?\}#', function ($m) use (&$mapping) {
+            if (isset($m[5][0])) {
+                $this->setDefault($m[2], '?' !== $m[5] ? substr($m[5], 1) : null);
+            }
             if (isset($m[4][0])) {
-                $this->setDefault($m[2], '?' !== $m[4] ? substr($m[4], 1) : null);
+                $this->setRequirement($m[2], substr($m[4], 1, -1));
             }
             if (isset($m[3][0])) {
-                $this->setRequirement($m[2], substr($m[3], 1, -1));
+                $mapping[$m[2]] = substr($m[3], 1);
             }
 
             return '{'.$m[1].$m[2].'}';
         }, $pattern);
+
+        if ($mapping) {
+            $this->setDefault('_route_mapping', $mapping);
+        }
+
+        return $pattern;
     }
 
     private function sanitizeRequirement(string $key, string $regex): string
@@ -440,12 +460,12 @@ class Route implements \Serializable
 
         if (str_ends_with($regex, '$')) {
             $regex = substr($regex, 0, -1);
-        } elseif (\strlen($regex) - 2 === strpos($regex, '\\z')) {
+        } elseif (strlen($regex) - 2 === strpos($regex, '\\z')) {
             $regex = substr($regex, 0, -2);
         }
 
         if ('' === $regex) {
-            throw new \InvalidArgumentException(sprintf('Routing requirement for "%s" cannot be empty.', $key));
+            throw new InvalidArgumentException(sprintf('Routing requirement for "%s" cannot be empty.', $key));
         }
 
         return $regex;

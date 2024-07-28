@@ -39,7 +39,7 @@ final class NumericComparator extends ScalarComparator
         if (($this->isInfinite($actual) xor $this->isInfinite($expected)) ||
             ($this->isNan($actual) || $this->isNan($expected)) ||
             abs($actual - $expected) > $delta) {
-            $exporter = new Exporter;
+            $exporter = new Exporter();
 
             throw new ComparisonFailure(
                 $expected,
@@ -49,8 +49,8 @@ final class NumericComparator extends ScalarComparator
                 sprintf(
                     'Failed asserting that %s matches expected %s.',
                     $exporter->export($actual),
-                    $exporter->export($expected)
-                )
+                    $exporter->export($expected),
+                ),
             );
         }
     }

@@ -14,9 +14,10 @@ use Symfony\Component\HttpFoundation\RedirectResponse as BaseRedirectResponse;
 
 class RedirectResponse extends BaseRedirectResponse
 {
-    use ForwardsCalls, ResponseTrait, Macroable {
-        Macroable::__call as macroCall;
-    }
+
+    use ForwardsCalls;
+    use Macroable;
+    use ResponseTrait;
 
     /**
      * The request instance.
@@ -71,7 +72,7 @@ class RedirectResponse extends BaseRedirectResponse
      * @param  array|null  $input
      * @return $this
      */
-    public function withInput(array $input = null)
+    public function withInput(?array $input = null)
     {
         $this->session->flashInput($this->removeFilesFromInput(
             ! is_null($input) ? $input : $this->request->input()
@@ -132,10 +133,10 @@ class RedirectResponse extends BaseRedirectResponse
     {
         $value = $this->parseErrors($provider);
 
-        $errors = $this->session->get('errors', new ViewErrorBag);
+        $errors = $this->session->get('errors', new ViewErrorBag());
 
         if (! $errors instanceof ViewErrorBag) {
-            $errors = new ViewErrorBag;
+            $errors = new ViewErrorBag();
         }
 
         $this->session->flash(

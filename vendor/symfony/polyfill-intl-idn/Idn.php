@@ -11,8 +11,20 @@
 
 namespace Symfony\Polyfill\Intl\Idn;
 
+use Exception;
+use Normalizer;
 use Symfony\Polyfill\Intl\Idn\Resources\unidata\DisallowedRanges;
 use Symfony\Polyfill\Intl\Idn\Resources\unidata\Regex;
+
+use function chr;
+use function count;
+use function ord;
+use function strlen;
+
+use const DIRECTORY_SEPARATOR;
+use const E_USER_DEPRECATED;
+use const PHP_VERSION_ID;
+use const PREG_OFFSET_CAPTURE;
 
 /**
  * @see https://www.unicode.org/reports/tr46/
@@ -145,8 +157,8 @@ final class Idn
      */
     public static function idn_to_ascii($domainName, $options = self::IDNA_DEFAULT, $variant = self::INTL_IDNA_VARIANT_UTS46, &$idna_info = [])
     {
-        if (\PHP_VERSION_ID >= 70200 && self::INTL_IDNA_VARIANT_2003 === $variant) {
-            @trigger_error('idn_to_ascii(): INTL_IDNA_VARIANT_2003 is deprecated', \E_USER_DEPRECATED);
+        if (PHP_VERSION_ID >= 70200 && self::INTL_IDNA_VARIANT_2003 === $variant) {
+            @trigger_error('idn_to_ascii(): INTL_IDNA_VARIANT_2003 is deprecated', E_USER_DEPRECATED);
         }
 
         $options = [
@@ -165,7 +177,7 @@ final class Idn
             if (1 === preg_match('/[^\x00-\x7F]/', $label)) {
                 try {
                     $label = 'xn--'.self::punycodeEncode($label);
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     $info->errors |= self::ERROR_PUNYCODE;
                 }
 
@@ -198,8 +210,8 @@ final class Idn
      */
     public static function idn_to_utf8($domainName, $options = self::IDNA_DEFAULT, $variant = self::INTL_IDNA_VARIANT_UTS46, &$idna_info = [])
     {
-        if (\PHP_VERSION_ID >= 70200 && self::INTL_IDNA_VARIANT_2003 === $variant) {
-            @trigger_error('idn_to_utf8(): INTL_IDNA_VARIANT_2003 is deprecated', \E_USER_DEPRECATED);
+        if (PHP_VERSION_ID >= 70200 && self::INTL_IDNA_VARIANT_2003 === $variant) {
+            @trigger_error('idn_to_utf8(): INTL_IDNA_VARIANT_2003 is deprecated', E_USER_DEPRECATED);
         }
 
         $info = new Info();
@@ -227,7 +239,7 @@ final class Idn
     private static function isValidContextJ(array $codePoints, $label)
     {
         if (!isset(self::$virama)) {
-            self::$virama = require __DIR__.\DIRECTORY_SEPARATOR.'Resources'.\DIRECTORY_SEPARATOR.'unidata'.\DIRECTORY_SEPARATOR.'virama.php';
+            self::$virama = require __DIR__ . DIRECTORY_SEPARATOR . 'Resources' . DIRECTORY_SEPARATOR . 'unidata' . DIRECTORY_SEPARATOR . 'virama.php';
         }
 
         $offset = 0;
@@ -249,8 +261,8 @@ final class Idn
             // If RegExpMatch((Joining_Type:{L,D})(Joining_Type:T)*\u200C(Joining_Type:T)*(Joining_Type:{R,D})) Then
             // True;
             // Generated RegExp = ([Joining_Type:{L,D}][Joining_Type:T]*\u200C[Joining_Type:T]*)[Joining_Type:{R,D}]
-            if (0x200C === $codePoint && 1 === preg_match(Regex::ZWNJ, $label, $matches, \PREG_OFFSET_CAPTURE, $offset)) {
-                $offset += \strlen($matches[1][0]);
+            if (0x200C === $codePoint && 1 === preg_match(Regex::ZWNJ, $label, $matches, PREG_OFFSET_CAPTURE, $offset)) {
+                $offset += strlen($matches[1][0]);
 
                 continue;
             }
@@ -280,10 +292,6 @@ final class Idn
 
             switch ($data['status']) {
                 case 'disallowed':
-                    $info->errors |= self::ERROR_DISALLOWED;
-
-                    // no break.
-
                 case 'valid':
                     $str .= mb_chr($codePoint, 'utf-8');
 
@@ -294,7 +302,7 @@ final class Idn
                     break;
 
                 case 'mapped':
-                    $str .= $data['mapping'];
+                    $str .= $transitional && 0x1E9E === $codePoint ? 'ss' : $data['mapping'];
 
                     break;
 
@@ -333,22 +341,34 @@ final class Idn
         $domain = self::mapCodePoints($domain, $options, $info);
 
         // Step 2. Normalize the domain name string to Unicode Normalization Form C.
-        if (!\Normalizer::isNormalized($domain, \Normalizer::FORM_C)) {
-            $domain = \Normalizer::normalize($domain, \Normalizer::FORM_C);
+        if (!Normalizer::isNormalized($domain, Normalizer::FORM_C)) {
+            $domain = Normalizer::normalize($domain, Normalizer::FORM_C);
         }
 
         // Step 3. Break the string into labels at U+002E (.) FULL STOP.
         $labels = explode('.', $domain);
-        $lastLabelIndex = \count($labels) - 1;
+        $lastLabelIndex = count($labels) - 1;
 
         // Step 4. Convert and validate each label in the domain name string.
         foreach ($labels as $i => $label) {
             $validationOptions = $options;
 
             if ('xn--' === substr($label, 0, 4)) {
+                // Step 4.1. If the label contains any non-ASCII code point (i.e., a code point greater than U+007F),
+                // record that there was an error, and continue with the next label.
+                if (preg_match('/[^\x00-\x7F]/', $label)) {
+                    $info->errors |= self::ERROR_PUNYCODE;
+
+                    continue;
+                }
+
+                // Step 4.2. Attempt to convert the rest of the label to Unicode according to Punycode [RFC3492]. If
+                // that conversion fails, record that there was an error, and continue
+                // with the next label. Otherwise replace the original label in the string by the results of the
+                // conversion.
                 try {
                     $label = self::punycodeDecode(substr($label, 4));
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     $info->errors |= self::ERROR_PUNYCODE;
 
                     continue;
@@ -448,7 +468,7 @@ final class Idn
     private static function validateDomainAndLabelLength(array $labels, Info $info)
     {
         $maxDomainSize = self::MAX_DOMAIN_SIZE;
-        $length = \count($labels);
+        $length = count($labels);
 
         // Number of "." delimiters.
         $domainLength = $length - 1;
@@ -463,7 +483,7 @@ final class Idn
         }
 
         for ($i = 0; $i < $length; ++$i) {
-            $bytes = \strlen($labels[$i]);
+            $bytes = strlen($labels[$i]);
             $domainLength += $bytes;
 
             if ($bytes > self::MAX_LABEL_SIZE) {
@@ -494,7 +514,7 @@ final class Idn
         }
 
         // Step 1. The label must be in Unicode Normalization Form C.
-        if (!\Normalizer::isNormalized($label, \Normalizer::FORM_C)) {
+        if (!Normalizer::isNormalized($label, Normalizer::FORM_C)) {
             $info->errors |= self::ERROR_INVALID_ACE_LABEL;
         }
 
@@ -516,6 +536,8 @@ final class Idn
             if ('-' === substr($label, -1, 1)) {
                 $info->errors |= self::ERROR_TRAILING_HYPHEN;
             }
+        } elseif ('xn--' === substr($label, 0, 4)) {
+            $info->errors |= self::ERROR_PUNYCODE;
         }
 
         // Step 4. The label must not contain a U+002E (.) FULL STOP.
@@ -575,13 +597,13 @@ final class Idn
         $bias = self::INITIAL_BIAS;
         $lastDelimIndex = strrpos($input, self::DELIMITER);
         $b = false === $lastDelimIndex ? 0 : $lastDelimIndex;
-        $inputLength = \strlen($input);
+        $inputLength = strlen($input);
         $output = [];
         $bytes = array_map('ord', str_split($input));
 
         for ($j = 0; $j < $b; ++$j) {
             if ($bytes[$j] > 0x7F) {
-                throw new \Exception('Invalid input');
+                throw new Exception('Invalid input');
             }
 
             $output[$out++] = $input[$j];
@@ -597,17 +619,17 @@ final class Idn
 
             for ($k = self::BASE; /* no condition */; $k += self::BASE) {
                 if ($in >= $inputLength) {
-                    throw new \Exception('Invalid input');
+                    throw new Exception('Invalid input');
                 }
 
                 $digit = self::$basicToDigit[$bytes[$in++] & 0xFF];
 
                 if ($digit < 0) {
-                    throw new \Exception('Invalid input');
+                    throw new Exception('Invalid input');
                 }
 
                 if ($digit > intdiv(self::MAX_INT - $i, $w)) {
-                    throw new \Exception('Integer overflow');
+                    throw new Exception('Integer overflow');
                 }
 
                 $i += $digit * $w;
@@ -627,7 +649,7 @@ final class Idn
                 $baseMinusT = self::BASE - $t;
 
                 if ($w > intdiv(self::MAX_INT, $baseMinusT)) {
-                    throw new \Exception('Integer overflow');
+                    throw new Exception('Integer overflow');
                 }
 
                 $w *= $baseMinusT;
@@ -637,7 +659,7 @@ final class Idn
             $bias = self::adaptBias($i - $oldi, $outPlusOne, 0 === $oldi);
 
             if (intdiv($i, $outPlusOne) > self::MAX_INT - $n) {
-                throw new \Exception('Integer overflow');
+                throw new Exception('Integer overflow');
             }
 
             $n += intdiv($i, $outPlusOne);
@@ -669,7 +691,7 @@ final class Idn
             ++$inputLength;
 
             if ($codePoint < 0x80) {
-                $output .= \chr($codePoint);
+                $output .= chr($codePoint);
                 ++$out;
             }
         }
@@ -692,7 +714,7 @@ final class Idn
             }
 
             if ($m - $n > intdiv(self::MAX_INT - $delta, $h + 1)) {
-                throw new \Exception('Integer overflow');
+                throw new Exception('Integer overflow');
             }
 
             $delta += ($m - $n) * ($h + 1);
@@ -700,7 +722,7 @@ final class Idn
 
             foreach ($iter as $codePoint) {
                 if ($codePoint < $n && 0 === ++$delta) {
-                    throw new \Exception('Integer overflow');
+                    throw new Exception('Integer overflow');
                 }
 
                 if ($codePoint === $n) {
@@ -773,7 +795,7 @@ final class Idn
      */
     private static function encodeDigit($d, $flag)
     {
-        return \chr($d + 22 + 75 * ($d < 26 ? 1 : 0) - (($flag ? 1 : 0) << 5));
+        return chr($d + 22 + 75 * ($d < 26 ? 1 : 0) - (($flag ? 1 : 0) << 5));
     }
 
     /**
@@ -794,10 +816,10 @@ final class Idn
         $upperBoundary = 0xBF;
         $codePoint = 0;
         $codePoints = [];
-        $length = \strlen($input);
+        $length = strlen($input);
 
         for ($i = 0; $i < $length; ++$i) {
-            $byte = \ord($input[$i]);
+            $byte = ord($input[$i]);
 
             if (0 === $bytesNeeded) {
                 if ($byte >= 0x00 && $byte <= 0x7F) {

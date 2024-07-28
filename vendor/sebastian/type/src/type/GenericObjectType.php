@@ -31,6 +31,9 @@ final class GenericObjectType extends Type
         return true;
     }
 
+    /**
+     * @return 'object'
+     */
     public function name(): string
     {
         return 'object';
@@ -41,9 +44,6 @@ final class GenericObjectType extends Type
         return $this->allowsNull;
     }
 
-    /**
-     * @psalm-assert-if-true GenericObjectType $this
-     */
     public function isGenericObject(): bool
     {
         return true;

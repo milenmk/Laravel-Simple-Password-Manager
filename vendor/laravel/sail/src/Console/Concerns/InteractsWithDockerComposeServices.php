@@ -2,8 +2,11 @@
 
 namespace Laravel\Sail\Console\Concerns;
 
+use RuntimeException;
 use Symfony\Component\Process\Process;
 use Symfony\Component\Yaml\Yaml;
+
+use function Laravel\Prompts\multiselect;
 
 trait InteractsWithDockerComposeServices
 {
@@ -41,7 +44,7 @@ trait InteractsWithDockerComposeServices
     protected function gatherServicesInteractively()
     {
         if (function_exists('\Laravel\Prompts\multiselect')) {
-            return \Laravel\Prompts\multiselect(
+            return multiselect(
                 label: 'Which services would you like to install?',
                 options: $this->services,
                 default: ['mysql'],
@@ -79,6 +82,13 @@ trait InteractsWithDockerComposeServices
                 ->unique()
                 ->values()
                 ->all();
+        }
+
+        // Update the dependencies if the MariaDB service is used...
+        if (in_array('mariadb', $services)) {
+            $compose['services']['laravel.test']['depends_on'] = array_map(function ($dependedItem) {
+                return $dependedItem;
+            }, $compose['services']['laravel.test']['depends_on']);
         }
 
         // Add the services to the docker-compose.yml...
@@ -140,21 +150,21 @@ trait InteractsWithDockerComposeServices
 
         if (in_array('mysql', $services)) {
             $environment = preg_replace('/DB_CONNECTION=.*/', 'DB_CONNECTION=mysql', $environment);
-            $environment = str_replace('DB_HOST=127.0.0.1', "DB_HOST=mysql", $environment);
+            $environment = str_replace('DB_HOST=127.0.0.1', 'DB_HOST=mysql', $environment);
         }elseif (in_array('pgsql', $services)) {
             $environment = preg_replace('/DB_CONNECTION=.*/', 'DB_CONNECTION=pgsql', $environment);
-            $environment = str_replace('DB_HOST=127.0.0.1', "DB_HOST=pgsql", $environment);
-            $environment = str_replace('DB_PORT=3306', "DB_PORT=5432", $environment);
+            $environment = str_replace('DB_HOST=127.0.0.1', 'DB_HOST=pgsql', $environment);
+            $environment = str_replace('DB_PORT=3306', 'DB_PORT=5432', $environment);
         } elseif (in_array('mariadb', $services)) {
             if ($this->laravel->config->has('database.connections.mariadb')) {
                 $environment = preg_replace('/DB_CONNECTION=.*/', 'DB_CONNECTION=mariadb', $environment);
             }
 
-            $environment = str_replace('DB_HOST=127.0.0.1', "DB_HOST=mariadb", $environment);
+            $environment = str_replace('DB_HOST=127.0.0.1', 'DB_HOST=mariadb', $environment);
         }
 
-        $environment = str_replace('DB_USERNAME=root', "DB_USERNAME=sail", $environment);
-        $environment = preg_replace("/DB_PASSWORD=(.*)/", "DB_PASSWORD=password", $environment);
+        $environment = str_replace('DB_USERNAME=root', 'DB_USERNAME=sail', $environment);
+        $environment = preg_replace('/DB_PASSWORD=(.*)/', 'DB_PASSWORD=password', $environment);
 
         if (in_array('memcached', $services)) {
             $environment = str_replace('MEMCACHED_HOST=127.0.0.1', 'MEMCACHED_HOST=memcached', $environment);
@@ -179,20 +189,20 @@ trait InteractsWithDockerComposeServices
         }
 
         if (in_array('soketi', $services)) {
-            $environment = preg_replace("/^BROADCAST_DRIVER=(.*)/m", "BROADCAST_DRIVER=pusher", $environment);
-            $environment = preg_replace("/^PUSHER_APP_ID=(.*)/m", "PUSHER_APP_ID=app-id", $environment);
-            $environment = preg_replace("/^PUSHER_APP_KEY=(.*)/m", "PUSHER_APP_KEY=app-key", $environment);
-            $environment = preg_replace("/^PUSHER_APP_SECRET=(.*)/m", "PUSHER_APP_SECRET=app-secret", $environment);
-            $environment = preg_replace("/^PUSHER_HOST=(.*)/m", "PUSHER_HOST=soketi", $environment);
-            $environment = preg_replace("/^PUSHER_PORT=(.*)/m", "PUSHER_PORT=6001", $environment);
-            $environment = preg_replace("/^PUSHER_SCHEME=(.*)/m", "PUSHER_SCHEME=http", $environment);
-            $environment = preg_replace("/^VITE_PUSHER_HOST=(.*)/m", "VITE_PUSHER_HOST=localhost", $environment);
+            $environment = preg_replace('/^BROADCAST_DRIVER=(.*)/m', 'BROADCAST_DRIVER=pusher', $environment);
+            $environment = preg_replace('/^PUSHER_APP_ID=(.*)/m', 'PUSHER_APP_ID=app-id', $environment);
+            $environment = preg_replace('/^PUSHER_APP_KEY=(.*)/m', 'PUSHER_APP_KEY=app-key', $environment);
+            $environment = preg_replace('/^PUSHER_APP_SECRET=(.*)/m', 'PUSHER_APP_SECRET=app-secret', $environment);
+            $environment = preg_replace('/^PUSHER_HOST=(.*)/m', 'PUSHER_HOST=soketi', $environment);
+            $environment = preg_replace('/^PUSHER_PORT=(.*)/m', 'PUSHER_PORT=6001', $environment);
+            $environment = preg_replace('/^PUSHER_SCHEME=(.*)/m', 'PUSHER_SCHEME=http', $environment);
+            $environment = preg_replace('/^VITE_PUSHER_HOST=(.*)/m', 'VITE_PUSHER_HOST=localhost', $environment);
         }
 
         if (in_array('mailpit', $services)) {
-            $environment = preg_replace("/^MAIL_MAILER=(.*)/m", "MAIL_MAILER=smtp", $environment);
-            $environment = preg_replace("/^MAIL_HOST=(.*)/m", "MAIL_HOST=mailpit", $environment);
-            $environment = preg_replace("/^MAIL_PORT=(.*)/m", "MAIL_PORT=1025", $environment);
+            $environment = preg_replace('/^MAIL_MAILER=(.*)/m', 'MAIL_MAILER=smtp', $environment);
+            $environment = preg_replace('/^MAIL_HOST=(.*)/m', 'MAIL_HOST=mailpit', $environment);
+            $environment = preg_replace('/^MAIL_PORT=(.*)/m', 'MAIL_PORT=1025', $environment);
         }
 
         file_put_contents($this->laravel->basePath('.env'), $environment);
@@ -282,7 +292,7 @@ trait InteractsWithDockerComposeServices
         if ('\\' !== DIRECTORY_SEPARATOR && file_exists('/dev/tty') && is_readable('/dev/tty')) {
             try {
                 $process->setTty(true);
-            } catch (\RuntimeException $e) {
+            } catch (RuntimeException $e) {
                 $this->output->writeln('  <bg=yellow;fg=black> WARN </> '.$e->getMessage().PHP_EOL);
             }
         }

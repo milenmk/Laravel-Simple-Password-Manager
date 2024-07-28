@@ -11,6 +11,12 @@
 
 namespace Symfony\Component\HttpKernel\ControllerMetadata;
 
+use ReflectionFunction;
+use ReflectionFunctionAbstract;
+use ReflectionMethod;
+use ReflectionNamedType;
+use ReflectionParameter;
+
 /**
  * Builds {@see ArgumentMetadata} objects based on the given Controller.
  *
@@ -18,10 +24,11 @@ namespace Symfony\Component\HttpKernel\ControllerMetadata;
  */
 final class ArgumentMetadataFactory implements ArgumentMetadataFactoryInterface
 {
-    public function createArgumentMetadata(string|object|array $controller, ?\ReflectionFunctionAbstract $reflector = null): array
+    public function createArgumentMetadata(string|object|array $controller, ?ReflectionFunctionAbstract $reflector = null): array
     {
         $arguments = [];
-        $reflector ??= new \ReflectionFunction($controller(...));
+        $reflector ??= new ReflectionFunction($controller(...));
+        $controllerName = $this->getPrettyName($reflector);
 
         foreach ($reflector->getParameters() as $param) {
             $attributes = [];
@@ -31,7 +38,7 @@ final class ArgumentMetadataFactory implements ArgumentMetadataFactoryInterface
                 }
             }
 
-            $arguments[] = new ArgumentMetadata($param->getName(), $this->getType($param), $param->isVariadic(), $param->isDefaultValueAvailable(), $param->isDefaultValueAvailable() ? $param->getDefaultValue() : null, $param->allowsNull(), $attributes);
+            $arguments[] = new ArgumentMetadata($param->getName(), $this->getType($param), $param->isVariadic(), $param->isDefaultValueAvailable(), $param->isDefaultValueAvailable() ? $param->getDefaultValue() : null, $param->allowsNull(), $attributes, $controllerName);
         }
 
         return $arguments;
@@ -40,17 +47,32 @@ final class ArgumentMetadataFactory implements ArgumentMetadataFactoryInterface
     /**
      * Returns an associated type to the given parameter if available.
      */
-    private function getType(\ReflectionParameter $parameter): ?string
+    private function getType(ReflectionParameter $parameter): ?string
     {
         if (!$type = $parameter->getType()) {
             return null;
         }
-        $name = $type instanceof \ReflectionNamedType ? $type->getName() : (string) $type;
+        $name = $type instanceof ReflectionNamedType ? $type->getName() : (string) $type;
 
         return match (strtolower($name)) {
             'self' => $parameter->getDeclaringClass()?->name,
             'parent' => get_parent_class($parameter->getDeclaringClass()?->name ?? '') ?: null,
             default => $name,
         };
+    }
+
+    private function getPrettyName(ReflectionFunctionAbstract $r): string
+    {
+        $name = $r->name;
+
+        if ($r instanceof ReflectionMethod) {
+            return $r->class.'::'.$name;
+        }
+
+        if ($r->isAnonymous() || !$class = $r->getClosureCalledClass()) {
+            return $name;
+        }
+
+        return $class->name.'::'.$name;
     }
 }

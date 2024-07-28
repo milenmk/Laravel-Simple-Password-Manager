@@ -7,6 +7,16 @@ namespace Dotenv\Util;
 use GrahamCampbell\ResultType\Error;
 use GrahamCampbell\ResultType\Success;
 
+use function preg_last_error;
+use function preg_last_error_msg;
+
+use function preg_match;
+use function preg_match_all;
+use function preg_replace_callback;
+use function preg_split;
+
+use const PREG_NO_ERROR;
+
 /**
  * @internal
  */
@@ -35,7 +45,7 @@ final class Regex
     public static function matches(string $pattern, string $subject)
     {
         return self::pregAndWrap(static function (string $subject) use ($pattern) {
-            return @\preg_match($pattern, $subject) === 1;
+            return @preg_match($pattern, $subject) === 1;
         }, $subject);
     }
 
@@ -50,7 +60,7 @@ final class Regex
     public static function occurrences(string $pattern, string $subject)
     {
         return self::pregAndWrap(static function (string $subject) use ($pattern) {
-            return (int) @\preg_match_all($pattern, $subject);
+            return (int) @preg_match_all($pattern, $subject);
         }, $subject);
     }
 
@@ -64,10 +74,10 @@ final class Regex
      *
      * @return \GrahamCampbell\ResultType\Result<string,string>
      */
-    public static function replaceCallback(string $pattern, callable $callback, string $subject, int $limit = null)
+    public static function replaceCallback(string $pattern, callable $callback, string $subject, ?int $limit = null)
     {
         return self::pregAndWrap(static function (string $subject) use ($pattern, $callback, $limit) {
-            return (string) @\preg_replace_callback($pattern, $callback, $subject, $limit ?? -1);
+            return (string) @preg_replace_callback($pattern, $callback, $subject, $limit ?? -1);
         }, $subject);
     }
 
@@ -83,7 +93,7 @@ final class Regex
     {
         return self::pregAndWrap(static function (string $subject) use ($pattern) {
             /** @var string[] */
-            return (array) @\preg_split($pattern, $subject);
+            return (array) @preg_split($pattern, $subject);
         }, $subject);
     }
 
@@ -101,9 +111,9 @@ final class Regex
     {
         $result = $operation($subject);
 
-        if (\preg_last_error() !== \PREG_NO_ERROR) {
+        if (preg_last_error() !== PREG_NO_ERROR) {
             /** @var \GrahamCampbell\ResultType\Result<V,string> */
-            return Error::create(\preg_last_error_msg());
+            return Error::create(preg_last_error_msg());
         }
 
         /** @var \GrahamCampbell\ResultType\Result<V,string> */

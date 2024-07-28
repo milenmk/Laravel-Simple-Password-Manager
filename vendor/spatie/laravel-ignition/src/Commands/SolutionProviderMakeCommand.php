@@ -6,7 +6,6 @@ use Illuminate\Console\GeneratorCommand;
 
 class SolutionProviderMakeCommand extends GeneratorCommand
 {
-
     protected $name = 'ignition:make-solution-provider';
 
     protected $description = 'Create a new custom Ignition solution provider class';
@@ -15,14 +14,11 @@ class SolutionProviderMakeCommand extends GeneratorCommand
 
     protected function getStub(): string
     {
-
-        return __DIR__ . '/stubs/solution-provider.stub';
+        return __DIR__.'/stubs/solution-provider.stub';
     }
 
     protected function getDefaultNamespace($rootNamespace)
     {
-
         return "{$rootNamespace}\\SolutionProviders";
     }
-
 }

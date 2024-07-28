@@ -7,18 +7,15 @@ use Throwable;
 
 class BladeSourceMapCompiler
 {
-
     protected BladeCompiler $bladeCompiler;
 
     public function __construct()
     {
-
         $this->bladeCompiler = app('blade.compiler');
     }
 
     public function detectLineNumber(string $filename, int $compiledLineNumber): int
     {
-
         $map = $this->compileSourcemap((string)file_get_contents($filename));
 
         return $this->findClosestLineNumberMapping($map, $compiledLineNumber);
@@ -26,7 +23,6 @@ class BladeSourceMapCompiler
 
     protected function compileSourcemap(string $value): string
     {
-
         try {
             $value = $this->addEchoLineNumbers($value);
 
@@ -37,8 +33,7 @@ class BladeSourceMapCompiler
             $value = $this->bladeCompiler->compileString($value);
 
             return $this->trimEmptyLines($value);
-        }
-        catch (Throwable $e) {
+        } catch (Throwable $e) {
             report($e);
 
             return $value;
@@ -47,7 +42,6 @@ class BladeSourceMapCompiler
 
     protected function addEchoLineNumbers(string $value): string
     {
-
         $echoPairs = [['{{', '}}'], ['{{{', '}}}'], ['{!!', '!!}']];
 
         foreach ($echoPairs as $pair) {
@@ -66,18 +60,8 @@ class BladeSourceMapCompiler
         return $value;
     }
 
-    protected function insertLineNumberAtPosition(int $position, string $value): string
-    {
-
-        $before = mb_substr($value, 0, $position);
-        $lineNumber = count(explode("\n", $before));
-
-        return mb_substr($value, 0, $position) . "|---LINE:{$lineNumber}---|" . mb_substr($value, $position);
-    }
-
     protected function addStatementLineNumbers(string $value): string
     {
-
         // Matches @bladeStatements() like @if, @component(...), @etc;
         $shouldInsertLineNumbers = preg_match_all(
             '/\B@(@?\w+(?:::\w+)?)([ \t]*)(\( ( (?>[^()]+) | (?3) )* \))?/x',
@@ -99,7 +83,6 @@ class BladeSourceMapCompiler
 
     protected function addBladeComponentLineNumbers(string $value): string
     {
-
         // Matches the start of `<x-blade-component`
         $shouldInsertLineNumbers = preg_match_all(
             '/<\s*x[-:]([\w\-:.]*)/mx',
@@ -119,9 +102,16 @@ class BladeSourceMapCompiler
         return $value;
     }
 
+    protected function insertLineNumberAtPosition(int $position, string $value): string
+    {
+        $before = mb_substr($value, 0, $position);
+        $lineNumber = count(explode("\n", $before));
+
+        return mb_substr($value, 0, $position)."|---LINE:{$lineNumber}---|".mb_substr($value, $position);
+    }
+
     protected function trimEmptyLines(string $value): string
     {
-
         $value = preg_replace('/^\|---LINE:([0-9]+)---\|$/m', '', $value);
 
         return ltrim((string)$value, PHP_EOL);
@@ -129,7 +119,6 @@ class BladeSourceMapCompiler
 
     protected function findClosestLineNumberMapping(string $map, int $compiledLineNumber): int
     {
-
         $map = explode("\n", $map);
 
         // Max 20 lines between compiled and source line number.
@@ -153,5 +142,4 @@ class BladeSourceMapCompiler
             $lineNumberToCheck--;
         }
     }
-
 }

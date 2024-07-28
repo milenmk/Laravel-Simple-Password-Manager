@@ -28,7 +28,7 @@ use SebastianBergmann\FileIterator\Facade as FileIteratorFacade;
 /**
  * @internal This class is not covered by the backward compatibility promise for PHPUnit
  */
-final class TestSuiteBuilder
+final readonly class TestSuiteBuilder
 {
     /**
      * @throws \PHPUnit\Framework\Exception
@@ -69,7 +69,7 @@ final class TestSuiteBuilder
 
             assert(!empty($xmlConfigurationFile));
 
-            $testSuite = (new TestSuiteMapper)->map(
+            $testSuite = (new TestSuiteMapper())->map(
                 $xmlConfigurationFile,
                 $configuration->testSuite(),
                 $configuration->includeTestSuite(),
@@ -99,7 +99,7 @@ final class TestSuiteBuilder
         }
 
         if (is_dir($path)) {
-            $files = (new FileIteratorFacade)->getFilesAsArray($path, $suffixes);
+            $files = (new FileIteratorFacade())->getFilesAsArray($path, $suffixes);
 
             $suite = $suite ?: TestSuite::empty('CLI Arguments');
             $suite->addTestFiles($files);
@@ -108,7 +108,7 @@ final class TestSuiteBuilder
         }
 
         try {
-            $testClass = (new TestSuiteLoader)->load($path);
+            $testClass = (new TestSuiteLoader())->load($path);
         } catch (Exception $e) {
             print $e->getMessage() . PHP_EOL;
 

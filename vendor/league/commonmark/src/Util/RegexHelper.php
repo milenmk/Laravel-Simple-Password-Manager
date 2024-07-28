@@ -19,6 +19,21 @@ namespace League\CommonMark\Util;
 use League\CommonMark\Exception\InvalidArgumentException;
 use League\CommonMark\Extension\CommonMark\Node\Block\HtmlBlock;
 
+use function assert;
+use function is_string;
+use function mb_strcut;
+use function mb_strlen;
+use function mb_substr;
+use function preg_match;
+use function preg_match_all;
+use function preg_replace;
+use function preg_replace_callback;
+
+use function substr;
+
+use const PREG_OFFSET_CAPTURE;
+use const PREG_SET_ORDER;
+
 /**
  * Provides regular expressions and utilities for parsing Markdown
  *
@@ -53,9 +68,9 @@ final class RegexHelper
     public const PARTIAL_CLOSETAG              = '<\/' . self::PARTIAL_TAGNAME . '\s*[>]';
     public const PARTIAL_OPENBLOCKTAG          = '<' . self::PARTIAL_BLOCKTAGNAME . self::PARTIAL_ATTRIBUTE . '*' . '\s*\/?>';
     public const PARTIAL_CLOSEBLOCKTAG         = '<\/' . self::PARTIAL_BLOCKTAGNAME . '\s*[>]';
-    public const PARTIAL_HTMLCOMMENT           = '<!---->|<!--(?:-?[^>-])(?:-?[^-])*-->';
+    public const PARTIAL_HTMLCOMMENT           = '<!-->|<!--->|<!--[\s\S]*?-->';
     public const PARTIAL_PROCESSINGINSTRUCTION = '[<][?][\s\S]*?[?][>]';
-    public const PARTIAL_DECLARATION           = '<![A-Z]+' . '[^>]*>';
+    public const PARTIAL_DECLARATION           = '<![A-Za-z]+' . '[^>]*>';
     public const PARTIAL_CDATA                 = '<!\[CDATA\[[\s\S]*?]\]>';
     public const PARTIAL_HTMLTAG               = '(?:' . self::PARTIAL_OPENTAG . '|' . self::PARTIAL_CLOSETAG . '|' . self::PARTIAL_HTMLCOMMENT . '|' .
         self::PARTIAL_PROCESSINGINSTRUCTION . '|' . self::PARTIAL_DECLARATION . '|' . self::PARTIAL_CDATA . ')';
@@ -65,7 +80,7 @@ final class RegexHelper
         '|' . '\'(' . self::PARTIAL_ESCAPED_CHAR . '|[^\'\x00])*\'' .
         '|' . '\((' . self::PARTIAL_ESCAPED_CHAR . '|[^()\x00])*\))';
 
-    public const REGEX_PUNCTUATION        = '/^[\x{2000}-\x{206F}\x{2E00}-\x{2E7F}\p{Pc}\p{Pd}\p{Pe}\p{Pf}\p{Pi}\p{Po}\p{Ps}\\\\\'!"#\$%&\(\)\*\+,\-\.\\/:;<=>\?@\[\]\^_`\{\|\}~]/u';
+    public const REGEX_PUNCTUATION        = '/^[!"#$%&\'()*+,\-.\\/:;<=>?@\\[\\]\\\\^_`{|}~\p{P}\p{S}]/u';
     public const REGEX_UNSAFE_PROTOCOL    = '/^javascript:|vbscript:|file:|data:/i';
     public const REGEX_SAFE_DATA_PROTOCOL = '/^data:image\/(?:png|gif|jpeg|webp)/i';
     public const REGEX_NON_SPACE          = '/[^ \t\f\v\r\n]/';
@@ -80,7 +95,7 @@ final class RegexHelper
      */
     public static function isEscapable(string $character): bool
     {
-        return \preg_match('/' . self::PARTIAL_ESCAPABLE . '/', $character) === 1;
+        return preg_match('/' . self::PARTIAL_ESCAPABLE . '/', $character) === 1;
     }
 
     /**
@@ -92,7 +107,7 @@ final class RegexHelper
             return false;
         }
 
-        return \preg_match('/[\pL]/u', $character) === 1;
+        return preg_match('/[\pL]/u', $character) === 1;
     }
 
     /**
@@ -107,13 +122,13 @@ final class RegexHelper
     public static function matchAt(string $regex, string $string, int $offset = 0): ?int
     {
         $matches = [];
-        $string  = \mb_substr($string, $offset, null, 'UTF-8');
-        if (! \preg_match($regex, $string, $matches, \PREG_OFFSET_CAPTURE)) {
+        $string  = mb_substr($string, $offset, null, 'UTF-8');
+        if (! preg_match($regex, $string, $matches, PREG_OFFSET_CAPTURE)) {
             return null;
         }
 
         // PREG_OFFSET_CAPTURE always returns the byte offset, not the char offset, which is annoying
-        $charPos = \mb_strlen(\mb_strcut($string, 0, $matches[0][1], 'UTF-8'), 'UTF-8');
+        $charPos = mb_strlen(mb_strcut($string, 0, $matches[0][1], 'UTF-8'), 'UTF-8');
 
         return $offset + $charPos;
     }
@@ -130,10 +145,10 @@ final class RegexHelper
     public static function matchFirst(string $pattern, string $subject, int $offset = 0): ?array
     {
         if ($offset !== 0) {
-            $subject = \substr($subject, $offset);
+            $subject = substr($subject, $offset);
         }
 
-        \preg_match_all($pattern, $subject, $matches, \PREG_SET_ORDER);
+        preg_match_all($pattern, $subject, $matches, PREG_SET_ORDER);
 
         if ($matches === []) {
             return null;
@@ -151,10 +166,10 @@ final class RegexHelper
     {
         $allEscapedChar = '/\\\\(' . self::PARTIAL_ESCAPABLE . ')/';
 
-        $escaped = \preg_replace($allEscapedChar, '$1', $string);
-        \assert(\is_string($escaped));
+        $escaped = preg_replace($allEscapedChar, '$1', $string);
+        assert(is_string($escaped));
 
-        return \preg_replace_callback('/' . self::PARTIAL_ENTITY . '/i', static fn ($e) => Html5EntityDecoder::decode($e[0]), $escaped);
+        return preg_replace_callback('/' . self::PARTIAL_ENTITY . '/i', static fn ($e) => Html5EntityDecoder::decode($e[0]), $escaped);
     }
 
     /**
@@ -232,6 +247,6 @@ final class RegexHelper
      */
     public static function isLinkPotentiallyUnsafe(string $url): bool
     {
-        return \preg_match(self::REGEX_UNSAFE_PROTOCOL, $url) !== 0 && \preg_match(self::REGEX_SAFE_DATA_PROTOCOL, $url) === 0;
+        return preg_match(self::REGEX_UNSAFE_PROTOCOL, $url) !== 0 && preg_match(self::REGEX_SAFE_DATA_PROTOCOL, $url) === 0;
     }
 }

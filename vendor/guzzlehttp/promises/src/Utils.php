@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace GuzzleHttp\Promise;
 
+use Throwable;
+
 final class Utils
 {
     /**
@@ -21,7 +23,7 @@ final class Utils
      *
      * @param TaskQueueInterface|null $assign Optionally specify a new queue instance.
      */
-    public static function queue(TaskQueueInterface $assign = null): TaskQueueInterface
+    public static function queue(?TaskQueueInterface $assign = null): TaskQueueInterface
     {
         static $queue;
 
@@ -49,7 +51,7 @@ final class Utils
                 if (Is::pending($promise)) {
                     $promise->resolve($task());
                 }
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 $promise->reject($e);
             }
         });
@@ -78,7 +80,7 @@ final class Utils
             ];
         } catch (RejectionException $e) {
             return ['state' => PromiseInterface::REJECTED, 'reason' => $e->getReason()];
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             return ['state' => PromiseInterface::REJECTED, 'reason' => $e];
         }
     }

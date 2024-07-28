@@ -4,6 +4,11 @@ declare(strict_types=1);
 
 namespace Termwind\ValueObjects;
 
+use DOMComment;
+use DOMDocument;
+use DOMElement;
+use DOMNode;
+use DOMText;
 use Generator;
 
 /**
@@ -14,7 +19,7 @@ final class Node
     /**
      * A value object with helper methods for working with DOM node.
      */
-    public function __construct(private \DOMNode $node)
+    public function __construct(private DOMNode $node)
     {
     }
 
@@ -34,7 +39,7 @@ final class Node
     public function getChildNodes(): Generator
     {
         foreach ($this->node->childNodes as $node) {
-            yield new static($node);
+            yield new self($node);
         }
     }
 
@@ -43,7 +48,7 @@ final class Node
      */
     public function isText(): bool
     {
-        return $this->node instanceof \DOMText;
+        return $this->node instanceof DOMText;
     }
 
     /**
@@ -51,7 +56,7 @@ final class Node
      */
     public function isComment(): bool
     {
-        return $this->node instanceof \DOMComment;
+        return $this->node instanceof DOMComment;
     }
 
     /**
@@ -83,7 +88,7 @@ final class Node
      */
     public function getAttribute(string $name): string
     {
-        if ($this->node instanceof \DOMElement) {
+        if ($this->node instanceof DOMElement) {
             return $this->node->getAttribute($name);
         }
 
@@ -101,12 +106,12 @@ final class Node
     /**
      * Gets the previous sibling from the node.
      */
-    public function getPreviousSibling(): static|null
+    public function getPreviousSibling(): ?static
     {
         $node = $this->node;
 
         while ($node = $node->previousSibling) {
-            $node = new static($node);
+            $node = new self($node);
 
             if ($node->isEmpty()) {
                 $node = $node->node;
@@ -121,18 +126,18 @@ final class Node
             $node = $node->node;
         }
 
-        return is_null($node) ? null : new static($node);
+        return is_null($node) ? null : new self($node);
     }
 
     /**
      * Gets the next sibling from the node.
      */
-    public function getNextSibling(): static|null
+    public function getNextSibling(): ?static
     {
         $node = $this->node;
 
         while ($node = $node->nextSibling) {
-            $node = new static($node);
+            $node = new self($node);
 
             if ($node->isEmpty()) {
                 $node = $node->node;
@@ -147,7 +152,7 @@ final class Node
             $node = $node->node;
         }
 
-        return is_null($node) ? null : new static($node);
+        return is_null($node) ? null : new self($node);
     }
 
     /**
@@ -165,7 +170,7 @@ final class Node
     {
         $html = '';
         foreach ($this->node->childNodes as $child) {
-            if ($child->ownerDocument instanceof \DOMDocument) {
+            if ($child->ownerDocument instanceof DOMDocument) {
                 $html .= $child->ownerDocument->saveXML($child);
             }
         }

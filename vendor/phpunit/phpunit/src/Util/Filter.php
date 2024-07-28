@@ -23,7 +23,7 @@ use Throwable;
 /**
  * @internal This class is not covered by the backward compatibility promise for PHPUnit
  */
-final class Filter
+final readonly class Filter
 {
     /**
      * @throws Exception
@@ -58,7 +58,7 @@ final class Filter
         }
 
         $prefix      = defined('__PHPUNIT_PHAR_ROOT__') ? __PHPUNIT_PHAR_ROOT__ : false;
-        $excludeList = new ExcludeList;
+        $excludeList = new ExcludeList();
 
         foreach ($eTrace as $frame) {
             if (self::shouldPrintFrame($frame, $prefix, $excludeList)) {

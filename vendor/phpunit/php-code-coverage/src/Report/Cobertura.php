@@ -35,7 +35,7 @@ final class Cobertura
 
         $report = $coverage->getReport();
 
-        $implementation = new DOMImplementation;
+        $implementation = new DOMImplementation();
 
         $documentType = $implementation->createDocumentType(
             'coverage',
@@ -117,10 +117,6 @@ final class Cobertura
                 $complexity        += $class['ccn'];
                 $packageComplexity += $class['ccn'];
 
-                if (!empty($class['package']['namespace'])) {
-                    $className = $class['package']['namespace'] . '\\' . $className;
-                }
-
                 $linesValid   = $class['executableLines'];
                 $linesCovered = $class['executedLines'];
                 $lineRate     = $linesValid === 0 ? 0 : ($linesCovered / $linesValid);
@@ -152,7 +148,7 @@ final class Cobertura
                         continue;
                     }
 
-                    preg_match("/\((.*?)\)/", $method['signature'], $signature);
+                    preg_match('/\((.*?)\)/', $method['signature'], $signature);
 
                     $linesValid   = $method['executableLines'];
                     $linesCovered = $method['executedLines'];

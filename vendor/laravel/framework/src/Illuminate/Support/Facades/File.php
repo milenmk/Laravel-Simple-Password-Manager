@@ -2,25 +2,31 @@
 
 namespace Illuminate\Support\Facades;
 
+use Closure;
+use Illuminate\Filesystem\Filesystem;
+use Illuminate\Support\LazyCollection;
+use Symfony\Component\Finder\SplFileInfo;
+
 /**
  * @method static bool exists(string $path)
  * @method static bool missing(string $path)
  * @method static string get(string $path, bool $lock = false)
+ * @method static array json(string $path, int $flags = 0, bool $lock = false)
  * @method static string sharedGet(string $path)
  * @method static mixed getRequire(string $path, array $data = [])
  * @method static mixed requireOnce(string $path, array $data = [])
- * @method static \Illuminate\Support\LazyCollection lines(string $path)
+ * @method static LazyCollection lines(string $path)
  * @method static string hash(string $path, string $algorithm = 'md5')
  * @method static int|bool put(string $path, string $contents, bool $lock = false)
  * @method static void replace(string $path, string $content, int|null $mode = null)
  * @method static void replaceInFile(array|string $search, array|string $replace, string $path)
  * @method static int prepend(string $path, string $data)
- * @method static int append(string $path, string $data)
+ * @method static int append(string $path, string $data, bool $lock = false)
  * @method static mixed chmod(string $path, int|null $mode = null)
  * @method static bool delete(string|array $paths)
  * @method static bool move(string $path, string $target)
  * @method static bool copy(string $path, string $target)
- * @method static void link(string $target, string $link)
+ * @method static bool|null link(string $target, string $link)
  * @method static void relativeLink(string $target, string $link)
  * @method static string name(string $path)
  * @method static string basename(string $path)
@@ -38,8 +44,8 @@ namespace Illuminate\Support\Facades;
  * @method static bool hasSameHash(string $firstFile, string $secondFile)
  * @method static bool isFile(string $file)
  * @method static array glob(string $pattern, int $flags = 0)
- * @method static \Symfony\Component\Finder\SplFileInfo[] files(string $directory, bool $hidden = false)
- * @method static \Symfony\Component\Finder\SplFileInfo[] allFiles(string $directory, bool $hidden = false)
+ * @method static SplFileInfo[] files(string $directory, bool $hidden = false)
+ * @method static SplFileInfo[] allFiles(string $directory, bool $hidden = false)
  * @method static array directories(string $directory)
  * @method static void ensureDirectoryExists(string $path, int $mode = 0755, bool $recursive = true)
  * @method static bool makeDirectory(string $path, int $mode = 0755, bool $recursive = false, bool $force = false)
@@ -48,9 +54,9 @@ namespace Illuminate\Support\Facades;
  * @method static bool deleteDirectory(string $directory, bool $preserve = false)
  * @method static bool deleteDirectories(string $directory)
  * @method static bool cleanDirectory(string $directory)
- * @method static \Illuminate\Filesystem\Filesystem|mixed when(\Closure|mixed|null $value = null, callable|null $callback = null, callable|null $default = null)
- * @method static \Illuminate\Filesystem\Filesystem|mixed unless(\Closure|mixed|null $value = null, callable|null $callback = null, callable|null $default = null)
- * @method static void macro(string $name, object|callable $macro)
+ * @method static Filesystem|mixed when(Closure|mixed|null $value = null, callable|null $callback = null, callable|null $default = null)
+ * @method static Filesystem|mixed unless(Closure|mixed|null $value = null, callable|null $callback = null, callable|null $default = null)
+ * @method static void macro(string $name, object|callable $macro, object|callable $macro = null)
  * @method static void mixin(object $mixin, bool $replace = true)
  * @method static bool hasMacro(string $name)
  * @method static void flushMacros()

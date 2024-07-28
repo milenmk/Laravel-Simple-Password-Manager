@@ -13,6 +13,8 @@ namespace Symfony\Component\Console\Input;
 
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 
+use function strlen;
+
 /**
  * StringInput represents an input provided as a string.
  *
@@ -24,10 +26,6 @@ use Symfony\Component\Console\Exception\InvalidArgumentException;
  */
 class StringInput extends ArgvInput
 {
-    /**
-     * @deprecated since Symfony 6.1
-     */
-    public const REGEX_STRING = '([^\s]+?)(?:\s|(?<!\\\\)"|(?<!\\\\)\'|$)';
     public const REGEX_UNQUOTED_STRING = '([^\s\\\\]+?)';
     public const REGEX_QUOTED_STRING = '(?:"([^"\\\\]*(?:\\\\.[^"\\\\]*)*)"|\'([^\'\\\\]*(?:\\\\.[^\'\\\\]*)*)\')';
 
@@ -44,12 +42,14 @@ class StringInput extends ArgvInput
     /**
      * Tokenizes a string.
      *
+     * @return list<string>
+     *
      * @throws InvalidArgumentException When unable to parse input (should never happen)
      */
     private function tokenize(string $input): array
     {
         $tokens = [];
-        $length = \strlen($input);
+        $length = strlen($input);
         $cursor = 0;
         $token = null;
         while ($cursor < $length) {
@@ -75,7 +75,7 @@ class StringInput extends ArgvInput
                 throw new InvalidArgumentException(sprintf('Unable to parse input near "... %s ...".', substr($input, $cursor, 10)));
             }
 
-            $cursor += \strlen($match[0]);
+            $cursor += strlen($match[0]);
         }
 
         if (null !== $token) {

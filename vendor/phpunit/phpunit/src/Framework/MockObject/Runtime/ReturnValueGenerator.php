@@ -97,7 +97,7 @@ final class ReturnValueGenerator
             }
 
             if (in_array('object', $lowerTypes, true)) {
-                return new stdClass;
+                return new stdClass();
             }
 
             if (in_array('callable', $lowerTypes, true) ||
@@ -204,7 +204,7 @@ final class ReturnValueGenerator
     private function testDoubleFor(string $type, string $className, string $methodName): Stub
     {
         try {
-            return (new Generator)->testDouble($type, false, [], [], '', false);
+            return (new Generator())->testDouble($type, false, false, [], [], '', false);
         } catch (Throwable $t) {
             throw new RuntimeException(
                 sprintf(
@@ -227,7 +227,7 @@ final class ReturnValueGenerator
     private function testDoubleForIntersectionOfInterfaces(array $types, string $className, string $methodName): Stub
     {
         try {
-            return (new Generator)->testDoubleForInterfaceIntersection($types, false);
+            return (new Generator())->testDoubleForInterfaceIntersection($types, false);
         } catch (Throwable $t) {
             throw new RuntimeException(
                 sprintf(

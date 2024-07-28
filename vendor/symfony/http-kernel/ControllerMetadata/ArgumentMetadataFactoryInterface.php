@@ -11,6 +11,8 @@
 
 namespace Symfony\Component\HttpKernel\ControllerMetadata;
 
+use ReflectionFunctionAbstract;
+
 /**
  * Builds method argument data.
  *
@@ -19,9 +21,7 @@ namespace Symfony\Component\HttpKernel\ControllerMetadata;
 interface ArgumentMetadataFactoryInterface
 {
     /**
-     * @param \ReflectionFunctionAbstract|null $reflector
-     *
      * @return ArgumentMetadata[]
      */
-    public function createArgumentMetadata(string|object|array $controller/* , \ReflectionFunctionAbstract $reflector = null */): array;
+    public function createArgumentMetadata(string|object|array $controller, ?ReflectionFunctionAbstract $reflector = null): array;
 }

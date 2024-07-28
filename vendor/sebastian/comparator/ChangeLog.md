@@ -2,6 +2,18 @@
 
 All notable changes are documented in this file using the [Keep a CHANGELOG](http://keepachangelog.com/) principles.
 
+## [6.0.1] - 2024-07-03
+
+### Changed
+
+* This project now uses PHPStan instead of Psalm for static analysis
+
+## [6.0.0] - 2024-02-02
+
+### Removed
+
+* Removed support for PHP 8.1
+
 ## [5.0.1] - 2023-08-14
 
 ### Fixed
@@ -144,6 +156,8 @@ All notable changes are documented in this file using the [Keep a CHANGELOG](htt
 * Added `SebastianBergmann\Comparator\Factory::reset()` to unregister all non-default comparators
 * Added support for `phpunit/phpunit-mock-objects` version `^5.0`
 
+[6.0.1]: https://github.com/sebastianbergmann/comparator/compare/6.0.0...6.0.1
+[6.0.0]: https://github.com/sebastianbergmann/comparator/compare/5.0...6.0.0
 [5.0.1]: https://github.com/sebastianbergmann/comparator/compare/5.0.0...5.0.1
 [5.0.0]: https://github.com/sebastianbergmann/comparator/compare/4.0.8...5.0.0
 [4.0.8]: https://github.com/sebastianbergmann/comparator/compare/4.0.7...4.0.8

@@ -7,7 +7,9 @@ use Exception;
 use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Log\LogManager;
+use Illuminate\Support\Env;
 use Monolog\Handler\NullHandler;
+use PHPUnit\Runner\ErrorHandler;
 use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\ErrorHandler\Error\FatalError;
 use Throwable;
@@ -36,7 +38,7 @@ class HandleExceptions
      */
     public function bootstrap(Application $app)
     {
-        self::$reservedMemory = str_repeat('x', 32768);
+        static::$reservedMemory = str_repeat('x', 32768);
 
         static::$app = $app;
 
@@ -60,33 +62,17 @@ class HandleExceptions
      * @param  string  $message
      * @param  string  $file
      * @param  int  $line
-     * @param  array  $context
      * @return void
      *
      * @throws \ErrorException
      */
-    public function handleError($level, $message, $file = '', $line = 0, $context = [])
+    public function handleError($level, $message, $file = '', $line = 0)
     {
         if ($this->isDeprecation($level)) {
             $this->handleDeprecationError($message, $file, $line, $level);
         } elseif (error_reporting() & $level) {
             throw new ErrorException($message, 0, $level, $file, $line);
         }
-    }
-
-    /**
-     * Reports a deprecation to the "deprecations" logger.
-     *
-     * @param  string  $message
-     * @param  string  $file
-     * @param  int  $line
-     * @return void
-     *
-     * @deprecated Use handleDeprecationError instead.
-     */
-    public function handleDeprecation($message, $file, $line)
-    {
-        $this->handleDeprecationError($message, $file, $line);
     }
 
     /**
@@ -106,7 +92,7 @@ class HandleExceptions
 
         try {
             $logger = static::$app->make(LogManager::class);
-        } catch (Exception $e) {
+        } catch (Exception) {
             return;
         }
 
@@ -134,7 +120,7 @@ class HandleExceptions
     {
         return ! class_exists(LogManager::class)
             || ! static::$app->hasBeenBootstrapped()
-            || static::$app->runningUnitTests();
+            || (static::$app->runningUnitTests() && ! Env::get('LOG_DEPRECATIONS_WHILE_TESTING'));
     }
 
     /**
@@ -192,11 +178,11 @@ class HandleExceptions
      */
     public function handleException(Throwable $e)
     {
-        self::$reservedMemory = null;
+        static::$reservedMemory = null;
 
         try {
             $this->getExceptionHandler()->report($e);
-        } catch (Exception $e) {
+        } catch (Exception) {
             $exceptionHandlerFailed = true;
         }
 
@@ -219,7 +205,7 @@ class HandleExceptions
      */
     protected function renderForConsole(Throwable $e)
     {
-        $this->getExceptionHandler()->renderForConsole(new ConsoleOutput, $e);
+        $this->getExceptionHandler()->renderForConsole(new ConsoleOutput(), $e);
     }
 
     /**
@@ -240,7 +226,7 @@ class HandleExceptions
      */
     public function handleShutdown()
     {
-        self::$reservedMemory = null;
+        static::$reservedMemory = null;
 
         if (! is_null($error = error_get_last()) && $this->isFatal($error['type'])) {
             $this->handleException($this->fatalErrorFromPhpError($error, 0));
@@ -307,9 +293,70 @@ class HandleExceptions
      * Clear the local application instance from memory.
      *
      * @return void
+     *
+     * @deprecated This method will be removed in a future Laravel version.
      */
     public static function forgetApp()
     {
         static::$app = null;
+    }
+
+    /**
+     * Flush the bootstrapper's global state.
+     *
+     * @return void
+     */
+    public static function flushState()
+    {
+        if (is_null(static::$app)) {
+            return;
+        }
+
+        static::flushHandlersState();
+
+        static::$app = null;
+
+        static::$reservedMemory = null;
+    }
+
+    /**
+     * Flush the bootstrapper's global handlers state.
+     *
+     * @return void
+     */
+    public static function flushHandlersState()
+    {
+        while (true) {
+            $previousHandler = set_exception_handler(static fn () => null);
+
+            restore_exception_handler();
+
+            if ($previousHandler === null) {
+                break;
+            }
+
+            restore_exception_handler();
+        }
+
+        while (true) {
+            $previousHandler = set_error_handler(static fn () => null);
+
+            restore_error_handler();
+
+            if ($previousHandler === null) {
+                break;
+            }
+
+            restore_error_handler();
+        }
+
+        if (class_exists(ErrorHandler::class)) {
+            $instance = ErrorHandler::instance();
+
+            if ((fn () => $this->enabled ?? false)->call($instance)) {
+                $instance->disable();
+                $instance->enable();
+            }
+        }
     }
 }

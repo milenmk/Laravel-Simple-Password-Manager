@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types = 1);
+declare(strict_types=1);
 
 /*
  * This file is a part of dflydev/dot-access-data.
@@ -18,5 +18,4 @@ namespace Dflydev\DotAccessData\Exception;
  */
 class InvalidPathException extends DataException
 {
-
 }

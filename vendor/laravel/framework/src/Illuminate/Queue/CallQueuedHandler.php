@@ -2,6 +2,7 @@
 
 namespace Illuminate\Queue;
 
+use __PHP_Incomplete_Class;
 use Exception;
 use Illuminate\Bus\Batchable;
 use Illuminate\Bus\UniqueLock;
@@ -14,6 +15,7 @@ use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldBeUniqueUntilProcessing;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Pipeline\Pipeline;
+use Illuminate\Queue\Attributes\DeleteWhenMissingModels;
 use ReflectionClass;
 use RuntimeException;
 
@@ -113,7 +115,7 @@ class CallQueuedHandler
      */
     protected function dispatchThroughMiddleware(Job $job, $command)
     {
-        if ($command instanceof \__PHP_Incomplete_Class) {
+        if ($command instanceof __PHP_Incomplete_Class) {
             throw new Exception('Job is incomplete class: '.json_encode($command));
         }
 
@@ -218,9 +220,11 @@ class CallQueuedHandler
         $class = $job->resolveName();
 
         try {
-            $shouldDelete = (new ReflectionClass($class))
-                    ->getDefaultProperties()['deleteWhenMissingModels'] ?? false;
-        } catch (Exception $e) {
+            $reflectionClass = new ReflectionClass($class);
+
+            $shouldDelete = $reflectionClass->getDefaultProperties()['deleteWhenMissingModels']
+                ?? count($reflectionClass->getAttributes(DeleteWhenMissingModels::class)) !== 0;
+        } catch (Exception) {
             $shouldDelete = false;
         }
 
@@ -249,7 +253,7 @@ class CallQueuedHandler
             $this->ensureUniqueJobLockIsReleased($command);
         }
 
-        if ($command instanceof \__PHP_Incomplete_Class) {
+        if ($command instanceof __PHP_Incomplete_Class) {
             return;
         }
 

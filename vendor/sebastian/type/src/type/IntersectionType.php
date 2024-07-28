@@ -9,6 +9,7 @@
  */
 namespace SebastianBergmann\Type;
 
+use function array_is_list;
 use function assert;
 use function count;
 use function implode;
@@ -18,7 +19,7 @@ use function sort;
 final class IntersectionType extends Type
 {
     /**
-     * @psalm-var non-empty-list<Type>
+     * @var non-empty-list<Type>
      */
     private array $types;
 
@@ -31,6 +32,8 @@ final class IntersectionType extends Type
         $this->ensureOnlyValidTypes(...$types);
         $this->ensureNoDuplicateTypes(...$types);
 
+        assert(array_is_list($types) && !empty($types));
+
         $this->types = $types;
     }
 
@@ -39,11 +42,17 @@ final class IntersectionType extends Type
         return $other->isObject();
     }
 
+    /**
+     * @return non-empty-string
+     */
     public function asString(): string
     {
         return $this->name();
     }
 
+    /**
+     * @return non-empty-string
+     */
     public function name(): string
     {
         $types = [];
@@ -62,16 +71,13 @@ final class IntersectionType extends Type
         return false;
     }
 
-    /**
-     * @psalm-assert-if-true IntersectionType $this
-     */
     public function isIntersection(): bool
     {
         return true;
     }
 
     /**
-     * @psalm-return non-empty-list<Type>
+     * @return non-empty-list<Type>
      */
     public function types(): array
     {
@@ -85,7 +91,7 @@ final class IntersectionType extends Type
     {
         if (count($types) < 2) {
             throw new RuntimeException(
-                'An intersection type must be composed of at least two types'
+                'An intersection type must be composed of at least two types',
             );
         }
     }
@@ -98,7 +104,7 @@ final class IntersectionType extends Type
         foreach ($types as $type) {
             if (!$type->isObject()) {
                 throw new RuntimeException(
-                    'An intersection type can only be composed of interfaces and classes'
+                    'An intersection type can only be composed of interfaces and classes',
                 );
             }
         }

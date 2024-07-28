@@ -21,6 +21,7 @@ use Spatie\FlareClient\FlareMiddleware\RemoveRequestIp;
 use Spatie\FlareClient\Glows\Glow;
 use Spatie\FlareClient\Glows\GlowRecorder;
 use Spatie\FlareClient\Http\Client;
+use Spatie\FlareClient\Support\PhpStackFrameArgumentsFixer;
 use Throwable;
 
 class Flare
@@ -145,9 +146,15 @@ class Flare
         return $this;
     }
 
-    public function withStackFrameArguments(bool $withStackFrameArguments = true): self
-    {
+    public function withStackFrameArguments(
+        bool $withStackFrameArguments = true,
+        bool $forcePHPIniSetting = false,
+    ): self {
         $this->withStackFrameArguments = $withStackFrameArguments;
+
+        if ($forcePHPIniSetting) {
+            (new PhpStackFrameArgumentsFixer())->enable();
+        }
 
         return $this;
     }
@@ -455,7 +462,7 @@ class Flare
         $this->applyAdditionalParameters($report);
         $middleware = array_map(function ($singleMiddleware) {
             return is_string($singleMiddleware)
-                ? new $singleMiddleware
+                ? new $singleMiddleware()
                 : $singleMiddleware;
         }, $this->middleware);
 

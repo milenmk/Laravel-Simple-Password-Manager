@@ -14,6 +14,13 @@ namespace Symfony\Component\Console\Output;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Formatter\OutputFormatterInterface;
 
+use function in_array;
+
+use function is_resource;
+
+use const DIRECTORY_SEPARATOR;
+use const PHP_EOL;
+
 /**
  * StreamOutput writes the output to a given stream.
  *
@@ -42,7 +49,7 @@ class StreamOutput extends Output
      */
     public function __construct($stream, int $verbosity = self::VERBOSITY_NORMAL, ?bool $decorated = null, ?OutputFormatterInterface $formatter = null)
     {
-        if (!\is_resource($stream) || 'stream' !== get_resource_type($stream)) {
+        if (!is_resource($stream) || 'stream' !== get_resource_type($stream)) {
             throw new InvalidArgumentException('The StreamOutput class needs a stream as its first argument.');
         }
 
@@ -63,13 +70,10 @@ class StreamOutput extends Output
         return $this->stream;
     }
 
-    /**
-     * @return void
-     */
-    protected function doWrite(string $message, bool $newline)
+    protected function doWrite(string $message, bool $newline): void
     {
         if ($newline) {
-            $message .= \PHP_EOL;
+            $message .= PHP_EOL;
         }
 
         @fwrite($this->stream, $message);
@@ -93,17 +97,17 @@ class StreamOutput extends Output
     protected function hasColorSupport(): bool
     {
         // Follow https://no-color.org/
-        if (isset($_SERVER['NO_COLOR']) || false !== getenv('NO_COLOR')) {
+        if ('' !== ($_SERVER['NO_COLOR'] ?? getenv('NO_COLOR') ?: '')) {
             return false;
         }
 
         // Detect msysgit/mingw and assume this is a tty because detection
         // does not work correctly, see https://github.com/composer/composer/issues/9690
-        if (!@stream_isatty($this->stream) && !\in_array(strtoupper((string) getenv('MSYSTEM')), ['MINGW32', 'MINGW64'], true)) {
+        if (!@stream_isatty($this->stream) && !in_array(strtoupper((string) getenv('MSYSTEM')), ['MINGW32', 'MINGW64'], true)) {
             return false;
         }
 
-        if ('\\' === \DIRECTORY_SEPARATOR && @sapi_windows_vt100_support($this->stream)) {
+        if ('\\' === DIRECTORY_SEPARATOR && @sapi_windows_vt100_support($this->stream)) {
             return true;
         }
 

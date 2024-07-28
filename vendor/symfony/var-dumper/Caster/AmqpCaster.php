@@ -11,7 +11,31 @@
 
 namespace Symfony\Component\VarDumper\Caster;
 
+use AMQPChannel;
+use AMQPConnection;
+use AMQPEnvelope;
+use AMQPExchange;
+use AMQPQueue;
 use Symfony\Component\VarDumper\Cloner\Stub;
+
+use const AMQP_AUTOACK;
+use const AMQP_AUTODELETE;
+use const AMQP_DURABLE;
+use const AMQP_EX_TYPE_DIRECT;
+use const AMQP_EX_TYPE_FANOUT;
+use const AMQP_EX_TYPE_HEADERS;
+use const AMQP_EX_TYPE_TOPIC;
+use const AMQP_EXCLUSIVE;
+use const AMQP_IFEMPTY;
+use const AMQP_IFUNUSED;
+use const AMQP_IMMEDIATE;
+use const AMQP_INTERNAL;
+use const AMQP_MANDATORY;
+use const AMQP_MULTIPLE;
+use const AMQP_NOLOCAL;
+use const AMQP_NOWAIT;
+use const AMQP_PASSIVE;
+use const AMQP_REQUEUE;
 
 /**
  * Casts Amqp related classes to array representation.
@@ -23,33 +47,30 @@ use Symfony\Component\VarDumper\Cloner\Stub;
 class AmqpCaster
 {
     private const FLAGS = [
-        \AMQP_DURABLE => 'AMQP_DURABLE',
-        \AMQP_PASSIVE => 'AMQP_PASSIVE',
-        \AMQP_EXCLUSIVE => 'AMQP_EXCLUSIVE',
-        \AMQP_AUTODELETE => 'AMQP_AUTODELETE',
-        \AMQP_INTERNAL => 'AMQP_INTERNAL',
-        \AMQP_NOLOCAL => 'AMQP_NOLOCAL',
-        \AMQP_AUTOACK => 'AMQP_AUTOACK',
-        \AMQP_IFEMPTY => 'AMQP_IFEMPTY',
-        \AMQP_IFUNUSED => 'AMQP_IFUNUSED',
-        \AMQP_MANDATORY => 'AMQP_MANDATORY',
-        \AMQP_IMMEDIATE => 'AMQP_IMMEDIATE',
-        \AMQP_MULTIPLE => 'AMQP_MULTIPLE',
-        \AMQP_NOWAIT => 'AMQP_NOWAIT',
-        \AMQP_REQUEUE => 'AMQP_REQUEUE',
+        AMQP_DURABLE => 'AMQP_DURABLE',
+        AMQP_PASSIVE => 'AMQP_PASSIVE',
+        AMQP_EXCLUSIVE => 'AMQP_EXCLUSIVE',
+        AMQP_AUTODELETE => 'AMQP_AUTODELETE',
+        AMQP_INTERNAL => 'AMQP_INTERNAL',
+        AMQP_NOLOCAL => 'AMQP_NOLOCAL',
+        AMQP_AUTOACK => 'AMQP_AUTOACK',
+        AMQP_IFEMPTY => 'AMQP_IFEMPTY',
+        AMQP_IFUNUSED => 'AMQP_IFUNUSED',
+        AMQP_MANDATORY => 'AMQP_MANDATORY',
+        AMQP_IMMEDIATE => 'AMQP_IMMEDIATE',
+        AMQP_MULTIPLE => 'AMQP_MULTIPLE',
+        AMQP_NOWAIT => 'AMQP_NOWAIT',
+        AMQP_REQUEUE => 'AMQP_REQUEUE',
     ];
 
     private const EXCHANGE_TYPES = [
-        \AMQP_EX_TYPE_DIRECT => 'AMQP_EX_TYPE_DIRECT',
-        \AMQP_EX_TYPE_FANOUT => 'AMQP_EX_TYPE_FANOUT',
-        \AMQP_EX_TYPE_TOPIC => 'AMQP_EX_TYPE_TOPIC',
-        \AMQP_EX_TYPE_HEADERS => 'AMQP_EX_TYPE_HEADERS',
+        AMQP_EX_TYPE_DIRECT => 'AMQP_EX_TYPE_DIRECT',
+        AMQP_EX_TYPE_FANOUT => 'AMQP_EX_TYPE_FANOUT',
+        AMQP_EX_TYPE_TOPIC => 'AMQP_EX_TYPE_TOPIC',
+        AMQP_EX_TYPE_HEADERS => 'AMQP_EX_TYPE_HEADERS',
     ];
 
-    /**
-     * @return array
-     */
-    public static function castConnection(\AMQPConnection $c, array $a, Stub $stub, bool $isNested)
+    public static function castConnection(AMQPConnection $c, array $a, Stub $stub, bool $isNested): array
     {
         $prefix = Caster::PREFIX_VIRTUAL;
 
@@ -82,10 +103,7 @@ class AmqpCaster
         return $a;
     }
 
-    /**
-     * @return array
-     */
-    public static function castChannel(\AMQPChannel $c, array $a, Stub $stub, bool $isNested)
+    public static function castChannel(AMQPChannel $c, array $a, Stub $stub, bool $isNested): array
     {
         $prefix = Caster::PREFIX_VIRTUAL;
 
@@ -108,10 +126,7 @@ class AmqpCaster
         return $a;
     }
 
-    /**
-     * @return array
-     */
-    public static function castQueue(\AMQPQueue $c, array $a, Stub $stub, bool $isNested)
+    public static function castQueue(AMQPQueue $c, array $a, Stub $stub, bool $isNested): array
     {
         $prefix = Caster::PREFIX_VIRTUAL;
 
@@ -134,10 +149,7 @@ class AmqpCaster
         return $a;
     }
 
-    /**
-     * @return array
-     */
-    public static function castExchange(\AMQPExchange $c, array $a, Stub $stub, bool $isNested)
+    public static function castExchange(AMQPExchange $c, array $a, Stub $stub, bool $isNested): array
     {
         $prefix = Caster::PREFIX_VIRTUAL;
 
@@ -165,10 +177,7 @@ class AmqpCaster
         return $a;
     }
 
-    /**
-     * @return array
-     */
-    public static function castEnvelope(\AMQPEnvelope $c, array $a, Stub $stub, bool $isNested, int $filter = 0)
+    public static function castEnvelope(AMQPEnvelope $c, array $a, Stub $stub, bool $isNested, int $filter = 0): array
     {
         $prefix = Caster::PREFIX_VIRTUAL;
 

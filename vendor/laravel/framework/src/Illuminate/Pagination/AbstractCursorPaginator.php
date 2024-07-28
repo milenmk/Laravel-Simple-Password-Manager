@@ -14,14 +14,17 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\Support\Traits\ForwardsCalls;
 use Illuminate\Support\Traits\Tappable;
+use Stringable;
 use Traversable;
 
 /**
  * @mixin \Illuminate\Support\Collection
  */
-abstract class AbstractCursorPaginator implements Htmlable
+abstract class AbstractCursorPaginator implements Htmlable, Stringable
 {
-    use ForwardsCalls, Tappable;
+
+    use ForwardsCalls;
+    use Tappable;
 
     /**
      * All of the items being paginated.
@@ -205,6 +208,7 @@ abstract class AbstractCursorPaginator implements Htmlable
     public function getParametersForItem($item)
     {
         return collect($this->parameters)
+            ->filter()
             ->flip()
             ->map(function ($_, $parameterName) use ($item) {
                 if ($item instanceof JsonResource) {

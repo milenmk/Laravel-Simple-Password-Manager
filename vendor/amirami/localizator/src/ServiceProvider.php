@@ -12,19 +12,15 @@ use Illuminate\Support\ServiceProvider as BaseServiceProvider;
 
 class ServiceProvider extends BaseServiceProvider
 {
-
     /**
      * @return void
      */
     public function boot(): void
     {
-
         if ($this->app->runningInConsole()) {
-            $this->publishes(
-                [
-                    __DIR__ . '/../config/localizator.php' => config_path('localizator.php'),
-                ], 'config'
-            );
+            $this->publishes([
+                __DIR__.'/../config/localizator.php' => config_path('localizator.php'),
+            ], 'config');
 
             $this->commands(LocalizeCommand::class);
         }
@@ -35,8 +31,7 @@ class ServiceProvider extends BaseServiceProvider
      */
     public function register(): void
     {
-
-        $this->mergeConfigFrom(__DIR__ . '/../config/localizator.php', 'localizator');
+        $this->mergeConfigFrom(__DIR__.'/../config/localizator.php', 'localizator');
 
         $this->registerContainerClasses();
     }
@@ -46,7 +41,6 @@ class ServiceProvider extends BaseServiceProvider
      */
     private function registerContainerClasses(): void
     {
-
         $this->app->singleton('localizator', Localizator::class);
 
         $this->app->bind('localizator.writers.default', DefaultWriter::class);
@@ -55,5 +49,4 @@ class ServiceProvider extends BaseServiceProvider
         $this->app->bind('localizator.collector.default', DefaultKeyCollector::class);
         $this->app->bind('localizator.collector.json', JsonKeyCollector::class);
     }
-
 }

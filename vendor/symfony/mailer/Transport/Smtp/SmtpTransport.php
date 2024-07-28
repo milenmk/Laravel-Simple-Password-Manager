@@ -11,6 +11,8 @@
 
 namespace Symfony\Component\Mailer\Transport\Smtp;
 
+use BadMethodCallException;
+use Exception;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Mailer\Envelope;
@@ -23,6 +25,12 @@ use Symfony\Component\Mailer\Transport\AbstractTransport;
 use Symfony\Component\Mailer\Transport\Smtp\Stream\AbstractStream;
 use Symfony\Component\Mailer\Transport\Smtp\Stream\SocketStream;
 use Symfony\Component\Mime\RawMessage;
+
+use function in_array;
+
+use const FILTER_FLAG_IPV4;
+use const FILTER_FLAG_IPV6;
+use const FILTER_VALIDATE_IP;
 
 /**
  * Sends emails over SMTP.
@@ -108,9 +116,9 @@ class SmtpTransport extends AbstractTransport
     public function setLocalDomain(string $domain): static
     {
         if ('' !== $domain && '[' !== $domain[0]) {
-            if (filter_var($domain, \FILTER_VALIDATE_IP, \FILTER_FLAG_IPV4)) {
+            if (filter_var($domain, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
                 $domain = '['.$domain.']';
-            } elseif (filter_var($domain, \FILTER_VALIDATE_IP, \FILTER_FLAG_IPV6)) {
+            } elseif (filter_var($domain, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
                 $domain = '[IPv6:'.$domain.']';
             }
         }
@@ -224,7 +232,7 @@ class SmtpTransport extends AbstractTransport
                 $this->stream->flush();
             } catch (TransportExceptionInterface $e) {
                 throw $e;
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $this->stream->terminate();
                 $this->started = false;
                 $this->getLogger()->debug(sprintf('Email transport "%s" stopped', __CLASS__));
@@ -244,12 +252,7 @@ class SmtpTransport extends AbstractTransport
         }
     }
 
-    /**
-     * @internal since version 6.1, to be made private in 7.0
-     *
-     * @final since version 6.1, to be made private in 7.0
-     */
-    protected function doHeloCommand(): void
+    private function doHeloCommand(): void
     {
         $this->executeCommand(sprintf("HELO %s\r\n", $this->domain), [250]);
     }
@@ -329,7 +332,7 @@ class SmtpTransport extends AbstractTransport
         }
 
         [$code] = sscanf($response, '%3d');
-        $valid = \in_array($code, $codes);
+        $valid = in_array($code, $codes);
 
         if (!$valid || !$response) {
             $codeStr = $code ? sprintf('code "%s"', $code) : 'empty code';
@@ -374,15 +377,12 @@ class SmtpTransport extends AbstractTransport
 
     public function __sleep(): array
     {
-        throw new \BadMethodCallException('Cannot serialize '.__CLASS__);
+        throw new BadMethodCallException('Cannot serialize '.__CLASS__);
     }
 
-    /**
-     * @return void
-     */
-    public function __wakeup()
+    public function __wakeup(): void
     {
-        throw new \BadMethodCallException('Cannot unserialize '.__CLASS__);
+        throw new BadMethodCallException('Cannot unserialize '.__CLASS__);
     }
 
     public function __destruct()

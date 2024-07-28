@@ -11,9 +11,14 @@
 
 namespace Symfony\Component\Console\Event;
 
+use ReflectionProperty;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+
+use Throwable;
+
+use function is_int;
 
 /**
  * Allows to handle throwables thrown while running a command.
@@ -22,22 +27,23 @@ use Symfony\Component\Console\Output\OutputInterface;
  */
 final class ConsoleErrorEvent extends ConsoleEvent
 {
-    private \Throwable $error;
     private int $exitCode;
 
-    public function __construct(InputInterface $input, OutputInterface $output, \Throwable $error, ?Command $command = null)
-    {
+    public function __construct(
+        InputInterface $input,
+        OutputInterface $output,
+        private Throwable $error,
+        ?Command $command = null,
+    ) {
         parent::__construct($command, $input, $output);
-
-        $this->error = $error;
     }
 
-    public function getError(): \Throwable
+    public function getError(): Throwable
     {
         return $this->error;
     }
 
-    public function setError(\Throwable $error): void
+    public function setError(Throwable $error): void
     {
         $this->error = $error;
     }
@@ -46,12 +52,12 @@ final class ConsoleErrorEvent extends ConsoleEvent
     {
         $this->exitCode = $exitCode;
 
-        $r = new \ReflectionProperty($this->error, 'code');
+        $r = new ReflectionProperty($this->error, 'code');
         $r->setValue($this->error, $this->exitCode);
     }
 
     public function getExitCode(): int
     {
-        return $this->exitCode ?? (\is_int($this->error->getCode()) && 0 !== $this->error->getCode() ? $this->error->getCode() : 1);
+        return $this->exitCode ?? (is_int($this->error->getCode()) && 0 !== $this->error->getCode() ? $this->error->getCode() : 1);
     }
 }

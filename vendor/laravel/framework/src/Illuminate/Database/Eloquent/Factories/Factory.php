@@ -25,14 +25,15 @@ use Throwable;
  */
 abstract class Factory
 {
-    use Conditionable, ForwardsCalls, Macroable {
-        __call as macroCall;
-    }
+
+    use Conditionable;
+    use ForwardsCalls;
+    use Macroable;
 
     /**
      * The name of the factory's corresponding model.
      *
-     * @var class-string<\Illuminate\Database\Eloquent\Model|TModel>
+     * @var class-string<TModel>
      */
     protected $model;
 
@@ -104,12 +105,12 @@ abstract class Factory
      *
      * @var string
      */
-    protected static $namespace = 'Database\\Factories\\';
+    public static $namespace = 'Database\\Factories\\';
 
     /**
      * The default model name resolver.
      *
-     * @var callable
+     * @var callable(self): class-string<TModel>
      */
     protected static $modelNameResolver;
 
@@ -143,13 +144,13 @@ abstract class Factory
                                 ?Collection $recycle = null)
     {
         $this->count = $count;
-        $this->states = $states ?? new Collection;
-        $this->has = $has ?? new Collection;
-        $this->for = $for ?? new Collection;
-        $this->afterMaking = $afterMaking ?? new Collection;
-        $this->afterCreating = $afterCreating ?? new Collection;
+        $this->states = $states ?? new Collection();
+        $this->has = $has ?? new Collection();
+        $this->for = $for ?? new Collection();
+        $this->afterMaking = $afterMaking ?? new Collection();
+        $this->afterCreating = $afterCreating ?? new Collection();
         $this->connection = $connection;
-        $this->recycle = $recycle ?? new Collection;
+        $this->recycle = $recycle ?? new Collection();
         $this->faker = $this->withFaker();
     }
 
@@ -168,7 +169,7 @@ abstract class Factory
      */
     public static function new($attributes = [])
     {
-        return (new static)->state($attributes)->configure();
+        return (new static())->state($attributes)->configure();
     }
 
     /**
@@ -185,7 +186,7 @@ abstract class Factory
     /**
      * Configure the factory.
      *
-     * @return $this
+     * @return static
      */
     public function configure()
     {
@@ -214,7 +215,7 @@ abstract class Factory
      * Create a single model and persist it to the database.
      *
      * @param  (callable(array<string, mixed>): array<string, mixed>)|array<string, mixed>  $attributes
-     * @return \Illuminate\Database\Eloquent\Model|TModel
+     * @return TModel
      */
     public function createOne($attributes = [])
     {
@@ -225,7 +226,7 @@ abstract class Factory
      * Create a single model and persist it to the database without dispatching any model events.
      *
      * @param  (callable(array<string, mixed>): array<string, mixed>)|array<string, mixed>  $attributes
-     * @return \Illuminate\Database\Eloquent\Model|TModel
+     * @return TModel
      */
     public function createOneQuietly($attributes = [])
     {
@@ -235,11 +236,19 @@ abstract class Factory
     /**
      * Create a collection of models and persist them to the database.
      *
-     * @param  iterable<int, array<string, mixed>>  $records
-     * @return \Illuminate\Database\Eloquent\Collection<int, \Illuminate\Database\Eloquent\Model|TModel>
+     * @param  int|null|iterable<int, array<string, mixed>>  $records
+     * @return \Illuminate\Database\Eloquent\Collection<int, TModel>
      */
-    public function createMany(iterable $records)
+    public function createMany(int|iterable|null $records = null)
     {
+        $records ??= ($this->count ?? 1);
+
+        $this->count = null;
+
+        if (is_numeric($records)) {
+            $records = array_fill(0, $records, []);
+        }
+
         return new EloquentCollection(
             collect($records)->map(function ($record) {
                 return $this->state($record)->create();
@@ -250,10 +259,10 @@ abstract class Factory
     /**
      * Create a collection of models and persist them to the database without dispatching any model events.
      *
-     * @param  iterable<int, array<string, mixed>>  $records
-     * @return \Illuminate\Database\Eloquent\Collection<int, \Illuminate\Database\Eloquent\Model|TModel>
+     * @param  int|null|iterable<int, array<string, mixed>>  $records
+     * @return \Illuminate\Database\Eloquent\Collection<int, TModel>
      */
-    public function createManyQuietly(iterable $records)
+    public function createManyQuietly(int|iterable|null $records = null)
     {
         return Model::withoutEvents(function () use ($records) {
             return $this->createMany($records);
@@ -265,7 +274,7 @@ abstract class Factory
      *
      * @param  (callable(array<string, mixed>): array<string, mixed>)|array<string, mixed>  $attributes
      * @param  \Illuminate\Database\Eloquent\Model|null  $parent
-     * @return \Illuminate\Database\Eloquent\Collection<int, \Illuminate\Database\Eloquent\Model|TModel>|\Illuminate\Database\Eloquent\Model|TModel
+     * @return \Illuminate\Database\Eloquent\Collection<int, TModel>|TModel
      */
     public function create($attributes = [], ?Model $parent = null)
     {
@@ -293,7 +302,7 @@ abstract class Factory
      *
      * @param  (callable(array<string, mixed>): array<string, mixed>)|array<string, mixed>  $attributes
      * @param  \Illuminate\Database\Eloquent\Model|null  $parent
-     * @return \Illuminate\Database\Eloquent\Collection<int, \Illuminate\Database\Eloquent\Model|TModel>|\Illuminate\Database\Eloquent\Model|TModel
+     * @return \Illuminate\Database\Eloquent\Collection<int, TModel>|TModel
      */
     public function createQuietly($attributes = [], ?Model $parent = null)
     {
@@ -307,7 +316,7 @@ abstract class Factory
      *
      * @param  array<string, mixed>  $attributes
      * @param  \Illuminate\Database\Eloquent\Model|null  $parent
-     * @return \Closure(): (\Illuminate\Database\Eloquent\Collection<int, \Illuminate\Database\Eloquent\Model|TModel>|\Illuminate\Database\Eloquent\Model|TModel)
+     * @return \Closure(): (\Illuminate\Database\Eloquent\Collection<int, TModel>|TModel)
      */
     public function lazy(array $attributes = [], ?Model $parent = null)
     {
@@ -317,7 +326,7 @@ abstract class Factory
     /**
      * Set the connection name on the results and store them.
      *
-     * @param  \Illuminate\Support\Collection  $results
+     * @param  \Illuminate\Support\Collection<int, \Illuminate\Database\Eloquent\Model>  $results
      * @return void
      */
     protected function store(Collection $results)
@@ -358,7 +367,7 @@ abstract class Factory
      * Make a single instance of the model.
      *
      * @param  (callable(array<string, mixed>): array<string, mixed>)|array<string, mixed>  $attributes
-     * @return \Illuminate\Database\Eloquent\Model|TModel
+     * @return TModel
      */
     public function makeOne($attributes = [])
     {
@@ -370,7 +379,7 @@ abstract class Factory
      *
      * @param  (callable(array<string, mixed>): array<string, mixed>)|array<string, mixed>  $attributes
      * @param  \Illuminate\Database\Eloquent\Model|null  $parent
-     * @return \Illuminate\Database\Eloquent\Collection<int, \Illuminate\Database\Eloquent\Model|TModel>|\Illuminate\Database\Eloquent\Model|TModel
+     * @return \Illuminate\Database\Eloquent\Collection<int, TModel>|TModel
      */
     public function make($attributes = [], ?Model $parent = null)
     {
@@ -471,7 +480,7 @@ abstract class Factory
         return collect($definition)
             ->map($evaluateRelations = function ($attribute) {
                 if ($attribute instanceof self) {
-                    $attribute = $this->getRandomRecycledModel($attribute->modelName())
+                    $attribute = $this->getRandomRecycledModel($attribute->modelName())?->getKey()
                         ?? $attribute->recycle($this->recycle)->create()->getKey();
                 } elseif ($attribute instanceof Model) {
                     $attribute = $attribute->getKey();
@@ -496,7 +505,7 @@ abstract class Factory
     /**
      * Add a new state transformation to the model definition.
      *
-     * @param  (callable(array<string, mixed>, \Illuminate\Database\Eloquent\Model|null): array<string, mixed>)|array<string, mixed>  $state
+     * @param  (callable(array<string, mixed>, TModel|null): array<string, mixed>)|array<string, mixed>  $state
      * @return static
      */
     public function state($state)
@@ -646,8 +655,10 @@ abstract class Factory
     /**
      * Retrieve a random model of a given type from previously provided models to recycle.
      *
-     * @param  string  $modelClassName
-     * @return \Illuminate\Database\Eloquent\Model|null
+     * @template TClass of \Illuminate\Database\Eloquent\Model
+     *
+     * @param  class-string<TClass>  $modelClassName
+     * @return TClass|null
      */
     public function getRandomRecycledModel($modelClassName)
     {
@@ -657,7 +668,7 @@ abstract class Factory
     /**
      * Add a new "after making" callback to the model definition.
      *
-     * @param  \Closure(\Illuminate\Database\Eloquent\Model|TModel): mixed  $callback
+     * @param  \Closure(TModel): mixed  $callback
      * @return static
      */
     public function afterMaking(Closure $callback)
@@ -668,7 +679,7 @@ abstract class Factory
     /**
      * Add a new "after creating" callback to the model definition.
      *
-     * @param  \Closure(\Illuminate\Database\Eloquent\Model|TModel): mixed  $callback
+     * @param  \Closure(TModel): mixed  $callback
      * @return static
      */
     public function afterCreating(Closure $callback)
@@ -753,7 +764,7 @@ abstract class Factory
      * Get a new model instance.
      *
      * @param  array<string, mixed>  $attributes
-     * @return \Illuminate\Database\Eloquent\Model|TModel
+     * @return TModel
      */
     public function newModel(array $attributes = [])
     {
@@ -765,7 +776,7 @@ abstract class Factory
     /**
      * Get the name of the model that is generated by the factory.
      *
-     * @return class-string<\Illuminate\Database\Eloquent\Model|TModel>
+     * @return class-string<TModel>
      */
     public function modelName()
     {
@@ -789,7 +800,7 @@ abstract class Factory
     /**
      * Specify the callback that should be invoked to guess model names based on factory names.
      *
-     * @param  callable(self): class-string<\Illuminate\Database\Eloquent\Model|TModel>  $callback
+     * @param  callable(self): class-string<TModel>  $callback
      * @return void
      */
     public static function guessModelNamesUsing(callable $callback)
@@ -811,8 +822,10 @@ abstract class Factory
     /**
      * Get a new factory instance for the given model name.
      *
-     * @param  class-string<\Illuminate\Database\Eloquent\Model>  $modelName
-     * @return \Illuminate\Database\Eloquent\Factories\Factory
+     * @template TClass of \Illuminate\Database\Eloquent\Model
+     *
+     * @param  class-string<TClass>  $modelName
+     * @return \Illuminate\Database\Eloquent\Factories\Factory<TClass>
      */
     public static function factoryForModel(string $modelName)
     {
@@ -845,8 +858,10 @@ abstract class Factory
     /**
      * Get the factory name for the given model name.
      *
-     * @param  class-string<\Illuminate\Database\Eloquent\Model>  $modelName
-     * @return class-string<\Illuminate\Database\Eloquent\Factories\Factory>
+     * @template TClass of \Illuminate\Database\Eloquent\Model
+     *
+     * @param  class-string<TClass>  $modelName
+     * @return class-string<\Illuminate\Database\Eloquent\Factories\Factory<TClass>>
      */
     public static function resolveFactoryName(string $modelName)
     {
@@ -872,9 +887,9 @@ abstract class Factory
     {
         try {
             return Container::getInstance()
-                            ->make(Application::class)
-                            ->getNamespace();
-        } catch (Throwable $e) {
+                ->make(Application::class)
+                ->getNamespace();
+        } catch (Throwable) {
             return 'App\\';
         }
     }

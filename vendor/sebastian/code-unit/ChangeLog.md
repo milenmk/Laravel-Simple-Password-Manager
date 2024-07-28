@@ -2,6 +2,18 @@
 
 All notable changes are documented in this file using the [Keep a CHANGELOG](http://keepachangelog.com/) principles.
 
+## [3.0.1] - 2024-07-03
+
+### Changed
+
+* This project now uses PHPStan instead of Psalm for static analysis
+
+## [3.0.0] - 2024-02-02
+
+### Removed
+
+* This component is no longer supported on PHP 8.1
+
 ## [2.0.0] - 2023-02-03
 
 ### Added
@@ -66,6 +78,8 @@ All notable changes are documented in this file using the [Keep a CHANGELOG](htt
 
 * Initial release
 
+[3.0.1]: https://github.com/sebastianbergmann/code-unit/compare/3.0.0...3.0.1
+[3.0.0]: https://github.com/sebastianbergmann/code-unit/compare/2.0...3.0.0
 [2.0.0]: https://github.com/sebastianbergmann/code-unit/compare/1.0.8...2.0.0
 [1.0.8]: https://github.com/sebastianbergmann/code-unit/compare/1.0.7...1.0.8
 [1.0.7]: https://github.com/sebastianbergmann/code-unit/compare/1.0.6...1.0.7

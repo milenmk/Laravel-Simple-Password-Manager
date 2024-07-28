@@ -28,14 +28,14 @@ final class ResourceComparator extends Comparator
         assert(is_resource($expected));
         assert(is_resource($actual));
 
-        $exporter = new Exporter;
+        $exporter = new Exporter();
 
         if ($actual != $expected) {
             throw new ComparisonFailure(
                 $expected,
                 $actual,
                 $exporter->export($expected),
-                $exporter->export($actual)
+                $exporter->export($actual),
             );
         }
     }

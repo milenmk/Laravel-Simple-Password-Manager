@@ -13,6 +13,10 @@ namespace Symfony\Component\Console\Input;
 
 use Symfony\Component\Console\Exception\RuntimeException;
 
+use function count;
+use function in_array;
+use function strlen;
+
 /**
  * ArgvInput represents an input coming from the CLI arguments.
  *
@@ -40,9 +44,11 @@ use Symfony\Component\Console\Exception\RuntimeException;
  */
 class ArgvInput extends Input
 {
+    /** @var list<string> */
     private array $tokens;
     private array $parsed;
 
+    /** @param list<string>|null $argv */
     public function __construct(?array $argv = null, ?InputDefinition $definition = null)
     {
         $argv ??= $_SERVER['argv'] ?? [];
@@ -55,18 +61,13 @@ class ArgvInput extends Input
         parent::__construct($definition);
     }
 
-    /**
-     * @return void
-     */
-    protected function setTokens(array $tokens)
+    /** @param list<string> $tokens */
+    protected function setTokens(array $tokens): void
     {
         $this->tokens = $tokens;
     }
 
-    /**
-     * @return void
-     */
-    protected function parse()
+    protected function parse(): void
     {
         $parseOptions = true;
         $this->parsed = $this->tokens;
@@ -99,7 +100,7 @@ class ArgvInput extends Input
     {
         $name = substr($token, 1);
 
-        if (\strlen($name) > 1) {
+        if (strlen($name) > 1) {
             if ($this->definition->hasShortcut($name[0]) && $this->definition->getOptionForShortcut($name[0])->acceptValue()) {
                 // an option with a value (with no space)
                 $this->addShortOption($name[0], substr($name, 1));
@@ -118,7 +119,7 @@ class ArgvInput extends Input
      */
     private function parseShortOptionSet(string $name): void
     {
-        $len = \strlen($name);
+        $len = strlen($name);
         for ($i = 0; $i < $len; ++$i) {
             if (!$this->definition->hasShortcut($name[$i])) {
                 $encoding = mb_detect_encoding($name, null, true);
@@ -160,7 +161,7 @@ class ArgvInput extends Input
      */
     private function parseArgument(string $token): void
     {
-        $c = \count($this->arguments);
+        $c = count($this->arguments);
 
         // if input is expecting another argument, add it
         if ($this->definition->hasArgument($c)) {
@@ -181,7 +182,7 @@ class ArgvInput extends Input
                 unset($all[$key]);
             }
 
-            if (\count($all)) {
+            if (count($all)) {
                 if ($symfonyCommandName) {
                     $message = sprintf('Too many arguments to "%s" command, expected arguments "%s".', $symfonyCommandName, implode('" "', array_keys($all)));
                 } else {
@@ -238,11 +239,11 @@ class ArgvInput extends Input
             throw new RuntimeException(sprintf('The "--%s" option does not accept a value.', $name));
         }
 
-        if (\in_array($value, ['', null], true) && $option->acceptValue() && \count($this->parsed)) {
+        if (in_array($value, ['', null], true) && $option->acceptValue() && count($this->parsed)) {
             // if option accepts an optional or mandatory argument
             // let's see if there is one provided
             $next = array_shift($this->parsed);
-            if ((isset($next[0]) && '-' !== $next[0]) || \in_array($next, ['', null], true)) {
+            if ((isset($next[0]) && '-' !== $next[0]) || in_array($next, ['', null], true)) {
                 $value = $next;
             } else {
                 array_unshift($this->parsed, $next);
@@ -325,7 +326,7 @@ class ArgvInput extends Input
         $values = (array) $values;
         $tokens = $this->tokens;
 
-        while (0 < \count($tokens)) {
+        while (0 < count($tokens)) {
             $token = array_shift($tokens);
             if ($onlyParams && '--' === $token) {
                 return $default;
@@ -340,12 +341,41 @@ class ArgvInput extends Input
                 //   For short options, test for '-o' at beginning
                 $leading = str_starts_with($value, '--') ? $value.'=' : $value;
                 if ('' !== $leading && str_starts_with($token, $leading)) {
-                    return substr($token, \strlen($leading));
+                    return substr($token, strlen($leading));
                 }
             }
         }
 
         return $default;
+    }
+
+    /**
+     * Returns un-parsed and not validated tokens.
+     *
+     * @param bool $strip Whether to return the raw parameters (false) or the values after the command name (true)
+     *
+     * @return list<string>
+     */
+    public function getRawTokens(bool $strip = false): array
+    {
+        if (!$strip) {
+            return $this->tokens;
+        }
+
+        $parameters = [];
+        $keep = false;
+        foreach ($this->tokens as $value) {
+            if (!$keep && $value === $this->getFirstArgument()) {
+                $keep = true;
+
+                continue;
+            }
+            if ($keep) {
+                $parameters[] = $value;
+            }
+        }
+
+        return $parameters;
     }
 
     /**

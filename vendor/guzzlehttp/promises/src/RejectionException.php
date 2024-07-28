@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace GuzzleHttp\Promise;
 
+use JsonSerializable;
+use RuntimeException;
+
 /**
  * A special exception that is thrown when waiting on a rejected promise.
  *
  * The reason value is available via the getReason() method.
  */
-class RejectionException extends \RuntimeException
+class RejectionException extends RuntimeException
 {
     /** @var mixed Rejection reason. */
     private $reason;
@@ -18,7 +21,7 @@ class RejectionException extends \RuntimeException
      * @param mixed       $reason      Rejection reason.
      * @param string|null $description Optional description.
      */
-    public function __construct($reason, string $description = null)
+    public function __construct($reason, ?string $description = null)
     {
         $this->reason = $reason;
 
@@ -30,7 +33,7 @@ class RejectionException extends \RuntimeException
             || (is_object($reason) && method_exists($reason, '__toString'))
         ) {
             $message .= ' with reason: '.$this->reason;
-        } elseif ($reason instanceof \JsonSerializable) {
+        } elseif ($reason instanceof JsonSerializable) {
             $message .= ' with reason: '.json_encode($this->reason, JSON_PRETTY_PRINT);
         }
 

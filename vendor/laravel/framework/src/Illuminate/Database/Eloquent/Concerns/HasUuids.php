@@ -8,29 +8,13 @@ use Illuminate\Support\Str;
 trait HasUuids
 {
     /**
-     * Generate a primary UUID for the model.
+     * Initialize the trait.
      *
      * @return void
      */
-    public static function bootHasUuids()
+    public function initializeHasUuids()
     {
-        static::creating(function (self $model) {
-            foreach ($model->uniqueIds() as $column) {
-                if (empty($model->{$column})) {
-                    $model->{$column} = $model->newUniqueId();
-                }
-            }
-        });
-    }
-
-    /**
-     * Generate a new UUID for the model.
-     *
-     * @return string
-     */
-    public function newUniqueId()
-    {
-        return (string) Str::orderedUuid();
+        $this->usesUniqueIds = true;
     }
 
     /**
@@ -44,23 +28,33 @@ trait HasUuids
     }
 
     /**
+     * Generate a new UUID for the model.
+     *
+     * @return string
+     */
+    public function newUniqueId()
+    {
+        return (string) Str::orderedUuid();
+    }
+
+    /**
      * Retrieve the model for a bound value.
      *
-     * @param  \Illuminate\Database\Eloquent\Model|\Illuminate\Database\Eloquent\Relations\Relation  $query
+     * @param  \Illuminate\Database\Eloquent\Model|\Illuminate\Database\Eloquent\Relations\Relation<*, *, *>  $query
      * @param  mixed  $value
      * @param  string|null  $field
-     * @return \Illuminate\Database\Eloquent\Relations\Relation
+     * @return \Illuminate\Contracts\Database\Eloquent\Builder
      *
      * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
      */
     public function resolveRouteBindingQuery($query, $value, $field = null)
     {
         if ($field && in_array($field, $this->uniqueIds()) && ! Str::isUuid($value)) {
-            throw (new ModelNotFoundException)->setModel(get_class($this), $value);
+            throw (new ModelNotFoundException())->setModel(get_class($this), $value);
         }
 
         if (! $field && in_array($this->getRouteKeyName(), $this->uniqueIds()) && ! Str::isUuid($value)) {
-            throw (new ModelNotFoundException)->setModel(get_class($this), $value);
+            throw (new ModelNotFoundException())->setModel(get_class($this), $value);
         }
 
         return parent::resolveRouteBindingQuery($query, $value, $field);

@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types = 1);
+declare(strict_types=1);
 
 /*
  * This file is a part of dflydev/dot-access-data.
@@ -15,7 +15,6 @@ namespace Dflydev\DotAccessData;
 
 class Util
 {
-
     /**
      * Test if array is an associative array
      *
@@ -30,15 +29,14 @@ class Util
      */
     public static function isAssoc(array $arr): bool
     {
-
         return !count($arr) || count(array_filter(array_keys($arr), 'is_string')) == count($arr);
     }
 
     /**
      * Merge contents from one associtative array to another
      *
-     * @param mixed                                                               $to
-     * @param mixed                                                               $from
+     * @param mixed $to
+     * @param mixed $from
      * @param DataInterface::PRESERVE|DataInterface::REPLACE|DataInterface::MERGE $mode
      *
      * @return mixed
@@ -47,7 +45,6 @@ class Util
      */
     public static function mergeAssocArray($to, $from, int $mode = DataInterface::REPLACE)
     {
-
         if ($mode === DataInterface::MERGE && self::isList($to) && self::isList($from)) {
             return array_merge($to, $from);
         }
@@ -76,8 +73,6 @@ class Util
      */
     private static function isList($value): bool
     {
-
         return is_array($value) && array_values($value) === $value;
     }
-
 }

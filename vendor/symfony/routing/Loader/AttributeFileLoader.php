@@ -11,10 +11,33 @@
 
 namespace Symfony\Component\Routing\Loader;
 
+use InvalidArgumentException;
+use LogicException;
+use ReflectionClass;
 use Symfony\Component\Config\FileLocatorInterface;
 use Symfony\Component\Config\Loader\FileLoader;
 use Symfony\Component\Config\Resource\FileResource;
 use Symfony\Component\Routing\RouteCollection;
+
+use function count;
+use function defined;
+use function function_exists;
+use function in_array;
+
+use function is_string;
+
+use const PATHINFO_EXTENSION;
+use const T_CLASS;
+use const T_COMMENT;
+use const T_DOC_COMMENT;
+use const T_DOUBLE_COLON;
+use const T_INLINE_HTML;
+use const T_NAME_QUALIFIED;
+use const T_NAMESPACE;
+use const T_NEW;
+use const T_NS_SEPARATOR;
+use const T_STRING;
+use const T_WHITESPACE;
 
 /**
  * AttributeFileLoader loads routing information from attributes set
@@ -25,17 +48,15 @@ use Symfony\Component\Routing\RouteCollection;
  */
 class AttributeFileLoader extends FileLoader
 {
-    protected $loader;
-
-    public function __construct(FileLocatorInterface $locator, AttributeClassLoader $loader)
-    {
-        if (!\function_exists('token_get_all')) {
-            throw new \LogicException('The Tokenizer extension is required for the routing attribute loader.');
+    public function __construct(
+        FileLocatorInterface $locator,
+        protected AttributeClassLoader $loader,
+    ) {
+        if (!function_exists('token_get_all')) {
+            throw new LogicException('The Tokenizer extension is required for the routing attribute loader.');
         }
 
         parent::__construct($locator);
-
-        $this->loader = $loader;
     }
 
     /**
@@ -49,7 +70,7 @@ class AttributeFileLoader extends FileLoader
 
         $collection = new RouteCollection();
         if ($class = $this->findClass($path)) {
-            $refl = new \ReflectionClass($class);
+            $refl = new ReflectionClass($class);
             if ($refl->isAbstract()) {
                 return null;
             }
@@ -65,11 +86,7 @@ class AttributeFileLoader extends FileLoader
 
     public function supports(mixed $resource, ?string $type = null): bool
     {
-        if ('annotation' === $type) {
-            trigger_deprecation('symfony/routing', '6.4', 'The "annotation" route type is deprecated, use the "attribute" route type instead.');
-        }
-
-        return \is_string($resource) && 'php' === pathinfo($resource, \PATHINFO_EXTENSION) && (!$type || \in_array($type, ['annotation', 'attribute'], true));
+        return is_string($resource) && 'php' === pathinfo($resource, PATHINFO_EXTENSION) && (!$type || 'attribute' === $type);
     }
 
     /**
@@ -81,13 +98,13 @@ class AttributeFileLoader extends FileLoader
         $namespace = false;
         $tokens = token_get_all(file_get_contents($file));
 
-        if (1 === \count($tokens) && \T_INLINE_HTML === $tokens[0][0]) {
-            throw new \InvalidArgumentException(sprintf('The file "%s" does not contain PHP code. Did you forgot to add the "<?php" start tag at the beginning of the file?', $file));
+        if (1 === count($tokens) && T_INLINE_HTML === $tokens[0][0]) {
+            throw new InvalidArgumentException(sprintf('The file "%s" does not contain PHP code. Did you forgot to add the "<?php" start tag at the beginning of the file?', $file));
         }
 
-        $nsTokens = [\T_NS_SEPARATOR => true, \T_STRING => true];
-        if (\defined('T_NAME_QUALIFIED')) {
-            $nsTokens[\T_NAME_QUALIFIED] = true;
+        $nsTokens = [T_NS_SEPARATOR => true, T_STRING => true];
+        if (defined('T_NAME_QUALIFIED')) {
+            $nsTokens[T_NAME_QUALIFIED] = true;
         }
         for ($i = 0; isset($tokens[$i]); ++$i) {
             $token = $tokens[$i];
@@ -95,7 +112,7 @@ class AttributeFileLoader extends FileLoader
                 continue;
             }
 
-            if (true === $class && \T_STRING === $token[0]) {
+            if (true === $class && T_STRING === $token[0]) {
                 return $namespace.'\\'.$token[1];
             }
 
@@ -107,7 +124,7 @@ class AttributeFileLoader extends FileLoader
                 $token = $tokens[$i];
             }
 
-            if (\T_CLASS === $token[0]) {
+            if (T_CLASS === $token[0]) {
                 // Skip usage of ::class constant and anonymous classes
                 $skipClassToken = false;
                 for ($j = $i - 1; $j > 0; --$j) {
@@ -118,10 +135,10 @@ class AttributeFileLoader extends FileLoader
                         break;
                     }
 
-                    if (\T_DOUBLE_COLON === $tokens[$j][0] || \T_NEW === $tokens[$j][0]) {
+                    if (T_DOUBLE_COLON === $tokens[$j][0] || T_NEW === $tokens[$j][0]) {
                         $skipClassToken = true;
                         break;
-                    } elseif (!\in_array($tokens[$j][0], [\T_WHITESPACE, \T_DOC_COMMENT, \T_COMMENT])) {
+                    } elseif (!in_array($tokens[$j][0], [T_WHITESPACE, T_DOC_COMMENT, T_COMMENT])) {
                         break;
                     }
                 }
@@ -131,15 +148,11 @@ class AttributeFileLoader extends FileLoader
                 }
             }
 
-            if (\T_NAMESPACE === $token[0]) {
+            if (T_NAMESPACE === $token[0]) {
                 $namespace = true;
             }
         }
 
         return false;
     }
-}
-
-if (!class_exists(AnnotationFileLoader::class, false)) {
-    class_alias(AttributeFileLoader::class, AnnotationFileLoader::class);
 }

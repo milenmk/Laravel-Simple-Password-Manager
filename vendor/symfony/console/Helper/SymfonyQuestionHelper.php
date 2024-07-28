@@ -11,12 +11,15 @@
 
 namespace Symfony\Component\Console\Helper;
 
+use Exception;
 use Symfony\Component\Console\Formatter\OutputFormatter;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\ChoiceQuestion;
 use Symfony\Component\Console\Question\ConfirmationQuestion;
 use Symfony\Component\Console\Question\Question;
 use Symfony\Component\Console\Style\SymfonyStyle;
+
+use const PHP_OS_FAMILY;
 
 /**
  * Symfony Style Guide compliant question helper.
@@ -25,10 +28,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  */
 class SymfonyQuestionHelper extends QuestionHelper
 {
-    /**
-     * @return void
-     */
-    protected function writePrompt(OutputInterface $output, Question $question)
+    protected function writePrompt(OutputInterface $output, Question $question): void
     {
         $text = OutputFormatter::escapeTrailingBackslash($question->getQuestion());
         $default = $question->getDefault();
@@ -83,10 +83,7 @@ class SymfonyQuestionHelper extends QuestionHelper
         $output->write($prompt);
     }
 
-    /**
-     * @return void
-     */
-    protected function writeError(OutputInterface $output, \Exception $error)
+    protected function writeError(OutputInterface $output, Exception $error): void
     {
         if ($output instanceof SymfonyStyle) {
             $output->newLine();
@@ -100,7 +97,7 @@ class SymfonyQuestionHelper extends QuestionHelper
 
     private function getEofShortcut(): string
     {
-        if ('Windows' === \PHP_OS_FAMILY) {
+        if ('Windows' === PHP_OS_FAMILY) {
             return '<comment>Ctrl+Z</comment> then <comment>Enter</comment>';
         }
 

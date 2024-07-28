@@ -8,7 +8,6 @@ use Throwable;
 
 class LogRecorder
 {
-
     /** @var \Spatie\LaravelIgnition\Recorders\LogRecorder\LogMessage[] */
     protected array $logMessages = [];
 
@@ -18,7 +17,6 @@ class LogRecorder
 
     public function __construct(Application $app, ?int $maxLogs = null)
     {
-
         $this->app = $app;
 
         $this->maxLogs = $maxLogs;
@@ -26,7 +24,6 @@ class LogRecorder
 
     public function start(): self
     {
-
         /** @phpstan-ignore-next-line */
         $this->app['events']->listen(MessageLogged::class, [$this, 'record']);
 
@@ -35,7 +32,6 @@ class LogRecorder
 
     public function record(MessageLogged $event): void
     {
-
         if ($this->shouldIgnore($event)) {
             return;
         }
@@ -47,31 +43,15 @@ class LogRecorder
         }
     }
 
-    protected function shouldIgnore(mixed $event): bool
-    {
-
-        if (!isset($event->context['exception'])) {
-            return false;
-        }
-
-        if (!$event->context['exception'] instanceof Throwable) {
-            return false;
-        }
-
-        return true;
-    }
-
     /** @return array<array<int,string>> */
     public function getLogMessages(): array
     {
-
         return $this->toArray();
     }
 
     /** @return array<int, mixed> */
     public function toArray(): array
     {
-
         $logMessages = [];
 
         foreach ($this->logMessages as $log) {
@@ -81,24 +61,33 @@ class LogRecorder
         return $logMessages;
     }
 
+    protected function shouldIgnore(mixed $event): bool
+    {
+        if (! isset($event->context['exception'])) {
+            return false;
+        }
+
+        if (! $event->context['exception'] instanceof Throwable) {
+            return false;
+        }
+
+        return true;
+    }
+
     public function reset(): void
     {
-
         $this->logMessages = [];
     }
 
     public function getMaxLogs(): ?int
     {
-
         return $this->maxLogs;
     }
 
     public function setMaxLogs(?int $maxLogs): self
     {
-
         $this->maxLogs = $maxLogs;
 
         return $this;
     }
-
 }

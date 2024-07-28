@@ -120,6 +120,8 @@ final class DocBlock
      *   string,
      *   string|array{version: string, operator: string}|array{constraint: string}|array<int|string, string>
      * >
+     *
+     * @throws InvalidVersionRequirementException
      */
     public function requirements(): array
     {
@@ -162,7 +164,7 @@ final class DocBlock
                 }
 
                 try {
-                    $versionConstraintParser = new VersionConstraintParser;
+                    $versionConstraintParser = new VersionConstraintParser();
 
                     $requires[$matches['name'] . '_constraint'] = [
                         'constraint' => $versionConstraintParser->parse(trim($matches['constraint'])),

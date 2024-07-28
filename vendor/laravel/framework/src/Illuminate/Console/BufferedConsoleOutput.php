@@ -2,7 +2,10 @@
 
 namespace Illuminate\Console;
 
+use Override;
 use Symfony\Component\Console\Output\ConsoleOutput;
+
+use const PHP_EOL;
 
 class BufferedConsoleOutput extends ConsoleOutput
 {
@@ -27,17 +30,16 @@ class BufferedConsoleOutput extends ConsoleOutput
 
     /**
      * {@inheritdoc}
-     *
-     * @return void
      */
-    protected function doWrite(string $message, bool $newline)
+    #[Override]
+    protected function doWrite(string $message, bool $newline): void
     {
         $this->buffer .= $message;
 
         if ($newline) {
-            $this->buffer .= \PHP_EOL;
+            $this->buffer .= PHP_EOL;
         }
 
-        return parent::doWrite($message, $newline);
+        parent::doWrite($message, $newline);
     }
 }

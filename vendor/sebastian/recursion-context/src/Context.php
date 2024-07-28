@@ -17,17 +17,24 @@ use function array_slice;
 use function count;
 use function is_array;
 use function random_int;
-use function spl_object_hash;
+use function spl_object_id;
 use SplObjectStorage;
 
 final class Context
 {
+    /**
+     * @var list<array<mixed>>
+     */
     private array $arrays = [];
+
+    /**
+     * @var SplObjectStorage<object, null>
+     */
     private SplObjectStorage $objects;
 
     public function __construct()
     {
-        $this->objects = new SplObjectStorage;
+        $this->objects = new SplObjectStorage();
     }
 
     /**
@@ -44,13 +51,13 @@ final class Context
     }
 
     /**
-     * @psalm-template T
+     * @template T of object|array
      *
-     * @psalm-param T $value
+     * @param T $value
      *
      * @param-out T $value
      */
-    public function add(object|array &$value): int|string|false
+    public function add(array|object &$value): false|int|string
     {
         if (is_array($value)) {
             return $this->addArray($value);
@@ -60,13 +67,13 @@ final class Context
     }
 
     /**
-     * @psalm-template T
+     * @template T of object|array
      *
-     * @psalm-param T $value
+     * @param T $value
      *
      * @param-out T $value
      */
-    public function contains(object|array &$value): int|string|false
+    public function contains(array|object &$value): false|int|string
     {
         if (is_array($value)) {
             return $this->containsArray($value);
@@ -75,6 +82,9 @@ final class Context
         return $this->containsObject($value);
     }
 
+    /**
+     * @param array<mixed> $array
+     */
     private function addArray(array &$array): int
     {
         $key = $this->containsArray($array);
@@ -114,26 +124,29 @@ final class Context
         return $key;
     }
 
-    private function addObject(object $object): string
+    private function addObject(object $object): int
     {
         if (!$this->objects->contains($object)) {
             $this->objects->attach($object);
         }
 
-        return spl_object_hash($object);
+        return spl_object_id($object);
     }
 
-    private function containsArray(array $array): int|false
+    /**
+     * @param array<mixed> $array
+     */
+    private function containsArray(array $array): false|int
     {
         $end = array_slice($array, -2);
 
         return isset($end[1]) && $end[1] === $this->objects ? $end[0] : false;
     }
 
-    private function containsObject(object $value): string|false
+    private function containsObject(object $value): false|int
     {
         if ($this->objects->contains($value)) {
-            return spl_object_hash($value);
+            return spl_object_id($value);
         }
 
         return false;

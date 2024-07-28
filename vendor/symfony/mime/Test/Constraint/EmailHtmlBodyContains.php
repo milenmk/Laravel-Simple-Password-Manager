@@ -11,17 +11,16 @@
 
 namespace Symfony\Component\Mime\Test\Constraint;
 
+use LogicException;
 use PHPUnit\Framework\Constraint\Constraint;
 use Symfony\Component\Mime\Message;
 use Symfony\Component\Mime\RawMessage;
 
 final class EmailHtmlBodyContains extends Constraint
 {
-    private string $expectedText;
-
-    public function __construct(string $expectedText)
-    {
-        $this->expectedText = $expectedText;
+    public function __construct(
+        private string $expectedText,
+    ) {
     }
 
     public function toString(): string
@@ -35,7 +34,7 @@ final class EmailHtmlBodyContains extends Constraint
     protected function matches($message): bool
     {
         if (RawMessage::class === $message::class || Message::class === $message::class) {
-            throw new \LogicException('Unable to test a message HTML body on a RawMessage or Message instance.');
+            throw new LogicException('Unable to test a message HTML body on a RawMessage or Message instance.');
         }
 
         return str_contains($message->getHtmlBody(), $this->expectedText);

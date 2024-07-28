@@ -3,22 +3,19 @@
 namespace Spatie\LaravelIgnition\Http\Controllers;
 
 use Illuminate\Foundation\Validation\ValidatesRequests;
-use Spatie\Ignition\Contracts\SolutionProviderRepository;
+use Spatie\ErrorSolutions\Contracts\SolutionProviderRepository;
 use Spatie\LaravelIgnition\Exceptions\CannotExecuteSolutionForNonLocalIp;
 use Spatie\LaravelIgnition\Http\Requests\ExecuteSolutionRequest;
 use Spatie\LaravelIgnition\Support\RunnableSolutionsGuard;
 
 class ExecuteSolutionController
 {
-
     use ValidatesRequests;
 
     public function __invoke(
-        ExecuteSolutionRequest     $request,
+        ExecuteSolutionRequest $request,
         SolutionProviderRepository $solutionProviderRepository
-    )
-    {
-
+    ) {
         $this
             ->ensureRunnableSolutionsEnabled()
             ->ensureLocalRequest();
@@ -30,9 +27,16 @@ class ExecuteSolutionController
         return response()->noContent();
     }
 
+    public function ensureRunnableSolutionsEnabled(): self
+    {
+        // Should already be checked in middleware but we want to be 100% certain.
+        abort_unless(RunnableSolutionsGuard::check(), 400);
+
+        return $this;
+    }
+
     public function ensureLocalRequest(): self
     {
-
         $ipIsPublic = filter_var(
             request()->ip(),
             FILTER_VALIDATE_IP,
@@ -45,14 +49,4 @@ class ExecuteSolutionController
 
         return $this;
     }
-
-    public function ensureRunnableSolutionsEnabled(): self
-    {
-
-        // Should already be checked in middleware but we want to be 100% certain.
-        abort_unless(RunnableSolutionsGuard::check(), 400);
-
-        return $this;
-    }
-
 }

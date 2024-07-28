@@ -34,7 +34,7 @@ use Closure;
 /**
  * @internal This class is not covered by the backward compatibility promise for PHPUnit
  */
-final class GlobalState
+final readonly class GlobalState
 {
     /**
      * @psalm-var list<string>
@@ -137,7 +137,7 @@ final class GlobalState
      */
     public static function processIncludedFilesAsString(array $files): string
     {
-        $excludeList = new ExcludeList;
+        $excludeList = new ExcludeList();
         $prefix      = false;
         $result      = '';
 

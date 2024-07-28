@@ -15,9 +15,10 @@ use PHPUnit\Event\Facade as EventFacade;
 use PHPUnit\Event\UnknownSubscriberTypeException;
 use PHPUnit\Logging\TeamCity\TeamCityLogger;
 use PHPUnit\Logging\TestDox\TestResultCollection;
+use PHPUnit\Runner\DirectoryDoesNotExistException;
 use PHPUnit\TestRunner\TestResult\TestResult;
+use PHPUnit\TextUI\CannotOpenSocketException;
 use PHPUnit\TextUI\Configuration\Configuration;
-use PHPUnit\TextUI\DirectoryDoesNotExistException;
 use PHPUnit\TextUI\InvalidSocketException;
 use PHPUnit\TextUI\Output\Default\ProgressPrinter\ProgressPrinter as DefaultProgressPrinter;
 use PHPUnit\TextUI\Output\Default\ResultPrinter as DefaultResultPrinter;
@@ -84,7 +85,7 @@ final class Facade
                 self::$printer->print(PHP_EOL . PHP_EOL);
             }
 
-            self::$printer->print((new ResourceUsageFormatter)->resourceUsage($duration) . PHP_EOL . PHP_EOL);
+            self::$printer->print((new ResourceUsageFormatter())->resourceUsage($duration) . PHP_EOL . PHP_EOL);
         }
 
         if (self::$testDoxResultPrinter !== null && $testDoxResult !== null) {
@@ -101,6 +102,7 @@ final class Facade
     }
 
     /**
+     * @throws CannotOpenSocketException
      * @throws DirectoryDoesNotExistException
      * @throws InvalidSocketException
      */
@@ -153,7 +155,7 @@ final class Facade
             return;
         }
 
-        self::$printer = new NullPrinter;
+        self::$printer = new NullPrinter();
     }
 
     private static function createProgressPrinter(Configuration $configuration): void
@@ -219,6 +221,7 @@ final class Facade
             self::$testDoxResultPrinter = new TestDoxResultPrinter(
                 self::$printer,
                 $configuration->colors(),
+                $configuration->columns(),
             );
         }
 

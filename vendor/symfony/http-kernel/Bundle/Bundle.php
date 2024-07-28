@@ -11,11 +11,15 @@
 
 namespace Symfony\Component\HttpKernel\Bundle;
 
+use LogicException;
+use ReflectionObject;
 use Symfony\Component\Console\Application;
 use Symfony\Component\DependencyInjection\Container;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\DependencyInjection\Extension\ExtensionInterface;
+
+use function dirname;
 
 /**
  * An implementation of BundleInterface that adds a few conventions for DependencyInjection extensions.
@@ -24,15 +28,12 @@ use Symfony\Component\DependencyInjection\Extension\ExtensionInterface;
  */
 abstract class Bundle implements BundleInterface
 {
-    protected $name;
-    protected $extension;
-    protected $path;
-    private string $namespace;
+    protected string $name;
+    protected ExtensionInterface|false|null $extension = null;
+    protected string $path;
+    protected ?ContainerInterface $container;
 
-    /**
-     * @var ContainerInterface|null
-     */
-    protected $container;
+    private string $namespace;
 
     /**
      * @return void
@@ -70,7 +71,7 @@ abstract class Bundle implements BundleInterface
 
             if (null !== $extension) {
                 if (!$extension instanceof ExtensionInterface) {
-                    throw new \LogicException(sprintf('Extension "%s" must implement Symfony\Component\DependencyInjection\Extension\ExtensionInterface.', get_debug_type($extension)));
+                    throw new LogicException(sprintf('Extension "%s" must implement Symfony\Component\DependencyInjection\Extension\ExtensionInterface.', get_debug_type($extension)));
                 }
 
                 // check naming convention
@@ -78,7 +79,7 @@ abstract class Bundle implements BundleInterface
                 $expectedAlias = Container::underscore($basename);
 
                 if ($expectedAlias != $extension->getAlias()) {
-                    throw new \LogicException(sprintf('Users will expect the alias of the default extension of a bundle to be the underscored version of the bundle name ("%s"). You can override "Bundle::getContainerExtension()" if you want to use "%s" or another alias.', $expectedAlias, $extension->getAlias()));
+                    throw new LogicException(sprintf('Users will expect the alias of the default extension of a bundle to be the underscored version of the bundle name ("%s"). You can override "Bundle::getContainerExtension()" if you want to use "%s" or another alias.', $expectedAlias, $extension->getAlias()));
                 }
 
                 $this->extension = $extension;
@@ -102,8 +103,8 @@ abstract class Bundle implements BundleInterface
     public function getPath(): string
     {
         if (!isset($this->path)) {
-            $reflected = new \ReflectionObject($this);
-            $this->path = \dirname($reflected->getFileName());
+            $reflected = new ReflectionObject($this);
+            $this->path = dirname($reflected->getFileName());
         }
 
         return $this->path;

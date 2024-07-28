@@ -1,8 +1,19 @@
 <?php
 
+use Spatie\Backtrace\Arguments\Reducers\ArrayArgumentReducer;
+use Spatie\Backtrace\Arguments\Reducers\BaseTypeArgumentReducer;
+use Spatie\Backtrace\Arguments\Reducers\ClosureArgumentReducer;
+use Spatie\Backtrace\Arguments\Reducers\DateTimeArgumentReducer;
+use Spatie\Backtrace\Arguments\Reducers\DateTimeZoneArgumentReducer;
+use Spatie\Backtrace\Arguments\Reducers\EnumArgumentReducer;
+use Spatie\Backtrace\Arguments\Reducers\StdClassArgumentReducer;
+use Spatie\Backtrace\Arguments\Reducers\StringableArgumentReducer;
+use Spatie\Backtrace\Arguments\Reducers\SymphonyRequestArgumentReducer;
 use Spatie\Ignition\Solutions\SolutionProviders\BadMethodCallSolutionProvider;
 use Spatie\Ignition\Solutions\SolutionProviders\MergeConflictSolutionProvider;
 use Spatie\Ignition\Solutions\SolutionProviders\UndefinedPropertySolutionProvider;
+use Spatie\LaravelIgnition\ArgumentReducers\CollectionArgumentReducer;
+use Spatie\LaravelIgnition\ArgumentReducers\ModelArgumentReducer;
 use Spatie\LaravelIgnition\Recorders\DumpRecorder\DumpRecorder;
 use Spatie\LaravelIgnition\Recorders\JobRecorder\JobRecorder;
 use Spatie\LaravelIgnition\Recorders\LogRecorder\LogRecorder;
@@ -22,6 +33,10 @@ use Spatie\LaravelIgnition\Solutions\SolutionProviders\TableNotFoundSolutionProv
 use Spatie\LaravelIgnition\Solutions\SolutionProviders\UndefinedViewVariableSolutionProvider;
 use Spatie\LaravelIgnition\Solutions\SolutionProviders\UnknownValidationSolutionProvider;
 use Spatie\LaravelIgnition\Solutions\SolutionProviders\ViewNotFoundSolutionProvider;
+use Spatie\LaravelIgnition\Solutions\SolutionProviders\OpenAiSolutionProvider;
+use Spatie\LaravelIgnition\Solutions\SolutionProviders\SailNetworkSolutionProvider;
+use Spatie\LaravelIgnition\Solutions\SolutionProviders\UnknownMariadbCollationSolutionProvider;
+use Spatie\LaravelIgnition\Solutions\SolutionProviders\UnknownMysql8CollationSolutionProvider;
 
 return [
 
@@ -34,7 +49,7 @@ return [
     |
     | Supported: "phpstorm", "vscode", "vscode-insiders", "textmate", "emacs",
     |            "sublime", "atom", "nova", "macvim", "idea", "netbeans",
-    |            "xdebug"
+    |            "xdebug", "phpstorm-remote"
     |
     */
 
@@ -87,9 +102,8 @@ return [
     | Solution Providers
     |--------------------------------------------------------------------------
     |
-    | You may specify a list of solution providers (as fully qualified class
-    | names) that shouldn't be loaded. Ignition will ignore these classes
-    | and possible solutions provided by them will never be displayed.
+    | List of solution providers that should be loaded. You may specify additional
+    | providers as fully qualified class names.
     |
     */
 
@@ -115,6 +129,10 @@ return [
         MissingLivewireComponentSolutionProvider::class,
         UndefinedViewVariableSolutionProvider::class,
         GenericLaravelExceptionSolutionProvider::class,
+        OpenAiSolutionProvider::class,
+        SailNetworkSolutionProvider::class,
+        UnknownMysql8CollationSolutionProvider::class,
+        UnknownMariadbCollationSolutionProvider::class,
     ],
 
     /*
@@ -176,7 +194,7 @@ return [
     */
 
     'remote_sites_path' => env('IGNITION_REMOTE_SITES_PATH', base_path()),
-    'local_sites_path'  => env('IGNITION_LOCAL_SITES_PATH', ''),
+    'local_sites_path' => env('IGNITION_LOCAL_SITES_PATH', ''),
 
     /*
     |--------------------------------------------------------------------------
@@ -231,4 +249,48 @@ return [
         LogRecorder::class,
         QueryRecorder::class,
     ],
+
+    /*
+     * When a key is set, we'll send your exceptions to Open AI to generate a solution
+     */
+
+    'open_ai_key' => env('IGNITION_OPEN_AI_KEY'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Include arguments
+    |--------------------------------------------------------------------------
+    |
+    | Ignition show you stack traces of exceptions with the arguments that were
+    | passed to each method. This feature can be disabled here.
+    |
+    */
+
+    'with_stack_frame_arguments' => true,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Argument reducers
+    |--------------------------------------------------------------------------
+    |
+    | Ignition show you stack traces of exceptions with the arguments that were
+    | passed to each method. To make these variables more readable, you can
+    | specify a list of classes here which summarize the variables.
+    |
+    */
+
+    'argument_reducers' => [
+        BaseTypeArgumentReducer::class,
+        ArrayArgumentReducer::class,
+        StdClassArgumentReducer::class,
+        EnumArgumentReducer::class,
+        ClosureArgumentReducer::class,
+        DateTimeArgumentReducer::class,
+        DateTimeZoneArgumentReducer::class,
+        SymphonyRequestArgumentReducer::class,
+        ModelArgumentReducer::class,
+        CollectionArgumentReducer::class,
+        StringableArgumentReducer::class,
+    ],
+
 ];

@@ -11,19 +11,21 @@
 
 namespace Symfony\Component\Console\Helper;
 
+use Closure;
+use IteratorAggregate;
+use Traversable;
+
 /**
  * @internal
  */
-class TableRows implements \IteratorAggregate
+class TableRows implements IteratorAggregate
 {
-    private \Closure $generator;
-
-    public function __construct(\Closure $generator)
-    {
-        $this->generator = $generator;
+    public function __construct(
+        private Closure $generator,
+    ) {
     }
 
-    public function getIterator(): \Traversable
+    public function getIterator(): Traversable
     {
         return ($this->generator)();
     }

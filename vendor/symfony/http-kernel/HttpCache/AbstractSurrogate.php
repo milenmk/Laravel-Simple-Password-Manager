@@ -11,9 +11,14 @@
 
 namespace Symfony\Component\HttpKernel\HttpCache;
 
+use Exception;
+use RuntimeException;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
+
+use function assert;
+use function strlen;
 
 /**
  * Abstract class implementing Surrogate capabilities to Request and Response instances.
@@ -23,23 +28,13 @@ use Symfony\Component\HttpKernel\HttpKernelInterface;
  */
 abstract class AbstractSurrogate implements SurrogateInterface
 {
-    protected $contentTypes;
-
-    /**
-     * @deprecated since Symfony 6.3
-     */
-    protected $phpEscapeMap = [
-        ['<?', '<%', '<s', '<S'],
-        ['<?php echo "<?"; ?>', '<?php echo "<%"; ?>', '<?php echo "<s"; ?>', '<?php echo "<S"; ?>'],
-    ];
-
     /**
      * @param array $contentTypes An array of content-type that should be parsed for Surrogate information
      *                            (default: text/html, text/xml, application/xhtml+xml, and application/xml)
      */
-    public function __construct(array $contentTypes = ['text/html', 'text/xml', 'application/xhtml+xml', 'application/xml'])
-    {
-        $this->contentTypes = $contentTypes;
+    public function __construct(
+        protected array $contentTypes = ['text/html', 'text/xml', 'application/xhtml+xml', 'application/xml'],
+    ) {
     }
 
     /**
@@ -59,10 +54,7 @@ abstract class AbstractSurrogate implements SurrogateInterface
         return str_contains($value, sprintf('%s/1.0', strtoupper($this->getName())));
     }
 
-    /**
-     * @return void
-     */
-    public function addSurrogateCapability(Request $request)
+    public function addSurrogateCapability(Request $request): void
     {
         $current = $request->headers->get('Surrogate-Capability');
         $new = sprintf('symfony="%s/1.0"', strtoupper($this->getName()));
@@ -89,11 +81,11 @@ abstract class AbstractSurrogate implements SurrogateInterface
             $response = $cache->handle($subRequest, HttpKernelInterface::SUB_REQUEST, true);
 
             if (!$response->isSuccessful() && Response::HTTP_NOT_MODIFIED !== $response->getStatusCode()) {
-                throw new \RuntimeException(sprintf('Error when rendering "%s" (Status code is %d).', $subRequest->getUri(), $response->getStatusCode()));
+                throw new RuntimeException(sprintf('Error when rendering "%s" (Status code is %d).', $subRequest->getUri(), $response->getStatusCode()));
             }
 
             return $response->getContent();
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             if ($alt) {
                 return $this->handle($cache, $alt, '', $ignoreErrors);
             }
@@ -108,10 +100,8 @@ abstract class AbstractSurrogate implements SurrogateInterface
 
     /**
      * Remove the Surrogate from the Surrogate-Control header.
-     *
-     * @return void
      */
-    protected function removeFromControl(Response $response)
+    protected function removeFromControl(Response $response): void
     {
         if (!$response->headers->has('Surrogate-Control')) {
             return;
@@ -135,7 +125,7 @@ abstract class AbstractSurrogate implements SurrogateInterface
         $cookie = hash('xxh128', $cookie ?? $cookie = random_bytes(16), true);
         $boundary = base64_encode($cookie);
 
-        \assert(HttpCache::BODY_EVAL_BOUNDARY_LENGTH === \strlen($boundary));
+        assert(HttpCache::BODY_EVAL_BOUNDARY_LENGTH === strlen($boundary));
 
         return $boundary;
     }

@@ -14,6 +14,8 @@ namespace Symfony\Component\HttpFoundation;
 use Symfony\Component\HttpFoundation\Exception\SessionNotFoundException;
 use Symfony\Component\HttpFoundation\Session\SessionInterface;
 
+use function count;
+
 /**
  * Request stack that controls the lifecycle of requests.
  *
@@ -31,10 +33,8 @@ class RequestStack
      *
      * This method should generally not be called directly as the stack
      * management should be taken care of by the application itself.
-     *
-     * @return void
      */
-    public function push(Request $request)
+    public function push(Request $request): void
     {
         $this->requests[] = $request;
     }
@@ -88,7 +88,7 @@ class RequestStack
      */
     public function getParentRequest(): ?Request
     {
-        $pos = \count($this->requests) - 2;
+        $pos = count($this->requests) - 2;
 
         return $this->requests[$pos] ?? null;
     }

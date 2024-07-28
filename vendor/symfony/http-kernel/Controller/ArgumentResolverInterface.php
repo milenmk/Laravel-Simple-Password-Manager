@@ -11,6 +11,7 @@
 
 namespace Symfony\Component\HttpKernel\Controller;
 
+use ReflectionFunctionAbstract;
 use Symfony\Component\HttpFoundation\Request;
 
 /**
@@ -24,9 +25,7 @@ interface ArgumentResolverInterface
     /**
      * Returns the arguments to pass to the controller.
      *
-     * @param \ReflectionFunctionAbstract|null $reflector
-     *
      * @throws \RuntimeException When no value could be provided for a required argument
      */
-    public function getArguments(Request $request, callable $controller/* , \ReflectionFunctionAbstract $reflector = null */): array;
+    public function getArguments(Request $request, callable $controller, ?ReflectionFunctionAbstract $reflector = null): array;
 }

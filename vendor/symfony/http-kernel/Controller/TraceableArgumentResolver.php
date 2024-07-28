@@ -11,6 +11,7 @@
 
 namespace Symfony\Component\HttpKernel\Controller;
 
+use ReflectionFunctionAbstract;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Stopwatch\Stopwatch;
 
@@ -19,21 +20,14 @@ use Symfony\Component\Stopwatch\Stopwatch;
  */
 class TraceableArgumentResolver implements ArgumentResolverInterface
 {
-    private ArgumentResolverInterface $resolver;
-    private Stopwatch $stopwatch;
-
-    public function __construct(ArgumentResolverInterface $resolver, Stopwatch $stopwatch)
-    {
-        $this->resolver = $resolver;
-        $this->stopwatch = $stopwatch;
+    public function __construct(
+        private ArgumentResolverInterface $resolver,
+        private Stopwatch $stopwatch,
+    ) {
     }
 
-    /**
-     * @param \ReflectionFunctionAbstract|null $reflector
-     */
-    public function getArguments(Request $request, callable $controller/* , \ReflectionFunctionAbstract $reflector = null */): array
+    public function getArguments(Request $request, callable $controller, ?ReflectionFunctionAbstract $reflector = null): array
     {
-        $reflector = 2 < \func_num_args() ? func_get_arg(2) : null;
         $e = $this->stopwatch->start('controller.get_arguments');
 
         try {

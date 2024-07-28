@@ -16,7 +16,7 @@ use PHPUnit\Util\Xml\XmlException;
 /**
  * @internal This class is not covered by the backward compatibility promise for PHPUnit
  */
-final class Migrator
+final readonly class Migrator
 {
     /**
      * @throws Exception
@@ -26,7 +26,7 @@ final class Migrator
      */
     public function migrate(string $filename): string
     {
-        $origin = (new SchemaDetector)->detect($filename);
+        $origin = (new SchemaDetector())->detect($filename);
 
         if (!$origin->detected()) {
             throw new Exception('The file does not validate against any know schema');
@@ -36,9 +36,9 @@ final class Migrator
             throw new Exception('The file does not need to be migrated');
         }
 
-        $configurationDocument = (new XmlLoader)->loadFile($filename);
+        $configurationDocument = (new XmlLoader())->loadFile($filename);
 
-        foreach ((new MigrationBuilder)->build($origin->version()) as $migration) {
+        foreach ((new MigrationBuilder())->build($origin->version()) as $migration) {
             $migration->migrate($configurationDocument);
         }
 

@@ -8,7 +8,6 @@ use Symfony\Component\Finder\Finder;
 
 class FileFinder
 {
-
     /**
      * @var array
      */
@@ -21,7 +20,6 @@ class FileFinder
      */
     public function __construct(Repository $config)
     {
-
         $this->config = $config->get('localizator');
     }
 
@@ -30,20 +28,15 @@ class FileFinder
      */
     public function getFiles(): Collection
     {
-
-        $directories = array_map(
-            static function ($dir) {
-
-                return base_path($dir);
-            }, $this->config['search']['dirs']
-        );
+        $directories = array_map(static function ($dir) {
+            return base_path($dir);
+        }, $this->config['search']['dirs']);
 
         return new Collection(
-            (new Finder)->in($directories)
+            (new Finder())->in($directories)
                 ->notPath($this->config['search']['exclude'])
                 ->name($this->config['search']['patterns'])
                 ->files()
         );
     }
-
 }

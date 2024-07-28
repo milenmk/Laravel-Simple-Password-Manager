@@ -5,6 +5,7 @@ namespace Illuminate\Database\Eloquent;
 use Illuminate\Contracts\Queue\QueueableCollection;
 use Illuminate\Contracts\Queue\QueueableEntity;
 use Illuminate\Contracts\Support\Arrayable;
+use Illuminate\Database\Eloquent\Relations\Concerns\InteractsWithDictionary;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection as BaseCollection;
 use LogicException;
@@ -17,6 +18,8 @@ use LogicException;
  */
 class Collection extends BaseCollection implements QueueableCollection
 {
+    use InteractsWithDictionary;
+
     /**
      * Find a model in the collection by key.
      *
@@ -38,7 +41,7 @@ class Collection extends BaseCollection implements QueueableCollection
 
         if (is_array($key)) {
             if ($this->isEmpty()) {
-                return new static;
+                return new static();
             }
 
             return $this->whereIn($this->first()->getKeyName(), $key);
@@ -50,7 +53,7 @@ class Collection extends BaseCollection implements QueueableCollection
     /**
      * Load a set of relationships onto the collection.
      *
-     * @param  array<array-key, (callable(\Illuminate\Database\Eloquent\Builder): mixed)|string>|string  $relations
+     * @param  array<array-key, (callable(\Illuminate\Database\Eloquent\Builder<TModel>): mixed)|string>|string  $relations
      * @return $this
      */
     public function load($relations)
@@ -71,7 +74,7 @@ class Collection extends BaseCollection implements QueueableCollection
     /**
      * Load a set of aggregations over relationship's column onto the collection.
      *
-     * @param  array<array-key, (callable(\Illuminate\Database\Eloquent\Builder): mixed)|string>|string  $relations
+     * @param  array<array-key, (callable(\Illuminate\Database\Eloquent\Builder<TModel>): mixed)|string>|string  $relations
      * @param  string  $column
      * @param  string|null  $function
      * @return $this
@@ -108,7 +111,7 @@ class Collection extends BaseCollection implements QueueableCollection
     /**
      * Load a set of relationship counts onto the collection.
      *
-     * @param  array<array-key, (callable(\Illuminate\Database\Eloquent\Builder): mixed)|string>|string  $relations
+     * @param  array<array-key, (callable(\Illuminate\Database\Eloquent\Builder<TModel>): mixed)|string>|string  $relations
      * @return $this
      */
     public function loadCount($relations)
@@ -119,7 +122,7 @@ class Collection extends BaseCollection implements QueueableCollection
     /**
      * Load a set of relationship's max column values onto the collection.
      *
-     * @param  array<array-key, (callable(\Illuminate\Database\Eloquent\Builder): mixed)|string>|string  $relations
+     * @param  array<array-key, (callable(\Illuminate\Database\Eloquent\Builder<TModel>): mixed)|string>|string  $relations
      * @param  string  $column
      * @return $this
      */
@@ -131,7 +134,7 @@ class Collection extends BaseCollection implements QueueableCollection
     /**
      * Load a set of relationship's min column values onto the collection.
      *
-     * @param  array<array-key, (callable(\Illuminate\Database\Eloquent\Builder): mixed)|string>|string  $relations
+     * @param  array<array-key, (callable(\Illuminate\Database\Eloquent\Builder<TModel>): mixed)|string>|string  $relations
      * @param  string  $column
      * @return $this
      */
@@ -143,7 +146,7 @@ class Collection extends BaseCollection implements QueueableCollection
     /**
      * Load a set of relationship's column summations onto the collection.
      *
-     * @param  array<array-key, (callable(\Illuminate\Database\Eloquent\Builder): mixed)|string>|string  $relations
+     * @param  array<array-key, (callable(\Illuminate\Database\Eloquent\Builder<TModel>): mixed)|string>|string  $relations
      * @param  string  $column
      * @return $this
      */
@@ -155,7 +158,7 @@ class Collection extends BaseCollection implements QueueableCollection
     /**
      * Load a set of relationship's average column values onto the collection.
      *
-     * @param  array<array-key, (callable(\Illuminate\Database\Eloquent\Builder): mixed)|string>|string  $relations
+     * @param  array<array-key, (callable(\Illuminate\Database\Eloquent\Builder<TModel>): mixed)|string>|string  $relations
      * @param  string  $column
      * @return $this
      */
@@ -167,7 +170,7 @@ class Collection extends BaseCollection implements QueueableCollection
     /**
      * Load a set of related existences onto the collection.
      *
-     * @param  array<array-key, (callable(\Illuminate\Database\Eloquent\Builder): mixed)|string>|string  $relations
+     * @param  array<array-key, (callable(\Illuminate\Database\Eloquent\Builder<TModel>): mixed)|string>|string  $relations
      * @return $this
      */
     public function loadExists($relations)
@@ -178,7 +181,7 @@ class Collection extends BaseCollection implements QueueableCollection
     /**
      * Load a set of relationships onto the collection if they are not already eager loaded.
      *
-     * @param  array<array-key, (callable(\Illuminate\Database\Eloquent\Builder): mixed)|string>|string  $relations
+     * @param  array<array-key, (callable(\Illuminate\Database\Eloquent\Builder<TModel>): mixed)|string>|string  $relations
      * @return $this
      */
     public function loadMissing($relations)
@@ -217,7 +220,7 @@ class Collection extends BaseCollection implements QueueableCollection
     /**
      * Load a relationship path if it is not already eager loaded.
      *
-     * @param  \Illuminate\Database\Eloquent\Collection  $models
+     * @param  \Illuminate\Database\Eloquent\Collection<int, TModel>  $models
      * @param  array  $path
      * @return void
      */
@@ -250,7 +253,7 @@ class Collection extends BaseCollection implements QueueableCollection
      * Load a set of relationships onto the mixed relationship collection.
      *
      * @param  string  $relation
-     * @param  array<array-key, (callable(\Illuminate\Database\Eloquent\Builder): mixed)|string>  $relations
+     * @param  array<array-key, (callable(\Illuminate\Database\Eloquent\Builder<TModel>): mixed)|string>  $relations
      * @return $this
      */
     public function loadMorph($relation, $relations)
@@ -267,7 +270,7 @@ class Collection extends BaseCollection implements QueueableCollection
      * Load a set of relationship counts onto the mixed relationship collection.
      *
      * @param  string  $relation
-     * @param  array<array-key, (callable(\Illuminate\Database\Eloquent\Builder): mixed)|string>  $relations
+     * @param  array<array-key, (callable(\Illuminate\Database\Eloquent\Builder<TModel>): mixed)|string>  $relations
      * @return $this
      */
     public function loadMorphCount($relation, $relations)
@@ -322,7 +325,7 @@ class Collection extends BaseCollection implements QueueableCollection
         $dictionary = $this->getDictionary();
 
         foreach ($items as $item) {
-            $dictionary[$item->getKey()] = $item;
+            $dictionary[$this->getDictionaryKey($item->getKey())] = $item;
         }
 
         return new static(array_values($dictionary));
@@ -370,7 +373,7 @@ class Collection extends BaseCollection implements QueueableCollection
     public function fresh($with = [])
     {
         if ($this->isEmpty()) {
-            return new static;
+            return new static();
         }
 
         $model = $this->first();
@@ -393,12 +396,12 @@ class Collection extends BaseCollection implements QueueableCollection
      */
     public function diff($items)
     {
-        $diff = new static;
+        $diff = new static();
 
         $dictionary = $this->getDictionary($items);
 
         foreach ($this->items as $item) {
-            if (! isset($dictionary[$item->getKey()])) {
+            if (! isset($dictionary[$this->getDictionaryKey($item->getKey())])) {
                 $diff->add($item);
             }
         }
@@ -414,7 +417,7 @@ class Collection extends BaseCollection implements QueueableCollection
      */
     public function intersect($items)
     {
-        $intersect = new static;
+        $intersect = new static();
 
         if (empty($items)) {
             return $intersect;
@@ -423,7 +426,7 @@ class Collection extends BaseCollection implements QueueableCollection
         $dictionary = $this->getDictionary($items);
 
         foreach ($this->items as $item) {
-            if (isset($dictionary[$item->getKey()])) {
+            if (isset($dictionary[$this->getDictionaryKey($item->getKey())])) {
                 $intersect->add($item);
             }
         }
@@ -459,7 +462,7 @@ class Collection extends BaseCollection implements QueueableCollection
             return new static($this->items);
         }
 
-        $dictionary = Arr::only($this->getDictionary(), $keys);
+        $dictionary = Arr::only($this->getDictionary(), array_map($this->getDictionaryKey(...), (array) $keys));
 
         return new static(array_values($dictionary));
     }
@@ -472,7 +475,11 @@ class Collection extends BaseCollection implements QueueableCollection
      */
     public function except($keys)
     {
-        $dictionary = Arr::except($this->getDictionary(), $keys);
+        if (is_null($keys)) {
+            return new static($this->items);
+        }
+
+        $dictionary = Arr::except($this->getDictionary(), array_map($this->getDictionaryKey(...), (array) $keys));
 
         return new static(array_values($dictionary));
     }
@@ -545,7 +552,7 @@ class Collection extends BaseCollection implements QueueableCollection
         $dictionary = [];
 
         foreach ($items as $value) {
-            $dictionary[$value->getKey()] = $value;
+            $dictionary[$this->getDictionaryKey($value->getKey())] = $value;
         }
 
         return $dictionary;
@@ -624,7 +631,7 @@ class Collection extends BaseCollection implements QueueableCollection
     /**
      * Get an array with the values of a given key.
      *
-     * @param  string|array<array-key, string>  $value
+     * @param  string|array<array-key, string>|null  $value
      * @param  string|null  $key
      * @return \Illuminate\Support\Collection<array-key, mixed>
      */
@@ -759,7 +766,7 @@ class Collection extends BaseCollection implements QueueableCollection
     /**
      * Get the Eloquent query builder from the collection.
      *
-     * @return \Illuminate\Database\Eloquent\Builder
+     * @return \Illuminate\Database\Eloquent\Builder<TModel>
      *
      * @throws \LogicException
      */

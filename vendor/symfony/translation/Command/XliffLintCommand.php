@@ -11,6 +11,12 @@
 
 namespace Symfony\Component\Translation\Command;
 
+use Closure;
+use DOMDocument;
+use FilesystemIterator;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
+use SplFileInfo;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\CI\GithubActionReporter;
 use Symfony\Component\Console\Command\Command;
@@ -25,6 +31,12 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Translation\Exception\InvalidArgumentException;
 use Symfony\Component\Translation\Util\XliffUtils;
 
+use function count;
+use function in_array;
+
+use const JSON_PRETTY_PRINT;
+use const JSON_UNESCAPED_SLASHES;
+
 /**
  * Validates XLIFF files syntax and outputs encountered errors.
  *
@@ -36,10 +48,10 @@ use Symfony\Component\Translation\Util\XliffUtils;
 class XliffLintCommand extends Command
 {
     private string $format;
-    private bool $displayCorrectFiles;
-    private ?\Closure $directoryIteratorProvider;
-    private ?\Closure $isReadableProvider;
-    private bool $requireStrictFileNames;
+    private bool     $displayCorrectFiles;
+    private ?Closure $directoryIteratorProvider;
+    private ?Closure $isReadableProvider;
+    private bool     $requireStrictFileNames;
 
     public function __construct(?string $name = null, ?callable $directoryIteratorProvider = null, ?callable $isReadableProvider = null, bool $requireStrictFileNames = true)
     {
@@ -50,10 +62,7 @@ class XliffLintCommand extends Command
         $this->requireStrictFileNames = $requireStrictFileNames;
     }
 
-    /**
-     * @return void
-     */
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->addArgument('filename', InputArgument::IS_ARRAY, 'A file, a directory or "-" for reading from STDIN')
@@ -120,7 +129,7 @@ EOF
 
         $internal = libxml_use_internal_errors(true);
 
-        $document = new \DOMDocument();
+        $document = new DOMDocument();
         $document->loadXML($content);
 
         if (null !== $targetLanguage = $this->getTargetLanguageFromFile($document)) {
@@ -151,7 +160,7 @@ EOF
         libxml_clear_errors();
         libxml_use_internal_errors($internal);
 
-        return ['file' => $file, 'valid' => 0 === \count($errors), 'messages' => $errors];
+        return ['file' => $file, 'valid' => 0 === count($errors), 'messages' => $errors];
     }
 
     private function display(SymfonyStyle $io, array $files): int
@@ -166,7 +175,7 @@ EOF
 
     private function displayTxt(SymfonyStyle $io, array $filesInfo, bool $errorAsGithubAnnotations = false): int
     {
-        $countFiles = \count($filesInfo);
+        $countFiles = count($filesInfo);
         $erroredFiles = 0;
         $githubReporter = $errorAsGithubAnnotations ? new GithubActionReporter($io) : null;
 
@@ -207,7 +216,7 @@ EOF
             }
         });
 
-        $io->writeln(json_encode($filesInfo, \JSON_PRETTY_PRINT | \JSON_UNESCAPED_SLASHES));
+        $io->writeln(json_encode($filesInfo, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
 
         return min($errors, 1);
     }
@@ -218,13 +227,13 @@ EOF
     private function getFiles(string $fileOrDirectory): iterable
     {
         if (is_file($fileOrDirectory)) {
-            yield new \SplFileInfo($fileOrDirectory);
+            yield new SplFileInfo($fileOrDirectory);
 
             return;
         }
 
         foreach ($this->getDirectoryIterator($fileOrDirectory) as $file) {
-            if (!\in_array($file->getExtension(), ['xlf', 'xliff'])) {
+            if (!in_array($file->getExtension(), ['xlf', 'xliff'])) {
                 continue;
             }
 
@@ -237,9 +246,9 @@ EOF
      */
     private function getDirectoryIterator(string $directory): iterable
     {
-        $default = fn ($directory) => new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($directory, \FilesystemIterator::SKIP_DOTS | \FilesystemIterator::FOLLOW_SYMLINKS),
-            \RecursiveIteratorIterator::LEAVES_ONLY
+        $default = fn ($directory) => new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($directory, FilesystemIterator::SKIP_DOTS | FilesystemIterator::FOLLOW_SYMLINKS),
+            RecursiveIteratorIterator::LEAVES_ONLY
         );
 
         if (null !== $this->directoryIteratorProvider) {
@@ -260,7 +269,7 @@ EOF
         return $default($fileOrDirectory);
     }
 
-    private function getTargetLanguageFromFile(\DOMDocument $xliffContents): ?string
+    private function getTargetLanguageFromFile(DOMDocument $xliffContents): ?string
     {
         foreach ($xliffContents->getElementsByTagName('file')[0]->attributes ?? [] as $attribute) {
             if ('target-language' === $attribute->nodeName) {

@@ -21,7 +21,7 @@ use PHPUnit\TextUI\XmlConfiguration\Loader;
  *
  * @codeCoverageIgnore
  */
-final class Builder
+final readonly class Builder
 {
     /**
      * @throws ConfigurationCannotBeBuiltException
@@ -29,12 +29,12 @@ final class Builder
     public function build(array $argv): Configuration
     {
         try {
-            $cliConfiguration  = (new CliConfigurationBuilder)->fromParameters($argv);
-            $configurationFile = (new XmlConfigurationFileFinder)->find($cliConfiguration);
+            $cliConfiguration  = (new CliConfigurationBuilder())->fromParameters($argv);
+            $configurationFile = (new XmlConfigurationFileFinder())->find($cliConfiguration);
             $xmlConfiguration  = DefaultConfiguration::create();
 
             if ($configurationFile !== false) {
-                $xmlConfiguration = (new Loader)->load($configurationFile);
+                $xmlConfiguration = (new Loader())->load($configurationFile);
             }
 
             return Registry::init(

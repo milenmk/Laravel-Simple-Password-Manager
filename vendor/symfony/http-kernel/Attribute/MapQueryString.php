@@ -11,6 +11,7 @@
 
 namespace Symfony\Component\HttpKernel\Attribute;
 
+use Attribute;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Controller\ArgumentResolver\RequestPayloadValueResolver;
 use Symfony\Component\HttpKernel\ControllerMetadata\ArgumentMetadata;
@@ -21,11 +22,17 @@ use Symfony\Component\Validator\Constraints\GroupSequence;
  *
  * @author Konstantin Myakshin <molodchick@gmail.com>
  */
-#[\Attribute(\Attribute::TARGET_PARAMETER)]
+#[Attribute(Attribute::TARGET_PARAMETER)]
 class MapQueryString extends ValueResolver
 {
     public ArgumentMetadata $metadata;
 
+    /**
+     * @param array<string, mixed>                    $serializationContext       The serialization context to use when deserializing the query string
+     * @param string|GroupSequence|array<string>|null $validationGroups           The validation groups to use when validating the query string mapping
+     * @param class-string                            $resolver                   The class name of the resolver to use
+     * @param int                                     $validationFailedStatusCode The HTTP code to return if the validation fails
+     */
     public function __construct(
         public readonly array $serializationContext = [],
         public readonly string|GroupSequence|array|null $validationGroups = null,

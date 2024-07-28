@@ -48,7 +48,7 @@ class AblyBroadcaster extends Broadcaster
         if (empty($request->channel_name) ||
             ($this->isGuardedChannel($request->channel_name) &&
             ! $this->retrieveUser($request, $channelName))) {
-            throw new AccessDeniedHttpException;
+            throw new AccessDeniedHttpException();
         }
 
         return parent::verifyUserCanAccessChannel(
@@ -147,7 +147,7 @@ class AblyBroadcaster extends Broadcaster
      */
     protected function buildAblyMessage($event, array $payload = [])
     {
-        return tap(new AblyMessage, function ($message) use ($event, $payload) {
+        return tap(new AblyMessage(), function ($message) use ($event, $payload) {
             $message->name = $event;
             $message->data = $payload;
             $message->connectionKey = data_get($payload, 'socket');
@@ -206,7 +206,7 @@ class AblyBroadcaster extends Broadcaster
     /**
      * Get the public token value from the Ably key.
      *
-     * @return mixed
+     * @return string
      */
     protected function getPublicToken()
     {
@@ -216,7 +216,7 @@ class AblyBroadcaster extends Broadcaster
     /**
      * Get the private token value from the Ably key.
      *
-     * @return mixed
+     * @return string
      */
     protected function getPrivateToken()
     {
@@ -231,5 +231,16 @@ class AblyBroadcaster extends Broadcaster
     public function getAbly()
     {
         return $this->ably;
+    }
+
+    /**
+     * Set the underlying Ably SDK instance.
+     *
+     * @param  \Ably\AblyRest  $ably
+     * @return void
+     */
+    public function setAbly($ably)
+    {
+        $this->ably = $ably;
     }
 }

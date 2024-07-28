@@ -17,7 +17,7 @@ final class StyleToMethod
     /**
      * Finds if there is any media query on the style class.
      */
-    private const MEDIA_QUERIES_REGEX = "/^(sm|md|lg|xl|2xl)\:(.*)/";
+    private const MEDIA_QUERIES_REGEX = '/^(sm|md|lg|xl|2xl)\:(.*)/';
 
     /**
      * Defines the Media Query Breakpoints.
@@ -59,8 +59,6 @@ final class StyleToMethod
 
     /**
      * Converts the given style to a method name.
-     *
-     * @return Styles
      */
     public function __invoke(string|int ...$arguments): Styles
     {
@@ -145,7 +143,7 @@ final class StyleToMethod
 
         [, $size, $method] = $matches;
 
-        if ((new Terminal)->width() >= self::MEDIA_QUERY_BREAKPOINTS[$size]) {
+        if ((new Terminal())->width() >= self::MEDIA_QUERY_BREAKPOINTS[$size]) {
             return $method;
         }
 

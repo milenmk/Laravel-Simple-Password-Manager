@@ -11,9 +11,12 @@
 
 namespace Symfony\Component\VarDumper\Caster;
 
+use FFI;
 use FFI\CData;
 use FFI\CType;
 use Symfony\Component\VarDumper\Cloner\Stub;
+
+use function defined;
 
 /**
  * Casts FFI extension classes to array representation.
@@ -38,7 +41,7 @@ final class FFICaster
             $type = $data;
             $data = null;
         } else {
-            $type = \FFI::typeof($data);
+            $type = FFI::typeof($data);
         }
 
         $stub->class = sprintf('%s<%s> size %d align %d', ($data ?? $type)::class, $type->getName(), $type->getSize(), $type->getAlignment());
@@ -46,7 +49,7 @@ final class FFICaster
         return match ($type->getKind()) {
             CType::TYPE_FLOAT,
             CType::TYPE_DOUBLE,
-            \defined('\FFI\CType::TYPE_LONGDOUBLE') ? CType::TYPE_LONGDOUBLE : -1,
+            defined('\FFI\CType::TYPE_LONGDOUBLE') ? CType::TYPE_LONGDOUBLE : -1,
             CType::TYPE_UINT8,
             CType::TYPE_SINT8,
             CType::TYPE_UINT16,
@@ -86,7 +89,7 @@ final class FFICaster
             CType::ABI_MS => '[ms]',
             CType::ABI_SYSV => '[sysv]',
             CType::ABI_VECTORCALL => '[vectorcall]',
-            default => '[unknown abi]'
+            default => '[unknown abi]',
         };
 
         $returnType = $type->getFuncReturnType();
@@ -115,11 +118,21 @@ final class FFICaster
     private static function castFFIStringValue(CData $data): string|CutStub
     {
         $result = [];
+        $ffi = FFI::cdef(<<<C
+            size_t zend_get_page_size(void);
+        C);
 
-        for ($i = 0; $i < self::MAX_STRING_LENGTH; ++$i) {
+        $pageSize = $ffi->zend_get_page_size();
+
+        // get cdata address
+        $start = $ffi->cast('uintptr_t', $ffi->cast('char*', $data))->cdata;
+        // accessing memory in the same page as $start is safe
+        $max = min(self::MAX_STRING_LENGTH, ($start | ($pageSize - 1)) - $start);
+
+        for ($i = 0; $i < $max; ++$i) {
             $result[$i] = $data[$i];
 
-            if ("\0" === $result[$i]) {
+            if ("\0" === $data[$i]) {
                 return implode('', $result);
             }
         }

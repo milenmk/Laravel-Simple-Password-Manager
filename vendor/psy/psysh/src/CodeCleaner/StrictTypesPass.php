@@ -12,10 +12,17 @@
 namespace Psy\CodeCleaner;
 
 use PhpParser\Node;
+use PhpParser\Node\DeclareItem;
 use PhpParser\Node\Scalar\LNumber;
 use PhpParser\Node\Stmt\Declare_;
 use PhpParser\Node\Stmt\DeclareDeclare;
 use Psy\Exception\FatalErrorException;
+
+use function array_unshift;
+use function class_exists;
+use function reset;
+
+use const E_ERROR;
 
 /**
  * Provide implicit strict types declarations for for subsequent execution.
@@ -29,7 +36,8 @@ use Psy\Exception\FatalErrorException;
  */
 class StrictTypesPass extends CodeCleanerPass
 {
-    const EXCEPTION_MESSAGE = 'strict_types declaration must have 0 or 1 as its value';
+
+    public const EXCEPTION_MESSAGE = 'strict_types declaration must have 0 or 1 as its value';
 
     private $strictTypes = false;
 
@@ -64,7 +72,7 @@ class StrictTypesPass extends CodeCleanerPass
                         $value = $declare->value;
                         // @todo Rename LNumber to Int_ once we drop support for PHP-Parser 4.x
                         if (!$value instanceof LNumber || ($value->value !== 0 && $value->value !== 1)) {
-                            throw new FatalErrorException(self::EXCEPTION_MESSAGE, 0, \E_ERROR, null, $node->getStartLine());
+                            throw new FatalErrorException(self::EXCEPTION_MESSAGE, 0, E_ERROR, null, $node->getStartLine());
                         }
 
                         $this->strictTypes = $value->value === 1;
@@ -74,12 +82,15 @@ class StrictTypesPass extends CodeCleanerPass
         }
 
         if ($prependStrictTypes) {
-            $first = \reset($nodes);
+            $first = reset($nodes);
             if (!$first instanceof Declare_) {
                 // @todo Switch to PhpParser\Node\DeclareItem once we drop support for PHP-Parser 4.x
                 // @todo Rename LNumber to Int_ once we drop support for PHP-Parser 4.x
-                $declare = new Declare_([new DeclareDeclare('strict_types', new LNumber(1))]);
-                \array_unshift($nodes, $declare);
+                $declareItem = class_exists('PhpParser\Node\DeclareItem') ?
+                    new DeclareItem('strict_types', new LNumber(1)) :
+                    new DeclareDeclare('strict_types', new LNumber(1));
+                $declare = new Declare_([$declareItem]);
+                array_unshift($nodes, $declare);
             }
         }
 

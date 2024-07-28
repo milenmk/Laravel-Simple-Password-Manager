@@ -3,6 +3,7 @@
 namespace Illuminate\Database\Query\Grammars;
 
 use Illuminate\Database\Query\Builder;
+use Illuminate\Database\Query\JoinLateralClause;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 
@@ -65,6 +66,22 @@ class PostgresGrammar extends Grammar
         $operator = str_replace('?', '??', $where['operator']);
 
         return '('.$this->wrap($where['column']).' '.$operator.' '.$value.')::bool';
+    }
+
+    /**
+     * Compile a "where like" clause.
+     *
+     * @param  \Illuminate\Database\Query\Builder  $query
+     * @param  array  $where
+     * @return string
+     */
+    protected function whereLike(Builder $query, $where)
+    {
+        $where['operator'] = $where['not'] ? 'not ' : '';
+
+        $where['operator'] .= $where['caseSensitive'] ? 'like' : 'ilike';
+
+        return $this->whereBasic($query, $where);
     }
 
     /**
@@ -324,6 +341,19 @@ class PostgresGrammar extends Grammar
     }
 
     /**
+     * Compile an insert ignore statement using a subquery into SQL.
+     *
+     * @param  \Illuminate\Database\Query\Builder  $query
+     * @param  array  $columns
+     * @param  string  $sql
+     * @return string
+     */
+    public function compileInsertOrIgnoreUsing(Builder $query, array $columns, string $sql)
+    {
+        return $this->compileInsertUsing($query, $columns, $sql).' on conflict do nothing';
+    }
+
+    /**
      * Compile an insert and get ID statement into SQL.
      *
      * @param  \Illuminate\Database\Query\Builder  $query
@@ -394,6 +424,18 @@ class PostgresGrammar extends Grammar
         })->implode(', ');
 
         return $sql.$columns;
+    }
+
+    /**
+     * Compile a "lateral join" clause.
+     *
+     * @param  \Illuminate\Database\Query\JoinLateralClause  $join
+     * @param  string  $expression
+     * @return string
+     */
+    public function compileJoinLateral(JoinLateralClause $join, string $expression): string
+    {
+        return trim("{$join->type} join lateral {$expression} on true");
     }
 
     /**
@@ -697,5 +739,27 @@ class PostgresGrammar extends Grammar
         }
 
         return [$attribute];
+    }
+
+    /**
+     * Substitute the given bindings into the given raw SQL query.
+     *
+     * @param  string  $sql
+     * @param  array  $bindings
+     * @return string
+     */
+    public function substituteBindingsIntoRawSql($sql, $bindings)
+    {
+        $query = parent::substituteBindingsIntoRawSql($sql, $bindings);
+
+        foreach ($this->operators as $operator) {
+            if (! str_contains($operator, '?')) {
+                continue;
+            }
+
+            $query = str_replace(str_replace('?', '??', $operator), $operator, $query);
+        }
+
+        return $query;
     }
 }

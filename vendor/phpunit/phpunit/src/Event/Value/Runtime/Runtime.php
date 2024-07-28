@@ -16,17 +16,17 @@ use function sprintf;
  *
  * @no-named-arguments Parameter names are not covered by the backward compatibility promise for PHPUnit
  */
-final class Runtime
+final readonly class Runtime
 {
-    private readonly OperatingSystem $operatingSystem;
-    private readonly PHP $php;
-    private readonly PHPUnit $phpunit;
+    private OperatingSystem $operatingSystem;
+    private PHP $php;
+    private PHPUnit $phpunit;
 
     public function __construct()
     {
-        $this->operatingSystem = new OperatingSystem;
-        $this->php             = new PHP;
-        $this->phpunit         = new PHPUnit;
+        $this->operatingSystem = new OperatingSystem();
+        $this->php             = new PHP();
+        $this->phpunit         = new PHPUnit();
     }
 
     public function asString(): string

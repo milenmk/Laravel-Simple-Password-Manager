@@ -11,6 +11,15 @@
 
 namespace Symfony\Component\Uid;
 
+use DateTimeImmutable;
+use DateTimeInterface;
+use InvalidArgumentException;
+
+use function strlen;
+
+use const PHP_INT_SIZE;
+use const STR_PAD_LEFT;
+
 /**
  * A ULID is lexicographically sortable and contains a 48-bit timestamp and 80-bit of crypto-random entropy.
  *
@@ -36,7 +45,7 @@ class Ulid extends AbstractUid implements TimeBasedUidInterface
             $this->uid = $ulid;
         } else {
             if (!self::isValid($ulid)) {
-                throw new \InvalidArgumentException(sprintf('Invalid ULID: "%s".', $ulid));
+                throw new InvalidArgumentException(sprintf('Invalid ULID: "%s".', $ulid));
             }
 
             $this->uid = strtoupper($ulid);
@@ -45,7 +54,7 @@ class Ulid extends AbstractUid implements TimeBasedUidInterface
 
     public static function isValid(string $ulid): bool
     {
-        if (26 !== \strlen($ulid)) {
+        if (26 !== strlen($ulid)) {
             return false;
         }
 
@@ -58,13 +67,13 @@ class Ulid extends AbstractUid implements TimeBasedUidInterface
 
     public static function fromString(string $ulid): static
     {
-        if (36 === \strlen($ulid) && preg_match('{^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$}Di', $ulid)) {
-            $ulid = uuid_parse($ulid);
-        } elseif (22 === \strlen($ulid) && 22 === strspn($ulid, BinaryUtil::BASE58[''])) {
-            $ulid = str_pad(BinaryUtil::fromBase($ulid, BinaryUtil::BASE58), 16, "\0", \STR_PAD_LEFT);
+        if (36 === strlen($ulid) && preg_match('{^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$}Di', $ulid)) {
+            $ulid = hex2bin(str_replace('-', '', $ulid));
+        } elseif (22 === strlen($ulid) && 22 === strspn($ulid, BinaryUtil::BASE58[''])) {
+            $ulid = str_pad(BinaryUtil::fromBase($ulid, BinaryUtil::BASE58), 16, "\0", STR_PAD_LEFT);
         }
 
-        if (16 !== \strlen($ulid)) {
+        if (16 !== strlen($ulid)) {
             return match (strtr($ulid, 'z', 'Z')) {
                 self::NIL => new NilUlid(),
                 self::MAX => new MaxUlid(),
@@ -126,11 +135,11 @@ class Ulid extends AbstractUid implements TimeBasedUidInterface
         return $this->uid;
     }
 
-    public function getDateTime(): \DateTimeImmutable
+    public function getDateTime(): DateTimeImmutable
     {
         $time = strtr(substr($this->uid, 0, 10), 'ABCDEFGHJKMNPQRSTVWXYZ', 'abcdefghijklmnopqrstuv');
 
-        if (\PHP_INT_SIZE >= 8) {
+        if (PHP_INT_SIZE >= 8) {
             $time = (string) hexdec(base_convert($time, 32, 16));
         } else {
             $time = sprintf('%02s%05s%05s',
@@ -141,20 +150,20 @@ class Ulid extends AbstractUid implements TimeBasedUidInterface
             $time = BinaryUtil::toBase(hex2bin($time), BinaryUtil::BASE10);
         }
 
-        if (4 > \strlen($time)) {
+        if (4 > strlen($time)) {
             $time = '000'.$time;
         }
 
-        return \DateTimeImmutable::createFromFormat('U.u', substr_replace($time, '.', -3, 0));
+        return DateTimeImmutable::createFromFormat('U.u', substr_replace($time, '.', -3, 0));
     }
 
-    public static function generate(?\DateTimeInterface $time = null): string
+    public static function generate(?DateTimeInterface $time = null): string
     {
         if (null === $mtime = $time) {
             $time = microtime(false);
             $time = substr($time, 11).substr($time, 2, 3);
         } elseif (0 > $time = $time->format('Uv')) {
-            throw new \InvalidArgumentException('The timestamp must be positive.');
+            throw new InvalidArgumentException('The timestamp must be positive.');
         }
 
         if ($time > self::$time || (null !== $mtime && $time !== self::$time)) {
@@ -168,12 +177,12 @@ class Ulid extends AbstractUid implements TimeBasedUidInterface
             self::$rand = $r;
             self::$time = $time;
         } elseif ([1 => 0xFFFFF, 0xFFFFF, 0xFFFFF, 0xFFFFF] === self::$rand) {
-            if (\PHP_INT_SIZE >= 8 || 10 > \strlen($time = self::$time)) {
+            if (PHP_INT_SIZE >= 8 || 10 > strlen($time = self::$time)) {
                 $time = (string) (1 + $time);
             } elseif ('999999999' === $mtime = substr($time, -9)) {
                 $time = (1 + substr($time, 0, -9)).'000000000';
             } else {
-                $time = substr_replace($time, str_pad(++$mtime, 9, '0', \STR_PAD_LEFT), -9);
+                $time = substr_replace($time, str_pad(++$mtime, 9, '0', STR_PAD_LEFT), -9);
             }
 
             goto randomize;
@@ -186,10 +195,10 @@ class Ulid extends AbstractUid implements TimeBasedUidInterface
             $time = self::$time;
         }
 
-        if (\PHP_INT_SIZE >= 8) {
+        if (PHP_INT_SIZE >= 8) {
             $time = base_convert($time, 10, 32);
         } else {
-            $time = str_pad(bin2hex(BinaryUtil::fromBase($time, BinaryUtil::BASE10)), 12, '0', \STR_PAD_LEFT);
+            $time = str_pad(bin2hex(BinaryUtil::fromBase($time, BinaryUtil::BASE10)), 12, '0', STR_PAD_LEFT);
             $time = sprintf('%s%04s%04s',
                 base_convert(substr($time, 0, 2), 16, 32),
                 base_convert(substr($time, 2, 5), 16, 32),

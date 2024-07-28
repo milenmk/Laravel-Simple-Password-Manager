@@ -11,8 +11,14 @@
 
 namespace Symfony\Component\HttpKernel\HttpCache;
 
+use RuntimeException;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+
+use function in_array;
+
+use const PREG_SET_ORDER;
+use const PREG_SPLIT_DELIM_CAPTURE;
 
 /**
  * Esi implements the ESI capabilities to Request and Response instances.
@@ -32,10 +38,7 @@ class Esi extends AbstractSurrogate
         return 'esi';
     }
 
-    /**
-     * @return void
-     */
-    public function addSurrogateControl(Response $response)
+    public function addSurrogateControl(Response $response): void
     {
         if (str_contains($response->getContent(), '<esi:include')) {
             $response->headers->set('Surrogate-Control', 'content="ESI/1.0"');
@@ -50,7 +53,7 @@ class Esi extends AbstractSurrogate
             $alt ? sprintf(' alt="%s"', $alt) : ''
         );
 
-        if (!empty($comment)) {
+        if ($comment) {
             return sprintf("<esi:comment text=\"%s\" />\n%s", $comment, $html);
         }
 
@@ -60,12 +63,12 @@ class Esi extends AbstractSurrogate
     public function process(Request $request, Response $response): Response
     {
         $type = $response->headers->get('Content-Type');
-        if (empty($type)) {
+        if (!$type) {
             $type = 'text/html';
         }
 
         $parts = explode(';', $type);
-        if (!\in_array($parts[0], $this->contentTypes)) {
+        if (!in_array($parts[0], $this->contentTypes, true)) {
             return $response;
         }
 
@@ -75,18 +78,18 @@ class Esi extends AbstractSurrogate
         $content = preg_replace('#<esi\:comment[^>]+>#s', '', $content);
 
         $boundary = self::generateBodyEvalBoundary();
-        $chunks = preg_split('#<esi\:include\s+(.*?)\s*(?:/|</esi\:include)>#', $content, -1, \PREG_SPLIT_DELIM_CAPTURE);
+        $chunks = preg_split('#<esi\:include\s+(.*?)\s*(?:/|</esi\:include)>#', $content, -1, PREG_SPLIT_DELIM_CAPTURE);
 
         $i = 1;
         while (isset($chunks[$i])) {
             $options = [];
-            preg_match_all('/(src|onerror|alt)="([^"]*?)"/', $chunks[$i], $matches, \PREG_SET_ORDER);
+            preg_match_all('/(src|onerror|alt)="([^"]*?)"/', $chunks[$i], $matches, PREG_SET_ORDER);
             foreach ($matches as $set) {
                 $options[$set[1]] = $set[2];
             }
 
             if (!isset($options['src'])) {
-                throw new \RuntimeException('Unable to process an ESI tag without a "src" attribute.');
+                throw new RuntimeException('Unable to process an ESI tag without a "src" attribute.');
             }
 
             $chunks[$i] = $boundary.$options['src']."\n".($options['alt'] ?? '')."\n".('continue' === ($options['onerror'] ?? ''))."\n";

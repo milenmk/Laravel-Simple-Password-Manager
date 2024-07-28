@@ -11,10 +11,18 @@
 
 namespace Symfony\Component\Mime\Part\Multipart;
 
+use ReflectionProperty;
 use Symfony\Component\Mime\Exception\InvalidArgumentException;
 use Symfony\Component\Mime\Part\AbstractMultipartPart;
 use Symfony\Component\Mime\Part\DataPart;
 use Symfony\Component\Mime\Part\TextPart;
+
+use function count;
+use function is_array;
+use function is_int;
+use function is_string;
+
+use const PHP_INT_MAX;
 
 /**
  * Implements RFC 7578.
@@ -23,19 +31,16 @@ use Symfony\Component\Mime\Part\TextPart;
  */
 final class FormDataPart extends AbstractMultipartPart
 {
-    private array $fields = [];
-
     /**
      * @param array<string|array|DataPart> $fields
      */
-    public function __construct(array $fields = [])
-    {
+    public function __construct(
+        private array $fields = [],
+    ) {
         parent::__construct();
 
-        $this->fields = $fields;
-
         // HTTP does not support \r\n in header values
-        $this->getHeaders()->setMaxLineLength(\PHP_INT_MAX);
+        $this->getHeaders()->setMaxLineLength(PHP_INT_MAX);
     }
 
     public function getMediaSubtype(): string
@@ -53,9 +58,9 @@ final class FormDataPart extends AbstractMultipartPart
         $values = [];
 
         $prepare = function ($item, $key, $root = null) use (&$values, &$prepare) {
-            if (null === $root && \is_int($key) && \is_array($item)) {
-                if (1 !== \count($item)) {
-                    throw new InvalidArgumentException(sprintf('Form field values with integer keys can only have one array element, the key being the field name and the value being the field value, %d provided.', \count($item)));
+            if (null === $root && is_int($key) && is_array($item)) {
+                if (1 !== count($item)) {
+                    throw new InvalidArgumentException(sprintf('Form field values with integer keys can only have one array element, the key being the field name and the value being the field value, %d provided.', count($item)));
                 }
 
                 $key = key($item);
@@ -64,13 +69,13 @@ final class FormDataPart extends AbstractMultipartPart
 
             $fieldName = null !== $root ? sprintf('%s[%s]', $root, $key) : $key;
 
-            if (\is_array($item)) {
+            if (is_array($item)) {
                 array_walk($item, $prepare, $fieldName);
 
                 return;
             }
 
-            if (!\is_string($item) && !$item instanceof TextPart) {
+            if (!is_string($item) && !$item instanceof TextPart) {
                 throw new InvalidArgumentException(sprintf('The value of the form field "%s" can only be a string, an array, or an instance of TextPart, "%s" given.', $fieldName, get_debug_type($item)));
             }
 
@@ -84,7 +89,7 @@ final class FormDataPart extends AbstractMultipartPart
 
     private function preparePart(string $name, string|TextPart $value): TextPart
     {
-        if (\is_string($value)) {
+        if (is_string($value)) {
             return $this->configurePart($name, new TextPart($value, 'utf-8', 'plain', '8bit'));
         }
 
@@ -95,12 +100,12 @@ final class FormDataPart extends AbstractMultipartPart
     {
         static $r;
 
-        $r ??= new \ReflectionProperty(TextPart::class, 'encoding');
+        $r ??= new ReflectionProperty(TextPart::class, 'encoding');
 
         $part->setDisposition('form-data');
         $part->setName($name);
         // HTTP does not support \r\n in header values
-        $part->getHeaders()->setMaxLineLength(\PHP_INT_MAX);
+        $part->getHeaders()->setMaxLineLength(PHP_INT_MAX);
         $r->setValue($part, '8bit');
 
         return $part;

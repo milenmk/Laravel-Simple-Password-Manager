@@ -6,6 +6,16 @@ namespace Brick\Math\Internal\Calculator;
 
 use Brick\Math\Internal\Calculator;
 
+use RuntimeException;
+
+use function intdiv;
+use function ltrim;
+use function str_pad;
+use function str_repeat;
+use function strcmp;
+use function strlen;
+use function substr;
+
 /**
  * Calculator implementation using only native PHP code.
  *
@@ -23,25 +33,18 @@ class NativeCalculator extends Calculator
      * Example: 32-bit: max number 1,999,999,999 (9 digits + carry)
      *          64-bit: max number 1,999,999,999,999,999,999 (18 digits + carry)
      */
-    private int $maxDigits;
+    private readonly int $maxDigits;
 
     /**
      * @codeCoverageIgnore
      */
     public function __construct()
     {
-        switch (PHP_INT_SIZE) {
-            case 4:
-                $this->maxDigits = 9;
-                break;
-
-            case 8:
-                $this->maxDigits = 18;
-                break;
-
-            default:
-                throw new \RuntimeException('The platform is not 32-bit or 64-bit as expected.');
-        }
+        $this->maxDigits = match (PHP_INT_SIZE) {
+            4 => 9,
+            8 => 18,
+            default => throw new RuntimeException('The platform is not 32-bit or 64-bit as expected.')
+        };
     }
 
     public function add(string $a, string $b) : string
@@ -161,10 +164,8 @@ class NativeCalculator extends Calculator
             if (is_int($nb)) {
                 // the only division that may overflow is PHP_INT_MIN / -1,
                 // which cannot happen here as we've already handled a divisor of -1 above.
+                $q = intdiv($na, $nb);
                 $r = $na % $nb;
-                $q = ($na - $r) / $nb;
-
-                assert(is_int($q));
 
                 return [
                     (string) $q,
@@ -257,7 +258,7 @@ class NativeCalculator extends Calculator
         }
 
         // initial approximation
-        $x = \str_repeat('9', \intdiv(\strlen($n), 2) ?: 1);
+        $x = str_repeat('9', intdiv(strlen($n), 2) ?: 1);
 
         $decreased = false;
 
@@ -295,20 +296,20 @@ class NativeCalculator extends Calculator
             }
 
             /** @psalm-var numeric-string $blockA */
-            $blockA = \substr($a, $i, $blockLength);
+            $blockA = substr($a, $i, $blockLength);
 
             /** @psalm-var numeric-string $blockB */
-            $blockB = \substr($b, $i, $blockLength);
+            $blockB = substr($b, $i, $blockLength);
 
             $sum = (string) ($blockA + $blockB + $carry);
-            $sumLength = \strlen($sum);
+            $sumLength = strlen($sum);
 
             if ($sumLength > $blockLength) {
-                $sum = \substr($sum, 1);
+                $sum = substr($sum, 1);
                 $carry = 1;
             } else {
                 if ($sumLength < $blockLength) {
-                    $sum = \str_repeat('0', $blockLength - $sumLength) . $sum;
+                    $sum = str_repeat('0', $blockLength - $sumLength) . $sum;
                 }
                 $carry = 0;
             }
@@ -364,10 +365,10 @@ class NativeCalculator extends Calculator
             }
 
             /** @psalm-var numeric-string $blockA */
-            $blockA = \substr($a, $i, $blockLength);
+            $blockA = substr($a, $i, $blockLength);
 
             /** @psalm-var numeric-string $blockB */
-            $blockB = \substr($b, $i, $blockLength);
+            $blockB = substr($b, $i, $blockLength);
 
             $sum = $blockA - $blockB - $carry;
 
@@ -379,10 +380,10 @@ class NativeCalculator extends Calculator
             }
 
             $sum = (string) $sum;
-            $sumLength = \strlen($sum);
+            $sumLength = strlen($sum);
 
             if ($sumLength < $blockLength) {
-                $sum = \str_repeat('0', $blockLength - $sumLength) . $sum;
+                $sum = str_repeat('0', $blockLength - $sumLength) . $sum;
             }
 
             $result = $sum . $result;
@@ -395,7 +396,7 @@ class NativeCalculator extends Calculator
         // Carry cannot be 1 when the loop ends, as a > b
         assert($carry === 0);
 
-        $result = \ltrim($result, '0');
+        $result = ltrim($result, '0');
 
         if ($invert) {
             $result = $this->neg($result);
@@ -409,10 +410,10 @@ class NativeCalculator extends Calculator
      */
     private function doMul(string $a, string $b) : string
     {
-        $x = \strlen($a);
-        $y = \strlen($b);
+        $x = strlen($a);
+        $y = strlen($b);
 
-        $maxDigits = \intdiv($this->maxDigits, 2);
+        $maxDigits = intdiv($this->maxDigits, 2);
         $complement = 10 ** $maxDigits;
 
         $result = '0';
@@ -426,7 +427,7 @@ class NativeCalculator extends Calculator
                 $i = 0;
             }
 
-            $blockA = (int) \substr($a, $i, $blockALength);
+            $blockA = (int) substr($a, $i, $blockALength);
 
             $line = '';
             $carry = 0;
@@ -440,14 +441,14 @@ class NativeCalculator extends Calculator
                     $j = 0;
                 }
 
-                $blockB = (int) \substr($b, $j, $blockBLength);
+                $blockB = (int) substr($b, $j, $blockBLength);
 
                 $mul = $blockA * $blockB + $carry;
                 $value = $mul % $complement;
                 $carry = ($mul - $value) / $complement;
 
                 $value = (string) $value;
-                $value = \str_pad($value, $maxDigits, '0', STR_PAD_LEFT);
+                $value = str_pad($value, $maxDigits, '0', STR_PAD_LEFT);
 
                 $line = $value . $line;
 
@@ -460,10 +461,10 @@ class NativeCalculator extends Calculator
                 $line = $carry . $line;
             }
 
-            $line = \ltrim($line, '0');
+            $line = ltrim($line, '0');
 
             if ($line !== '') {
-                $line .= \str_repeat('0', $x - $blockALength - $i);
+                $line .= str_repeat('0', $x - $blockALength - $i);
                 $result = $this->add($result, $line);
             }
 
@@ -488,8 +489,8 @@ class NativeCalculator extends Calculator
             return ['0', $a];
         }
 
-        $x = \strlen($a);
-        $y = \strlen($b);
+        $x = strlen($a);
+        $y = strlen($b);
 
         // we now know that a >= b && x >= y
 
@@ -498,7 +499,7 @@ class NativeCalculator extends Calculator
         $z = $y; // focus length, always $y or $y+1
 
         for (;;) {
-            $focus = \substr($a, 0, $z);
+            $focus = substr($a, 0, $z);
 
             $cmp = $this->doCmp($focus, $b);
 
@@ -510,7 +511,7 @@ class NativeCalculator extends Calculator
                 $z++;
             }
 
-            $zeros = \str_repeat('0', $x - $z);
+            $zeros = str_repeat('0', $x - $z);
 
             $q = $this->add($q, '1' . $zeros);
             $a = $this->sub($a, $b . $zeros);
@@ -521,7 +522,7 @@ class NativeCalculator extends Calculator
                 break;
             }
 
-            $x = \strlen($a);
+            $x = strlen($a);
 
             if ($x < $y) { // remainder < dividend
                 break;
@@ -536,12 +537,12 @@ class NativeCalculator extends Calculator
     /**
      * Compares two non-signed large numbers.
      *
-     * @return int [-1, 0, 1]
+     * @psalm-return -1|0|1
      */
     private function doCmp(string $a, string $b) : int
     {
-        $x = \strlen($a);
-        $y = \strlen($b);
+        $x = strlen($a);
+        $y = strlen($b);
 
         $cmp = $x <=> $y;
 
@@ -549,7 +550,7 @@ class NativeCalculator extends Calculator
             return $cmp;
         }
 
-        return \strcmp($a, $b) <=> 0; // enforce [-1, 0, 1]
+        return strcmp($a, $b) <=> 0; // enforce -1|0|1
     }
 
     /**
@@ -561,17 +562,17 @@ class NativeCalculator extends Calculator
      */
     private function pad(string $a, string $b) : array
     {
-        $x = \strlen($a);
-        $y = \strlen($b);
+        $x = strlen($a);
+        $y = strlen($b);
 
         if ($x > $y) {
-            $b = \str_repeat('0', $x - $y) . $b;
+            $b = str_repeat('0', $x - $y) . $b;
 
             return [$a, $b, $x];
         }
 
         if ($x < $y) {
-            $a = \str_repeat('0', $y - $x) . $a;
+            $a = str_repeat('0', $y - $x) . $a;
 
             return [$a, $b, $y];
         }

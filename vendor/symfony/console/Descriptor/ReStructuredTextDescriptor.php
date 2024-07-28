@@ -11,6 +11,7 @@
 
 namespace Symfony\Component\Console\Descriptor;
 
+use Exception;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\Helper;
@@ -19,6 +20,9 @@ use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\String\UnicodeString;
+
+use function array_key_exists;
+use function in_array;
 
 class ReStructuredTextDescriptor extends Descriptor
 {
@@ -226,7 +230,7 @@ class ReStructuredTextDescriptor extends Descriptor
         $nonDefaultOptions = [];
         foreach ($definition->getOptions() as $option) {
             // Skip global options.
-            if (!\in_array($option->getName(), $globalOptions)) {
+            if (!in_array($option->getName(), $globalOptions, true)) {
                 $nonDefaultOptions[] = $option;
             }
         }
@@ -241,7 +245,7 @@ class ReStructuredTextDescriptor extends Descriptor
             try {
                 $namespaceCommands = $namespace['commands'];
                 foreach ($namespaceCommands as $key => $commandName) {
-                    if (!\array_key_exists($commandName, $commands)) {
+                    if (!array_key_exists($commandName, $commands)) {
                         // If the array key does not exist, then this is an alias.
                         unset($namespaceCommands[$key]);
                     } elseif ($commands[$commandName]->isHidden()) {
@@ -252,7 +256,7 @@ class ReStructuredTextDescriptor extends Descriptor
                     // If the namespace contained only aliases or hidden commands, skip the namespace.
                     continue;
                 }
-            } catch (\Exception) {
+            } catch (Exception) {
             }
             $this->visibleNamespaces[] = $namespace['id'];
         }
@@ -261,7 +265,7 @@ class ReStructuredTextDescriptor extends Descriptor
     private function removeAliasesAndHiddenCommands(array $commands): array
     {
         foreach ($commands as $key => $command) {
-            if ($command->isHidden() || \in_array($key, $command->getAliases(), true)) {
+            if ($command->isHidden() || in_array($key, $command->getAliases(), true)) {
                 unset($commands[$key]);
             }
         }

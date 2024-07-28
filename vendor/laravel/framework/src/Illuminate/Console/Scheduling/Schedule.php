@@ -21,19 +21,19 @@ class Schedule
 {
     use Macroable;
 
-    const SUNDAY = 0;
+    public const SUNDAY = 0;
 
-    const MONDAY = 1;
+    public const MONDAY = 1;
 
-    const TUESDAY = 2;
+    public const TUESDAY = 2;
 
-    const WEDNESDAY = 3;
+    public const WEDNESDAY = 3;
 
-    const THURSDAY = 4;
+    public const THURSDAY = 4;
 
-    const FRIDAY = 5;
+    public const FRIDAY = 5;
 
-    const SATURDAY = 6;
+    public const SATURDAY = 6;
 
     /**
      * All of the events on the schedule.
@@ -69,6 +69,13 @@ class Schedule
      * @var \Illuminate\Contracts\Bus\Dispatcher
      */
     protected $dispatcher;
+
+    /**
+     * The cache of mutex results.
+     *
+     * @var array<string, bool>
+     */
+    protected $mutexCache = [];
 
     /**
      * Create a new schedule instance.
@@ -147,6 +154,14 @@ class Schedule
      */
     public function job($job, $queue = null, $connection = null)
     {
+        $jobName = $job;
+
+        if (! is_string($job)) {
+            $jobName = method_exists($job, 'displayName')
+                ? $job->displayName()
+                : $job::class;
+        }
+
         return $this->call(function () use ($job, $queue, $connection) {
             $job = is_string($job) ? Container::getInstance()->make($job) : $job;
 
@@ -155,7 +170,7 @@ class Schedule
             } else {
                 $this->dispatchNow($job);
             }
-        })->name(is_string($job) ? $job : get_class($job));
+        })->name($jobName);
     }
 
     /**
@@ -299,7 +314,7 @@ class Schedule
      */
     public function serverShouldRun(Event $event, DateTimeInterface $time)
     {
-        return $this->schedulingMutex->create($event, $time);
+        return $this->mutexCache[$event->mutexName()] ??= $this->schedulingMutex->create($event, $time);
     }
 
     /**

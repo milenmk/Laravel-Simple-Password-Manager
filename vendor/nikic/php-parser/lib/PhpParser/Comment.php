@@ -2,7 +2,11 @@
 
 namespace PhpParser;
 
-class Comment implements \JsonSerializable {
+use JsonSerializable;
+
+use const PHP_INT_MAX;
+
+class Comment implements JsonSerializable {
     protected string $text;
     protected int $startLine;
     protected int $startFilePos;
@@ -46,6 +50,7 @@ class Comment implements \JsonSerializable {
      * Gets the line number the comment started on.
      *
      * @return int Line number (or -1 if not available)
+     * @phpstan-return -1|positive-int
      */
     public function getStartLine(): int {
         return $this->startLine;
@@ -73,6 +78,7 @@ class Comment implements \JsonSerializable {
      * Gets the line number the comment ends on.
      *
      * @return int Line number (or -1 if not available)
+     * @phpstan-return -1|positive-int
      */
     public function getEndLine(): int {
         return $this->endLine;
@@ -175,7 +181,7 @@ class Comment implements \JsonSerializable {
      */
     private function getShortestWhitespacePrefixLen(string $str): int {
         $lines = explode("\n", $str);
-        $shortestPrefixLen = \PHP_INT_MAX;
+        $shortestPrefixLen = PHP_INT_MAX;
         foreach ($lines as $line) {
             preg_match('(^\s*)', $line, $matches);
             $prefixLen = strlen($matches[0]);

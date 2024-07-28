@@ -1,6 +1,17 @@
 CHANGELOG
 =========
 
+7.1
+---
+
+ * Mark class `DataCollectorTranslator` as `final`
+
+7.0
+---
+
+ * Remove `PhpStringTokenParser`
+ * Remove `PhpExtractor` in favor of `PhpAstExtractor`
+
 6.4
 ---
 

@@ -106,7 +106,12 @@ trait InteractsWithDatabase
         }
 
         $this->assertThat(
-            $this->getTable($table), new SoftDeletedInDatabase($this->getConnection($connection, $table), $data, $deletedAtColumn)
+            $this->getTable($table),
+            new SoftDeletedInDatabase(
+                $this->getConnection($connection, $table),
+                $data,
+                $this->getDeletedAtColumn($table, $deletedAtColumn)
+            )
         );
 
         return $this;
@@ -133,7 +138,12 @@ trait InteractsWithDatabase
         }
 
         $this->assertThat(
-            $this->getTable($table), new NotSoftDeletedInDatabase($this->getConnection($connection, $table), $data, $deletedAtColumn)
+            $this->getTable($table),
+            new NotSoftDeletedInDatabase(
+                $this->getConnection($connection, $table),
+                $data,
+                $this->getDeletedAtColumn($table, $deletedAtColumn)
+            )
         );
 
         return $this;
@@ -189,8 +199,8 @@ trait InteractsWithDatabase
 
             $this->beforeApplicationDestroyed(function () use (&$actual, $expected, $connectionInstance) {
                 $this->assertSame(
-                    $actual,
                     $expected,
+                    $actual,
                     "Expected {$expected} database queries on the [{$connectionInstance->getName()}] connection. {$actual} occurred."
                 );
             });
@@ -215,7 +225,7 @@ trait InteractsWithDatabase
      * Cast a JSON string to a database compatible type.
      *
      * @param  array|object|string  $value
-     * @return \Illuminate\Database\Query\Expression
+     * @return \Illuminate\Contracts\Database\Query\Expression
      */
     public function castAsJson($value)
     {
@@ -271,6 +281,18 @@ trait InteractsWithDatabase
     }
 
     /**
+     * Get the table column name used for soft deletes.
+     *
+     * @param  string  $table
+     * @param  string  $defaultColumnName
+     * @return string
+     */
+    protected function getDeletedAtColumn($table, $defaultColumnName = 'deleted_at')
+    {
+        return $this->newModelFor($table)?->getDeletedAtColumn() ?: $defaultColumnName;
+    }
+
+    /**
      * Get the model entity from the given model or string.
      *
      * @param  \Illuminate\Database\Eloquent\Model|string  $table
@@ -278,7 +300,7 @@ trait InteractsWithDatabase
      */
     protected function newModelFor($table)
     {
-        return is_subclass_of($table, Model::class) ? (new $table) : null;
+        return is_subclass_of($table, Model::class) ? (new $table()) : null;
     }
 
     /**

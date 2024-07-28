@@ -11,11 +11,20 @@
 
 namespace Symfony\Component\Mime\Crypto;
 
+use LogicException;
+use OpenSSLAsymmetricKey;
 use Symfony\Component\Mime\Exception\InvalidArgumentException;
 use Symfony\Component\Mime\Exception\RuntimeException;
 use Symfony\Component\Mime\Header\UnstructuredHeader;
 use Symfony\Component\Mime\Message;
 use Symfony\Component\Mime\Part\AbstractPart;
+
+use function extension_loaded;
+use function in_array;
+use function strlen;
+
+use const OPENSSL_ALGO_SHA256;
+use const PHP_INT_MAX;
 
 /**
  * @author Fabien Potencier <fabien@symfony.com>
@@ -30,27 +39,27 @@ final class DkimSigner
     public const ALGO_SHA256 = 'rsa-sha256';
     public const ALGO_ED25519 = 'ed25519-sha256'; // RFC 8463
 
-    private \OpenSSLAsymmetricKey $key;
-    private string $domainName;
-    private string $selector;
-    private array $defaultOptions;
+    private OpenSSLAsymmetricKey $key;
 
     /**
      * @param string $pk         The private key as a string or the path to the file containing the private key, should be prefixed with file:// (in PEM format)
      * @param string $passphrase A passphrase of the private key (if any)
      */
-    public function __construct(string $pk, string $domainName, string $selector, array $defaultOptions = [], string $passphrase = '')
-    {
-        if (!\extension_loaded('openssl')) {
-            throw new \LogicException('PHP extension "openssl" is required to use DKIM.');
+    public function __construct(
+        string $pk,
+        private string $domainName,
+        private string $selector,
+        private array $defaultOptions = [],
+        string $passphrase = '',
+    ) {
+        if (!extension_loaded('openssl')) {
+            throw new LogicException('PHP extension "openssl" is required to use DKIM.');
         }
         $this->key = openssl_pkey_get_private($pk, $passphrase) ?: throw new InvalidArgumentException('Unable to load DKIM private key: '.openssl_error_string());
-        $this->domainName = $domainName;
-        $this->selector = $selector;
-        $this->defaultOptions = $defaultOptions + [
+        $this->defaultOptions += [
             'algorithm' => self::ALGO_SHA256,
             'signature_expiration_delay' => 0,
-            'body_max_length' => \PHP_INT_MAX,
+            'body_max_length' => PHP_INT_MAX,
             'body_show_length' => false,
             'header_canon' => self::CANON_RELAXED,
             'body_canon' => self::CANON_RELAXED,
@@ -61,7 +70,7 @@ final class DkimSigner
     public function sign(Message $message, array $options = []): Message
     {
         $options += $this->defaultOptions;
-        if (!\in_array($options['algorithm'], [self::ALGO_SHA256, self::ALGO_ED25519], true)) {
+        if (!in_array($options['algorithm'], [self::ALGO_SHA256, self::ALGO_ED25519], true)) {
             throw new InvalidArgumentException(sprintf('Invalid DKIM signing algorithm "%s".', $options['algorithm']));
         }
         $headersToIgnore['return-path'] = true;
@@ -115,7 +124,7 @@ final class DkimSigner
         $header = new UnstructuredHeader('DKIM-Signature', $value);
         $headerCanonData .= rtrim($this->canonicalizeHeader($header->toString()."\r\n b=", $options['header_canon']));
         if (self::ALGO_SHA256 === $options['algorithm']) {
-            if (!openssl_sign($headerCanonData, $signature, $this->key, \OPENSSL_ALGO_SHA256)) {
+            if (!openssl_sign($headerCanonData, $signature, $this->key, OPENSSL_ALGO_SHA256)) {
                 throw new RuntimeException('Unable to sign DKIM hash: '.openssl_error_string());
             }
         } else {
@@ -151,7 +160,7 @@ final class DkimSigner
         $length = 0;
         foreach ($body->bodyToIterable() as $chunk) {
             $canon = '';
-            for ($i = 0, $len = \strlen($chunk); $i < $len; ++$i) {
+            for ($i = 0, $len = strlen($chunk); $i < $len; ++$i) {
                 switch ($chunk[$i]) {
                     case "\r":
                         break;
@@ -189,22 +198,22 @@ final class DkimSigner
                 }
             }
 
-            if ($length + \strlen($canon) >= $maxLength) {
+            if ($length + strlen($canon) >= $maxLength) {
                 $canon = substr($canon, 0, $maxLength - $length);
-                $length += \strlen($canon);
+                $length += strlen($canon);
                 hash_update($hash, $canon);
 
                 break;
             }
 
-            $length += \strlen($canon);
+            $length += strlen($canon);
             hash_update($hash, $canon);
         }
 
         // Add trailing Line return if last line is non empty
         if ('' !== $currentLine) {
             hash_update($hash, "\r\n");
-            $length += \strlen("\r\n");
+            $length += strlen("\r\n");
         }
 
         if (!$relaxed && 0 === $length) {

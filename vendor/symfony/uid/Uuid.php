@@ -11,6 +11,13 @@
 
 namespace Symfony\Component\Uid;
 
+use InvalidArgumentException;
+
+use function in_array;
+use function strlen;
+
+use const STR_PAD_LEFT;
+
 /**
  * @author Grégoire Pineau <lyrixx@lyrixx.info>
  *
@@ -32,36 +39,36 @@ class Uuid extends AbstractUid
         $type = preg_match('{^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$}Di', $uuid) ? (int) $uuid[14] : false;
 
         if (false === $type || (static::TYPE ?: $type) !== $type) {
-            throw new \InvalidArgumentException(sprintf('Invalid UUID%s: "%s".', static::TYPE ? 'v'.static::TYPE : '', $uuid));
+            throw new InvalidArgumentException(sprintf('Invalid UUID%s: "%s".', static::TYPE ? 'v'.static::TYPE : '', $uuid));
         }
 
         $this->uid = strtolower($uuid);
 
-        if ($checkVariant && !\in_array($this->uid[19], ['8', '9', 'a', 'b'], true)) {
-            throw new \InvalidArgumentException(sprintf('Invalid UUID%s: "%s".', static::TYPE ? 'v'.static::TYPE : '', $uuid));
+        if ($checkVariant && !in_array($this->uid[19], ['8', '9', 'a', 'b'], true)) {
+            throw new InvalidArgumentException(sprintf('Invalid UUID%s: "%s".', static::TYPE ? 'v'.static::TYPE : '', $uuid));
         }
     }
 
     public static function fromString(string $uuid): static
     {
-        if (22 === \strlen($uuid) && 22 === strspn($uuid, BinaryUtil::BASE58[''])) {
-            $uuid = str_pad(BinaryUtil::fromBase($uuid, BinaryUtil::BASE58), 16, "\0", \STR_PAD_LEFT);
+        if (22 === strlen($uuid) && 22 === strspn($uuid, BinaryUtil::BASE58[''])) {
+            $uuid = str_pad(BinaryUtil::fromBase($uuid, BinaryUtil::BASE58), 16, "\0", STR_PAD_LEFT);
         }
 
-        if (16 === \strlen($uuid)) {
+        if (16 === strlen($uuid)) {
             // don't use uuid_unparse(), it's slower
             $uuid = bin2hex($uuid);
             $uuid = substr_replace($uuid, '-', 8, 0);
             $uuid = substr_replace($uuid, '-', 13, 0);
             $uuid = substr_replace($uuid, '-', 18, 0);
             $uuid = substr_replace($uuid, '-', 23, 0);
-        } elseif (26 === \strlen($uuid) && Ulid::isValid($uuid)) {
+        } elseif (26 === strlen($uuid) && Ulid::isValid($uuid)) {
             $ulid = new NilUlid();
             $ulid->uid = strtoupper($uuid);
             $uuid = $ulid->toRfc4122();
         }
 
-        if (__CLASS__ !== static::class || 36 !== \strlen($uuid)) {
+        if (__CLASS__ !== static::class || 36 !== strlen($uuid)) {
             return new static($uuid);
         }
 
@@ -73,7 +80,7 @@ class Uuid extends AbstractUid
             return new MaxUuid();
         }
 
-        if (!\in_array($uuid[19], ['8', '9', 'a', 'b', 'A', 'B'], true)) {
+        if (!in_array($uuid[19], ['8', '9', 'a', 'b', 'A', 'B'], true)) {
             return new self($uuid);
         }
 
@@ -132,11 +139,11 @@ class Uuid extends AbstractUid
 
     public static function isValid(string $uuid): bool
     {
-        if (self::NIL === $uuid && \in_array(static::class, [__CLASS__, NilUuid::class], true)) {
+        if (self::NIL === $uuid && in_array(static::class, [__CLASS__, NilUuid::class], true)) {
             return true;
         }
 
-        if (self::MAX === strtr($uuid, 'F', 'f') && \in_array(static::class, [__CLASS__, MaxUuid::class], true)) {
+        if (self::MAX === strtr($uuid, 'F', 'f') && in_array(static::class, [__CLASS__, MaxUuid::class], true)) {
             return true;
         }
 
@@ -149,7 +156,7 @@ class Uuid extends AbstractUid
 
     public function toBinary(): string
     {
-        return uuid_parse($this->uid);
+        return hex2bin(str_replace('-', '', $this->uid));
     }
 
     /**

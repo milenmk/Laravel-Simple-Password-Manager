@@ -8,6 +8,15 @@ use GrahamCampbell\ResultType\Error;
 use GrahamCampbell\ResultType\Success;
 use PhpOption\Option;
 
+use function in_array;
+use function mb_convert_encoding;
+use function mb_list_encodings;
+use function mb_strlen;
+use function mb_strpos;
+use function mb_substr;
+use function sprintf;
+use function substr;
+
 /**
  * @internal
  */
@@ -33,24 +42,24 @@ final class Str
      *
      * @return \GrahamCampbell\ResultType\Result<string,string>
      */
-    public static function utf8(string $input, string $encoding = null)
+    public static function utf8(string $input, ?string $encoding = null)
     {
-        if ($encoding !== null && !\in_array($encoding, \mb_list_encodings(), true)) {
+        if ($encoding !== null && !in_array($encoding, mb_list_encodings(), true)) {
             /** @var \GrahamCampbell\ResultType\Result<string,string> */
             return Error::create(
-                \sprintf('Illegal character encoding [%s] specified.', $encoding)
+                sprintf('Illegal character encoding [%s] specified.', $encoding)
             );
         }
         $converted = $encoding === null ?
-            @\mb_convert_encoding($input, 'UTF-8') :
-            @\mb_convert_encoding($input, 'UTF-8', $encoding);
+            @mb_convert_encoding($input, 'UTF-8') :
+            @mb_convert_encoding($input, 'UTF-8', $encoding);
         /**
          * this is for support UTF-8 with BOM encoding
          * @see https://en.wikipedia.org/wiki/Byte_order_mark
          * @see https://github.com/vlucas/phpdotenv/issues/500
          */
-        if (\substr($converted, 0, 3) == "\xEF\xBB\xBF") {
-            $converted = \substr($converted, 3);
+        if (substr($converted, 0, 3) == "\xEF\xBB\xBF") {
+            $converted = substr($converted, 3);
         }
         /** @var \GrahamCampbell\ResultType\Result<string,string> */
         return Success::create($converted);
@@ -67,7 +76,7 @@ final class Str
     public static function pos(string $haystack, string $needle)
     {
         /** @var \PhpOption\Option<int> */
-        return Option::fromValue(\mb_strpos($haystack, $needle, 0, 'UTF-8'), false);
+        return Option::fromValue(mb_strpos($haystack, $needle, 0, 'UTF-8'), false);
     }
 
     /**
@@ -79,9 +88,9 @@ final class Str
      *
      * @return string
      */
-    public static function substr(string $input, int $start, int $length = null)
+    public static function substr(string $input, int $start, ?int $length = null)
     {
-        return \mb_substr($input, $start, $length, 'UTF-8');
+        return mb_substr($input, $start, $length, 'UTF-8');
     }
 
     /**
@@ -93,6 +102,6 @@ final class Str
      */
     public static function len(string $input)
     {
-        return \mb_strlen($input, 'UTF-8');
+        return mb_strlen($input, 'UTF-8');
     }
 }

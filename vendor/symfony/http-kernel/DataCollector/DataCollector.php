@@ -11,12 +11,16 @@
 
 namespace Symfony\Component\HttpKernel\DataCollector;
 
+use DateTimeInterface;
 use Symfony\Component\VarDumper\Caster\CutStub;
 use Symfony\Component\VarDumper\Caster\ReflectionCaster;
 use Symfony\Component\VarDumper\Cloner\ClonerInterface;
 use Symfony\Component\VarDumper\Cloner\Data;
 use Symfony\Component\VarDumper\Cloner\Stub;
 use Symfony\Component\VarDumper\Cloner\VarCloner;
+use TypeError;
+
+use function is_object;
 
 /**
  * DataCollector.
@@ -28,10 +32,7 @@ use Symfony\Component\VarDumper\Cloner\VarCloner;
  */
 abstract class DataCollector implements DataCollectorInterface
 {
-    /**
-     * @var array|Data
-     */
-    protected $data = [];
+    protected array|Data $data = [];
 
     private ClonerInterface $cloner;
 
@@ -58,14 +59,14 @@ abstract class DataCollector implements DataCollectorInterface
     /**
      * @return callable[] The casters to add to the cloner
      */
-    protected function getCasters()
+    protected function getCasters(): array
     {
         $casters = [
             '*' => function ($v, array $a, Stub $s, $isNested) {
                 if (!$v instanceof Stub) {
                     $b = $a;
                     foreach ($a as $k => $v) {
-                        if (!\is_object($v) || $v instanceof \DateTimeInterface || $v instanceof Stub) {
+                        if (!is_object($v) || $v instanceof DateTimeInterface || $v instanceof Stub) {
                             continue;
                         }
 
@@ -76,7 +77,7 @@ abstract class DataCollector implements DataCollectorInterface
                                 // we've hit a non-typed reference
                                 $a[$k] = $v;
                             }
-                        } catch (\TypeError $e) {
+                        } catch (TypeError $e) {
                             // we've hit a typed reference
                         }
                     }
@@ -94,10 +95,7 @@ abstract class DataCollector implements DataCollectorInterface
         return ['data'];
     }
 
-    /**
-     * @return void
-     */
-    public function __wakeup()
+    public function __wakeup(): void
     {
     }
 

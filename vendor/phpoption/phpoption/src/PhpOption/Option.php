@@ -19,6 +19,7 @@
 namespace PhpOption;
 
 use ArrayAccess;
+use Exception;
 use IteratorAggregate;
 
 /**
@@ -62,13 +63,13 @@ abstract class Option implements IteratorAggregate
      * @template S
      *
      * @param array<string|int,S>|ArrayAccess<string|int,S>|null $array A potential array or \ArrayAccess value.
-     * @param string                                             $key   The key to check.
+     * @param string|int|null                                    $key   The key to check.
      *
      * @return Option<S>
      */
     public static function fromArraysValue($array, $key)
     {
-        if (!(is_array($array) || $array instanceof ArrayAccess) || !isset($array[$key])) {
+        if ($key === null || !(is_array($array) || $array instanceof ArrayAccess) || !isset($array[$key])) {
             return None::create();
         }
 
@@ -232,7 +233,7 @@ abstract class Option implements IteratorAggregate
      *
      * @return T
      */
-    abstract public function getOrThrow(\Exception $ex);
+    abstract public function getOrThrow(Exception $ex);
 
     /**
      * Returns true if no value is available, false otherwise.

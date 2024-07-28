@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types = 1);
+declare(strict_types=1);
 
 /*
  * This file is a part of dflydev/dot-access-data.
@@ -18,10 +18,9 @@ use Dflydev\DotAccessData\Exception\InvalidPathException;
 
 interface DataInterface
 {
-
     public const PRESERVE = 0;
-    public const REPLACE  = 1;
-    public const MERGE    = 2;
+    public const REPLACE = 1;
+    public const MERGE = 2;
 
     /**
      * Append a value to a key (assumes key refers to an array value)
@@ -67,7 +66,7 @@ interface DataInterface
      * If no default is provided then an exception will be thrown instead.
      *
      * @param string $key
-     * @param mixed  $default
+     * @param mixed $default
      *
      * @return mixed
      *
@@ -129,5 +128,4 @@ interface DataInterface
      * @psalm-mutation-free
      */
     public function export(): array;
-
 }

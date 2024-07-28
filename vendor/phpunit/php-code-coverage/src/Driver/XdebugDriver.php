@@ -34,8 +34,8 @@ use SebastianBergmann\CodeCoverage\Filter;
  *
  * @see https://xdebug.org/docs/code_coverage#xdebug_get_code_coverage
  *
- * @psalm-type XdebugLinesCoverageType = array<int, int>
- * @psalm-type XdebugBranchCoverageType = array{
+ * @phpstan-type XdebugLinesCoverageType = array<int, int>
+ * @phpstan-type XdebugBranchCoverageType = array{
  *     op_start: int,
  *     op_end: int,
  *     line_start: int,
@@ -44,21 +44,21 @@ use SebastianBergmann\CodeCoverage\Filter;
  *     out: array<int, int>,
  *     out_hit: array<int, int>,
  * }
- * @psalm-type XdebugPathCoverageType = array{
+ * @phpstan-type XdebugPathCoverageType = array{
  *     path: array<int, int>,
  *     hit: int,
  * }
- * @psalm-type XdebugFunctionCoverageType = array{
+ * @phpstan-type XdebugFunctionCoverageType = array{
  *     branches: array<int, XdebugBranchCoverageType>,
  *     paths: array<int, XdebugPathCoverageType>,
  * }
- * @psalm-type XdebugFunctionsCoverageType = array<string, XdebugFunctionCoverageType>
- * @psalm-type XdebugPathAndBranchesCoverageType = array{
+ * @phpstan-type XdebugFunctionsCoverageType = array<string, XdebugFunctionCoverageType>
+ * @phpstan-type XdebugPathAndBranchesCoverageType = array{
  *     lines: XdebugLinesCoverageType,
  *     functions: XdebugFunctionsCoverageType,
  * }
- * @psalm-type XdebugCodeCoverageWithoutPathCoverageType = array<string, XdebugLinesCoverageType>
- * @psalm-type XdebugCodeCoverageWithPathCoverageType = array<string, XdebugPathAndBranchesCoverageType>
+ * @phpstan-type XdebugCodeCoverageWithoutPathCoverageType = array<string, XdebugLinesCoverageType>
+ * @phpstan-type XdebugCodeCoverageWithPathCoverageType = array<string, XdebugPathAndBranchesCoverageType>
  */
 final class XdebugDriver extends Driver
 {
@@ -131,7 +131,7 @@ final class XdebugDriver extends Driver
     private function ensureXdebugIsAvailable(): void
     {
         if (!extension_loaded('xdebug')) {
-            throw new XdebugNotAvailableException;
+            throw new XdebugNotAvailableException();
         }
     }
 
@@ -142,7 +142,7 @@ final class XdebugDriver extends Driver
     {
         if (version_compare(phpversion('xdebug'), '3.1', '>=')) {
             if (!in_array('coverage', xdebug_info('mode'), true)) {
-                throw new XdebugNotEnabledException;
+                throw new XdebugNotEnabledException();
             }
 
             return;
@@ -156,7 +156,7 @@ final class XdebugDriver extends Driver
 
         if ($mode === false ||
             !in_array('coverage', explode(',', $mode), true)) {
-            throw new XdebugNotEnabledException;
+            throw new XdebugNotEnabledException();
         }
     }
 }

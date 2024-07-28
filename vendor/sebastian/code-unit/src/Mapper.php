@@ -30,7 +30,7 @@ use ReflectionMethod;
 final class Mapper
 {
     /**
-     * @psalm-return array<string,list<int>>
+     * @return array<string,list<int>>
      */
     public function codeUnitsToSourceLines(CodeUnitCollection $codeUnits): array
     {
@@ -85,7 +85,7 @@ final class Mapper
             if ($this->isUserDefinedClass($unit)) {
                 $units = [CodeUnit::forClass($unit)];
 
-                foreach ($this->reflectorForClass($unit)->getTraits() as $trait) {
+                foreach ((new ReflectionClass($unit))->getTraits() as $trait) {
                     if (!$trait->isUserDefined()) {
                         // @codeCoverageIgnoreStart
                         continue;
@@ -114,33 +114,13 @@ final class Mapper
         throw new InvalidCodeUnitException(
             sprintf(
                 '"%s" is not a valid code unit',
-                $unit
-            )
+                $unit,
+            ),
         );
     }
 
     /**
-     * @psalm-param class-string $className
-     *
-     * @throws ReflectionException
-     */
-    private function reflectorForClass(string $className): ReflectionClass
-    {
-        try {
-            return new ReflectionClass($className);
-            // @codeCoverageIgnoreStart
-        } catch (\ReflectionException $e) {
-            throw new ReflectionException(
-                $e->getMessage(),
-                $e->getCode(),
-                $e
-            );
-        }
-        // @codeCoverageIgnoreEnd
-    }
-
-    /**
-     * @throws ReflectionException
+     * @phpstan-assert-if-true callable-string $functionName
      */
     private function isUserDefinedFunction(string $functionName): bool
     {
@@ -148,21 +128,11 @@ final class Mapper
             return false;
         }
 
-        try {
-            return (new ReflectionFunction($functionName))->isUserDefined();
-            // @codeCoverageIgnoreStart
-        } catch (\ReflectionException $e) {
-            throw new ReflectionException(
-                $e->getMessage(),
-                $e->getCode(),
-                $e
-            );
-        }
-        // @codeCoverageIgnoreEnd
+        return (new ReflectionFunction($functionName))->isUserDefined();
     }
 
     /**
-     * @throws ReflectionException
+     * @phpstan-assert-if-true class-string $className
      */
     private function isUserDefinedClass(string $className): bool
     {
@@ -170,21 +140,11 @@ final class Mapper
             return false;
         }
 
-        try {
-            return (new ReflectionClass($className))->isUserDefined();
-            // @codeCoverageIgnoreStart
-        } catch (\ReflectionException $e) {
-            throw new ReflectionException(
-                $e->getMessage(),
-                $e->getCode(),
-                $e
-            );
-        }
-        // @codeCoverageIgnoreEnd
+        return (new ReflectionClass($className))->isUserDefined();
     }
 
     /**
-     * @throws ReflectionException
+     * @phpstan-assert-if-true interface-string $interfaceName
      */
     private function isUserDefinedInterface(string $interfaceName): bool
     {
@@ -192,21 +152,11 @@ final class Mapper
             return false;
         }
 
-        try {
-            return (new ReflectionClass($interfaceName))->isUserDefined();
-            // @codeCoverageIgnoreStart
-        } catch (\ReflectionException $e) {
-            throw new ReflectionException(
-                $e->getMessage(),
-                $e->getCode(),
-                $e
-            );
-        }
-        // @codeCoverageIgnoreEnd
+        return (new ReflectionClass($interfaceName))->isUserDefined();
     }
 
     /**
-     * @throws ReflectionException
+     * @phpstan-assert-if-true trait-string $traitName
      */
     private function isUserDefinedTrait(string $traitName): bool
     {
@@ -214,46 +164,22 @@ final class Mapper
             return false;
         }
 
-        try {
-            return (new ReflectionClass($traitName))->isUserDefined();
-            // @codeCoverageIgnoreStart
-        } catch (\ReflectionException $e) {
-            throw new ReflectionException(
-                $e->getMessage(),
-                $e->getCode(),
-                $e
-            );
-        }
-        // @codeCoverageIgnoreEnd
+        return (new ReflectionClass($traitName))->isUserDefined();
     }
 
     /**
-     * @throws ReflectionException
+     * @phpstan-assert-if-true class-string $className
      */
     private function isUserDefinedMethod(string $className, string $methodName): bool
     {
         if (!class_exists($className)) {
-            // @codeCoverageIgnoreStart
             return false;
-            // @codeCoverageIgnoreEnd
         }
 
         if (!method_exists($className, $methodName)) {
-            // @codeCoverageIgnoreStart
             return false;
-            // @codeCoverageIgnoreEnd
         }
 
-        try {
-            return (new ReflectionMethod($className, $methodName))->isUserDefined();
-            // @codeCoverageIgnoreStart
-        } catch (\ReflectionException $e) {
-            throw new ReflectionException(
-                $e->getMessage(),
-                $e->getCode(),
-                $e
-            );
-        }
-        // @codeCoverageIgnoreEnd
+        return (new ReflectionMethod($className, $methodName))->isUserDefined();
     }
 }

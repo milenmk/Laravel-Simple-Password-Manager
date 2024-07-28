@@ -11,7 +11,6 @@ use Illuminate\Support\Facades\Facade;
  */
 class Localizator extends Facade
 {
-
     /**
      * Get the registered name of the component.
      *
@@ -19,8 +18,6 @@ class Localizator extends Facade
      */
     protected static function getFacadeAccessor(): string
     {
-
         return 'localizator';
     }
-
 }

@@ -6,7 +6,9 @@ use Illuminate\Contracts\Console\PromptsForMissingInput;
 use Illuminate\Database\Migrations\MigrationCreator;
 use Illuminate\Support\Composer;
 use Illuminate\Support\Str;
+use Symfony\Component\Console\Attribute\AsCommand;
 
+#[AsCommand(name: 'make:migration')]
 class MigrateMakeCommand extends BaseCommand implements PromptsForMissingInput
 {
     /**
@@ -39,6 +41,8 @@ class MigrateMakeCommand extends BaseCommand implements PromptsForMissingInput
      * The Composer instance.
      *
      * @var \Illuminate\Support\Composer
+     *
+     * @deprecated Will be removed in a future Laravel version.
      */
     protected $composer;
 
@@ -93,8 +97,6 @@ class MigrateMakeCommand extends BaseCommand implements PromptsForMissingInput
         // the migration out, we will dump-autoload for the entire framework to
         // make sure that the migrations are registered by the class loaders.
         $this->writeMigration($name, $table, $create);
-
-        $this->composer->dumpAutoloads();
     }
 
     /**
@@ -103,7 +105,7 @@ class MigrateMakeCommand extends BaseCommand implements PromptsForMissingInput
      * @param  string  $name
      * @param  string  $table
      * @param  bool  $create
-     * @return string
+     * @return void
      */
     protected function writeMigration($name, $table, $create)
     {
@@ -138,7 +140,7 @@ class MigrateMakeCommand extends BaseCommand implements PromptsForMissingInput
     protected function promptForMissingArgumentsUsing()
     {
         return [
-            'name' => 'What should the migration be named?',
+            'name' => ['What should the migration be named?', 'E.g. create_flights_table'],
         ];
     }
 }

@@ -14,6 +14,9 @@ namespace Symfony\Component\HttpKernel\Event;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
 
+use function array_key_exists;
+use function array_slice;
+
 /**
  * Allows filtering of controller arguments.
  *
@@ -29,11 +32,15 @@ use Symfony\Component\HttpKernel\HttpKernelInterface;
 final class ControllerArgumentsEvent extends KernelEvent
 {
     private ControllerEvent $controllerEvent;
-    private array $arguments;
     private array $namedArguments;
 
-    public function __construct(HttpKernelInterface $kernel, callable|ControllerEvent $controller, array $arguments, Request $request, ?int $requestType)
-    {
+    public function __construct(
+        HttpKernelInterface $kernel,
+        callable|ControllerEvent $controller,
+        private array $arguments,
+        Request $request,
+        ?int $requestType,
+    ) {
         parent::__construct($kernel, $request, $requestType);
 
         if (!$controller instanceof ControllerEvent) {
@@ -41,7 +48,6 @@ final class ControllerArgumentsEvent extends KernelEvent
         }
 
         $this->controllerEvent = $controller;
-        $this->arguments = $arguments;
     }
 
     public function getController(): callable
@@ -80,10 +86,10 @@ final class ControllerArgumentsEvent extends KernelEvent
 
         foreach ($this->controllerEvent->getControllerReflector()->getParameters() as $i => $param) {
             if ($param->isVariadic()) {
-                $namedArguments[$param->name] = \array_slice($arguments, $i);
+                $namedArguments[$param->name] = array_slice($arguments, $i);
                 break;
             }
-            if (\array_key_exists($i, $arguments)) {
+            if (array_key_exists($i, $arguments)) {
                 $namedArguments[$param->name] = $arguments[$i];
             } elseif ($param->isDefaultvalueAvailable()) {
                 $namedArguments[$param->name] = $param->getDefaultValue();

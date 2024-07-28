@@ -11,108 +11,72 @@ use Symfony\Component\VarDumper\VarDumper;
 
 class DumpRecorder
 {
-
-    protected static bool $registeredHandler = false;
     /** @var array<array<int,mixed>> */
     protected array $dumps = [];
+
     protected Application $app;
+
+    protected static bool $registeredHandler = false;
 
     public function __construct(Application $app)
     {
-
         $this->app = $app;
     }
 
     public function start(): self
     {
-
         $multiDumpHandler = new MultiDumpHandler();
 
-        $this->app->singleton(MultiDumpHandler::class, fn() => $multiDumpHandler);
+        $this->app->singleton(MultiDumpHandler::class, fn () => $multiDumpHandler);
 
-        if (!self::$registeredHandler) {
+        if (! self::$registeredHandler) {
             static::$registeredHandler = true;
 
             $this->ensureOriginalHandlerExists();
 
-            $originalHandler = VarDumper::setHandler(fn($dumpedVariable) => $multiDumpHandler->dump($dumpedVariable));
+            $originalHandler = VarDumper::setHandler(fn ($dumpedVariable) => $multiDumpHandler->dump($dumpedVariable));
 
             $multiDumpHandler?->addHandler($originalHandler);
 
-            $multiDumpHandler->addHandler(fn($var) => (new DumpHandler($this))->dump($var));
+            $multiDumpHandler->addHandler(fn ($var) => (new DumpHandler($this))->dump($var));
         }
 
         return $this;
     }
 
-    protected function ensureOriginalHandlerExists(): void
-    {
-
-        $reflectionProperty = new ReflectionProperty(VarDumper::class, 'handler');
-        $reflectionProperty->setAccessible(true);
-        $handler = $reflectionProperty->getValue();
-
-        if (!$handler) {
-            // No handler registered yet, so we'll force VarDumper to create one.
-            $reflectionMethod = new ReflectionMethod(VarDumper::class, 'register');
-            $reflectionMethod->setAccessible(true);
-            $reflectionMethod->invoke(null);
-        }
-    }
-
     public function record(Data $data): void
     {
-
         $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 11);
 
         $sourceFrame = $this->findSourceFrame($backtrace);
 
-        $file = (string)Arr::get($sourceFrame, 'file');
-        $lineNumber = (int)Arr::get($sourceFrame, 'line');
+        $file = (string) Arr::get($sourceFrame, 'file');
+        $lineNumber = (int) Arr::get($sourceFrame, 'line');
 
         $htmlDump = (new HtmlDumper())->dump($data);
 
         $this->dumps[] = new Dump($htmlDump, $file, $lineNumber);
     }
 
-    /**
-     * Find the first meaningful stack frame that is not the `DumpRecorder` itself.
-     *
-     * @template T of array{class?: class-string, function?: string, line?: int, file?: string}
-     *
-     *
-     * @param array<T> $stacktrace
-     *
-     * @return null|T
-     */
-    protected function findSourceFrame(array $stacktrace): ?array
-    {
-
-        $seenVarDumper = false;
-
-        foreach ($stacktrace as $frame) {
-            // Keep looping until we're past the VarDumper::dump() call in Symfony's helper functions file.
-            if (Arr::get($frame, 'class') === VarDumper::class && Arr::get($frame, 'function') === 'dump') {
-                $seenVarDumper = true;
-
-                continue;
-            }
-
-            if (!$seenVarDumper) {
-                continue;
-            }
-
-            // Return the next frame in the stack after the VarDumper::dump() call:
-            return $frame;
-        }
-
-        return null;
-    }
-
     public function getDumps(): array
     {
-
         return $this->toArray();
+    }
+
+    public function reset()
+    {
+        $this->dumps = [];
+    }
+
+    public function toArray(): array
+    {
+        $dumps = [];
+
+        foreach ($this->dumps as $dump) {
+            $dumps[] = $dump->toArray();
+        }
+
+        return $dumps;
     }
 
     /*
@@ -123,23 +87,49 @@ class DumpRecorder
      *
      * @throws \ReflectionException
      */
-
-    public function toArray(): array
+    protected function ensureOriginalHandlerExists(): void
     {
+        $reflectionProperty = new ReflectionProperty(VarDumper::class, 'handler');
+        $reflectionProperty->setAccessible(true);
+        $handler = $reflectionProperty->getValue();
 
-        $dumps = [];
+        if (! $handler) {
+            // No handler registered yet, so we'll force VarDumper to create one.
+            $reflectionMethod = new ReflectionMethod(VarDumper::class, 'register');
+            $reflectionMethod->setAccessible(true);
+            $reflectionMethod->invoke(null);
+        }
+    }
 
-        foreach ($this->dumps as $dump) {
-            $dumps[] = $dump->toArray();
+    /**
+     * Find the first meaningful stack frame that is not the `DumpRecorder` itself.
+     *
+     * @template T of array{class?: class-string, function?: string, line?: int, file?: string}
+     *
+     * @param array<T> $stacktrace
+     *
+     * @return null|T
+     */
+    protected function findSourceFrame(array $stacktrace): ?array
+    {
+        $seenVarDumper = false;
+
+        foreach ($stacktrace as $frame) {
+            // Keep looping until we're past the VarDumper::dump() call in Symfony's helper functions file.
+            if (Arr::get($frame, 'class') === VarDumper::class && Arr::get($frame, 'function') === 'dump') {
+                $seenVarDumper = true;
+
+                continue;
+            }
+
+            if (! $seenVarDumper) {
+                continue;
+            }
+
+            // Return the next frame in the stack after the VarDumper::dump() call:
+            return $frame;
         }
 
-        return $dumps;
+        return null;
     }
-
-    public function reset()
-    {
-
-        $this->dumps = [];
-    }
-
 }

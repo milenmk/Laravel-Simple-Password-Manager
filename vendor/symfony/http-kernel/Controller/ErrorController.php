@@ -16,6 +16,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
+use Throwable;
 
 /**
  * Renders error or exception pages from a given FlattenException.
@@ -25,18 +26,14 @@ use Symfony\Component\HttpKernel\HttpKernelInterface;
  */
 class ErrorController
 {
-    private HttpKernelInterface $kernel;
-    private string|object|array|null $controller;
-    private ErrorRendererInterface $errorRenderer;
-
-    public function __construct(HttpKernelInterface $kernel, string|object|array|null $controller, ErrorRendererInterface $errorRenderer)
-    {
-        $this->kernel = $kernel;
-        $this->controller = $controller;
-        $this->errorRenderer = $errorRenderer;
+    public function __construct(
+        private HttpKernelInterface $kernel,
+        private string|object|array|null $controller,
+        private ErrorRendererInterface $errorRenderer,
+    ) {
     }
 
-    public function __invoke(\Throwable $exception): Response
+    public function __invoke(Throwable $exception): Response
     {
         $exception = $this->errorRenderer->render($exception);
 

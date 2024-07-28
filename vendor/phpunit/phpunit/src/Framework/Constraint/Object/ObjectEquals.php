@@ -49,7 +49,7 @@ final class ObjectEquals extends Constraint
     protected function matches(mixed $other): bool
     {
         if (!is_object($other)) {
-            throw new ActualValueIsNotAnObjectException;
+            throw new ActualValueIsNotAnObjectException();
         }
 
         $object = new ReflectionObject($other);
@@ -137,6 +137,6 @@ final class ObjectEquals extends Constraint
 
     protected function failureDescription(mixed $other): string
     {
-        return $this->toString(true);
+        return $this->toString();
     }
 }

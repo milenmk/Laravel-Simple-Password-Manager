@@ -4,6 +4,7 @@ namespace Illuminate\Hashing;
 
 use Illuminate\Contracts\Hashing\Hasher as HasherContract;
 use RuntimeException;
+use SensitiveParameter;
 
 class BcryptHasher extends AbstractHasher implements HasherContract
 {
@@ -12,7 +13,7 @@ class BcryptHasher extends AbstractHasher implements HasherContract
      *
      * @var int
      */
-    protected $rounds = 10;
+    protected $rounds = 12;
 
     /**
      * Indicates whether to perform an algorithm check.
@@ -42,7 +43,7 @@ class BcryptHasher extends AbstractHasher implements HasherContract
      *
      * @throws \RuntimeException
      */
-    public function make($value, array $options = [])
+    public function make(#[SensitiveParameter] $value, array $options = [])
     {
         $hash = password_hash($value, PASSWORD_BCRYPT, [
             'cost' => $this->cost($options),
@@ -65,9 +66,9 @@ class BcryptHasher extends AbstractHasher implements HasherContract
      *
      * @throws \RuntimeException
      */
-    public function check($value, $hashedValue, array $options = [])
+    public function check(#[SensitiveParameter] $value, $hashedValue, array $options = [])
     {
-        if ($this->verifyAlgorithm && $this->info($hashedValue)['algoName'] !== 'bcrypt') {
+        if ($this->verifyAlgorithm && ! $this->isUsingCorrectAlgorithm($hashedValue)) {
             throw new RuntimeException('This password does not use the Bcrypt algorithm.');
         }
 
@@ -86,6 +87,48 @@ class BcryptHasher extends AbstractHasher implements HasherContract
         return password_needs_rehash($hashedValue, PASSWORD_BCRYPT, [
             'cost' => $this->cost($options),
         ]);
+    }
+
+    /**
+     * Verifies that the configuration is less than or equal to what is configured.
+     *
+     * @internal
+     */
+    public function verifyConfiguration($value)
+    {
+        return $this->isUsingCorrectAlgorithm($value) && $this->isUsingValidOptions($value);
+    }
+
+    /**
+     * Verify the hashed value's algorithm.
+     *
+     * @param  string  $hashedValue
+     * @return bool
+     */
+    protected function isUsingCorrectAlgorithm($hashedValue)
+    {
+        return $this->info($hashedValue)['algoName'] === 'bcrypt';
+    }
+
+    /**
+     * Verify the hashed value's options.
+     *
+     * @param  string  $hashedValue
+     * @return bool
+     */
+    protected function isUsingValidOptions($hashedValue)
+    {
+        ['options' => $options] = $this->info($hashedValue);
+
+        if (! is_int($options['cost'] ?? null)) {
+            return false;
+        }
+
+        if ($options['cost'] > $this->rounds) {
+            return false;
+        }
+
+        return true;
     }
 
     /**

@@ -5,6 +5,7 @@ namespace Illuminate\Auth\Notifications;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Lang;
+use SensitiveParameter;
 
 class ResetPassword extends Notification
 {
@@ -25,7 +26,7 @@ class ResetPassword extends Notification
     /**
      * The callback that should be used to build the mail message.
      *
-     * @var (\Closure(mixed, string): \Illuminate\Notifications\Messages\MailMessage)|null
+     * @var (\Closure(mixed, string): \Illuminate\Notifications\Messages\MailMessage|\Illuminate\Contracts\Mail\Mailable)|null
      */
     public static $toMailCallback;
 
@@ -35,7 +36,7 @@ class ResetPassword extends Notification
      * @param  string  $token
      * @return void
      */
-    public function __construct($token)
+    public function __construct(#[SensitiveParameter] $token)
     {
         $this->token = $token;
     }
@@ -74,7 +75,7 @@ class ResetPassword extends Notification
      */
     protected function buildMailMessage($url)
     {
-        return (new MailMessage)
+        return (new MailMessage())
             ->subject(Lang::get('Reset Password Notification'))
             ->line(Lang::get('You are receiving this email because we received a password reset request for your account.'))
             ->action(Lang::get('Reset Password'), $url)
@@ -114,7 +115,7 @@ class ResetPassword extends Notification
     /**
      * Set a callback that should be used when building the notification mail message.
      *
-     * @param  \Closure(mixed, string): \Illuminate\Notifications\Messages\MailMessage  $callback
+     * @param  \Closure(mixed, string): (\Illuminate\Notifications\Messages\MailMessage|\Illuminate\Contracts\Mail\Mailable)  $callback
      * @return void
      */
     public static function toMailUsing($callback)

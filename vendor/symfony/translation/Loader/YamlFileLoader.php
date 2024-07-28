@@ -17,6 +17,8 @@ use Symfony\Component\Yaml\Exception\ParseException;
 use Symfony\Component\Yaml\Parser as YamlParser;
 use Symfony\Component\Yaml\Yaml;
 
+use function is_array;
+
 /**
  * YamlFileLoader loads translations from Yaml files.
  *
@@ -29,7 +31,7 @@ class YamlFileLoader extends FileLoader
     protected function loadResource(string $resource): array
     {
         if (!isset($this->yamlParser)) {
-            if (!class_exists(\Symfony\Component\Yaml\Parser::class)) {
+            if (!class_exists(YamlParser::class)) {
                 throw new LogicException('Loading translations from the YAML format requires the Symfony Yaml component.');
             }
 
@@ -42,7 +44,7 @@ class YamlFileLoader extends FileLoader
             throw new InvalidResourceException(sprintf('The file "%s" does not contain valid YAML: ', $resource).$e->getMessage(), 0, $e);
         }
 
-        if (null !== $messages && !\is_array($messages)) {
+        if (null !== $messages && !is_array($messages)) {
             throw new InvalidResourceException(sprintf('Unable to load file "%s".', $resource));
         }
 

@@ -11,6 +11,13 @@
 
 namespace Symfony\Component\HttpFoundation;
 
+use InvalidArgumentException;
+
+use function array_key_exists;
+use function func_get_arg;
+use function func_num_args;
+use function in_array;
+
 /**
  * ResponseHeaderBag is a container for Response HTTP headers.
  *
@@ -24,9 +31,9 @@ class ResponseHeaderBag extends HeaderBag
     public const DISPOSITION_ATTACHMENT = 'attachment';
     public const DISPOSITION_INLINE = 'inline';
 
-    protected $computedCacheControl = [];
-    protected $cookies = [];
-    protected $headerNames = [];
+    protected array $computedCacheControl = [];
+    protected array $cookies = [];
+    protected array $headerNames = [];
 
     public function __construct(array $headers = [])
     {
@@ -55,10 +62,7 @@ class ResponseHeaderBag extends HeaderBag
         return $headers;
     }
 
-    /**
-     * @return array
-     */
-    public function allPreserveCaseWithoutCookies()
+    public function allPreserveCaseWithoutCookies(): array
     {
         $headers = $this->allPreserveCase();
         if (isset($this->headerNames['set-cookie'])) {
@@ -68,10 +72,7 @@ class ResponseHeaderBag extends HeaderBag
         return $headers;
     }
 
-    /**
-     * @return void
-     */
-    public function replace(array $headers = [])
+    public function replace(array $headers = []): void
     {
         $this->headerNames = [];
 
@@ -103,10 +104,7 @@ class ResponseHeaderBag extends HeaderBag
         return $headers;
     }
 
-    /**
-     * @return void
-     */
-    public function set(string $key, string|array|null $values, bool $replace = true)
+    public function set(string $key, string|array|null $values, bool $replace = true): void
     {
         $uniqueKey = strtr($key, self::UPPER, self::LOWER);
 
@@ -127,17 +125,14 @@ class ResponseHeaderBag extends HeaderBag
         parent::set($key, $values, $replace);
 
         // ensure the cache-control header has sensible defaults
-        if (\in_array($uniqueKey, ['cache-control', 'etag', 'last-modified', 'expires'], true) && '' !== $computed = $this->computeCacheControlValue()) {
+        if (in_array($uniqueKey, ['cache-control', 'etag', 'last-modified', 'expires'], true) && '' !== $computed = $this->computeCacheControlValue()) {
             $this->headers['cache-control'] = [$computed];
             $this->headerNames['cache-control'] = 'Cache-Control';
             $this->computedCacheControl = $this->parseCacheControl($computed);
         }
     }
 
-    /**
-     * @return void
-     */
-    public function remove(string $key)
+    public function remove(string $key): void
     {
         $uniqueKey = strtr($key, self::UPPER, self::LOWER);
         unset($this->headerNames[$uniqueKey]);
@@ -161,7 +156,7 @@ class ResponseHeaderBag extends HeaderBag
 
     public function hasCacheControlDirective(string $key): bool
     {
-        return \array_key_exists($key, $this->computedCacheControl);
+        return array_key_exists($key, $this->computedCacheControl);
     }
 
     public function getCacheControlDirective(string $key): bool|string|null
@@ -169,10 +164,7 @@ class ResponseHeaderBag extends HeaderBag
         return $this->computedCacheControl[$key] ?? null;
     }
 
-    /**
-     * @return void
-     */
-    public function setCookie(Cookie $cookie)
+    public function setCookie(Cookie $cookie): void
     {
         $this->cookies[$cookie->getDomain()][$cookie->getPath()][$cookie->getName()] = $cookie;
         $this->headerNames['set-cookie'] = 'Set-Cookie';
@@ -180,10 +172,8 @@ class ResponseHeaderBag extends HeaderBag
 
     /**
      * Removes a cookie from the array, but does not unset it in the browser.
-     *
-     * @return void
      */
-    public function removeCookie(string $name, ?string $path = '/', ?string $domain = null)
+    public function removeCookie(string $name, ?string $path = '/', ?string $domain = null): void
     {
         $path ??= '/';
 
@@ -197,7 +187,7 @@ class ResponseHeaderBag extends HeaderBag
             }
         }
 
-        if (empty($this->cookies)) {
+        if (!$this->cookies) {
             unset($this->headerNames['set-cookie']);
         }
     }
@@ -211,8 +201,8 @@ class ResponseHeaderBag extends HeaderBag
      */
     public function getCookies(string $format = self::COOKIES_FLAT): array
     {
-        if (!\in_array($format, [self::COOKIES_FLAT, self::COOKIES_ARRAY])) {
-            throw new \InvalidArgumentException(sprintf('Format "%s" invalid (%s).', $format, implode(', ', [self::COOKIES_FLAT, self::COOKIES_ARRAY])));
+        if (!in_array($format, [self::COOKIES_FLAT, self::COOKIES_ARRAY])) {
+            throw new InvalidArgumentException(sprintf('Format "%s" invalid (%s).', $format, implode(', ', [self::COOKIES_FLAT, self::COOKIES_ARRAY])));
         }
 
         if (self::COOKIES_ARRAY === $format) {
@@ -235,22 +225,18 @@ class ResponseHeaderBag extends HeaderBag
      * Clears a cookie in the browser.
      *
      * @param bool $partitioned
-     *
-     * @return void
      */
-    public function clearCookie(string $name, ?string $path = '/', ?string $domain = null, bool $secure = false, bool $httpOnly = true, ?string $sameSite = null /* , bool $partitioned = false */)
+    public function clearCookie(string $name, ?string $path = '/', ?string $domain = null, bool $secure = false, bool $httpOnly = true, ?string $sameSite = null /* , bool $partitioned = false */): void
     {
-        $partitioned = 6 < \func_num_args() ? \func_get_arg(6) : false;
+        $partitioned = 6 < func_num_args() ? func_get_arg(6) : false;
 
         $this->setCookie(new Cookie($name, null, 1, $path, $domain, $secure, $httpOnly, false, $sameSite, $partitioned));
     }
 
     /**
      * @see HeaderUtils::makeDisposition()
-     *
-     * @return string
      */
-    public function makeDisposition(string $disposition, string $filename, string $filenameFallback = '')
+    public function makeDisposition(string $disposition, string $filename, string $filenameFallback = ''): string
     {
         return HeaderUtils::makeDisposition($disposition, $filename, $filenameFallback);
     }

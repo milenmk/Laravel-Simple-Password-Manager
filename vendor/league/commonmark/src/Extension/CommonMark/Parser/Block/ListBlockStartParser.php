@@ -23,6 +23,13 @@ use League\CommonMark\Util\RegexHelper;
 use League\Config\ConfigurationAwareInterface;
 use League\Config\ConfigurationInterface;
 
+use function assert;
+use function implode;
+use function is_array;
+use function preg_match;
+use function preg_quote;
+use function strlen;
+
 final class ListBlockStartParser implements BlockStartParserInterface, ConfigurationAwareInterface
 {
     /** @psalm-readonly-allow-private-mutation */
@@ -58,6 +65,7 @@ final class ListBlockStartParser implements BlockStartParserInterface, Configura
         if (! ($matched instanceof ListBlockParser) || ! $listData->equals($matched->getBlock()->getListData())) {
             $listBlockParser = new ListBlockParser($listData);
             // We start out with assuming a list is tight. If we find a blank line, we set it to loose later.
+            // TODO for 3.0: Just make them tight by default in the block so we can remove this call
             $listBlockParser->getBlock()->setTight(true);
 
             return BlockStart::of($listBlockParser, $listItemParser)->at($cursor);
@@ -74,7 +82,7 @@ final class ListBlockStartParser implements BlockStartParserInterface, Configura
         $tmpCursor->advanceToNextNonSpaceOrTab();
         $rest = $tmpCursor->getRemainder();
 
-        if (\preg_match($this->listMarkerRegex ?? $this->generateListMarkerRegex(), $rest) === 1) {
+        if (preg_match($this->listMarkerRegex ?? $this->generateListMarkerRegex(), $rest) === 1) {
             $data               = new ListData();
             $data->markerOffset = $indent;
             $data->type         = ListBlock::TYPE_BULLET;
@@ -88,7 +96,7 @@ final class ListBlockStartParser implements BlockStartParserInterface, Configura
             $data->start        = (int) $matches[1];
             $data->delimiter    = $matches[2] === '.' ? ListBlock::DELIM_PERIOD : ListBlock::DELIM_PAREN;
             $data->bulletChar   = null;
-            $markerLength       = \strlen($matches[0]);
+            $markerLength       = strlen($matches[0]);
         } else {
             return null;
         }
@@ -146,8 +154,8 @@ final class ListBlockStartParser implements BlockStartParserInterface, Configura
         }
 
         $markers = $this->config->get('commonmark/unordered_list_markers');
-        \assert(\is_array($markers));
+        assert(is_array($markers));
 
-        return $this->listMarkerRegex = '/^[' . \preg_quote(\implode('', $markers), '/') . ']/';
+        return $this->listMarkerRegex = '/^[' . preg_quote(implode('', $markers), '/') . ']/';
     }
 }

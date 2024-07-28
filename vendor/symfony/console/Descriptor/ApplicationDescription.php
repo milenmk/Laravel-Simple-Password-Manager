@@ -15,6 +15,10 @@ use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Exception\CommandNotFoundException;
 
+use function in_array;
+
+use const SORT_STRING;
+
 /**
  * @author Jean-François Simon <jeanfrancois.simon@sensiolabs.com>
  *
@@ -24,9 +28,6 @@ class ApplicationDescription
 {
     public const GLOBAL_NAMESPACE = '_global';
 
-    private Application $application;
-    private ?string $namespace;
-    private bool $showHidden;
     private array $namespaces;
 
     /**
@@ -39,11 +40,11 @@ class ApplicationDescription
      */
     private array $aliases = [];
 
-    public function __construct(Application $application, ?string $namespace = null, bool $showHidden = false)
-    {
-        $this->application = $application;
-        $this->namespace = $namespace;
-        $this->showHidden = $showHidden;
+    public function __construct(
+        private Application $application,
+        private ?string $namespace = null,
+        private bool $showHidden = false,
+    ) {
     }
 
     public function getNamespaces(): array
@@ -114,7 +115,7 @@ class ApplicationDescription
         $sortedCommands = [];
         foreach ($commands as $name => $command) {
             $key = $this->application->extractNamespace($name, 1);
-            if (\in_array($key, ['', self::GLOBAL_NAMESPACE], true)) {
+            if (in_array($key, ['', self::GLOBAL_NAMESPACE], true)) {
                 $globalCommands[$name] = $command;
             } else {
                 $namespacedCommands[$key][$name] = $command;
@@ -127,7 +128,7 @@ class ApplicationDescription
         }
 
         if ($namespacedCommands) {
-            ksort($namespacedCommands, \SORT_STRING);
+            ksort($namespacedCommands, SORT_STRING);
             foreach ($namespacedCommands as $key => $commandsSet) {
                 ksort($commandsSet);
                 $sortedCommands[$key] = $commandsSet;

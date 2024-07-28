@@ -7,7 +7,9 @@ use Illuminate\Support\Traits\Macroable;
 
 class PendingSingletonResourceRegistration
 {
-    use CreatesRegularExpressionRouteConstraints, Macroable;
+
+    use CreatesRegularExpressionRouteConstraints;
+    use Macroable;
 
     /**
      * The resource registrar.
@@ -64,7 +66,7 @@ class PendingSingletonResourceRegistration
     /**
      * Set the methods the controller should apply to.
      *
-     * @param  array|string|dynamic  $methods
+     * @param  array|string|mixed  $methods
      * @return \Illuminate\Routing\PendingSingletonResourceRegistration
      */
     public function only($methods)
@@ -77,7 +79,7 @@ class PendingSingletonResourceRegistration
     /**
      * Set the methods the controller should exclude.
      *
-     * @param  array|string|dynamic  $methods
+     * @param  array|string|mixed  $methods
      * @return \Illuminate\Routing\PendingSingletonResourceRegistration
      */
     public function except($methods)

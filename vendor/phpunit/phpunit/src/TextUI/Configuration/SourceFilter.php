@@ -12,11 +12,11 @@ namespace PHPUnit\TextUI\Configuration;
 /**
  * @internal This class is not covered by the backward compatibility promise for PHPUnit
  */
-final class SourceFilter
+final readonly class SourceFilter
 {
     public function includes(Source $source, string $path): bool
     {
-        $files = (new SourceMapper)->map($source);
+        $files = (new SourceMapper())->map($source);
 
         return isset($files[$path]);
     }

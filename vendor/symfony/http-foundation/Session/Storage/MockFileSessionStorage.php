@@ -11,6 +11,8 @@
 
 namespace Symfony\Component\HttpFoundation\Session\Storage;
 
+use RuntimeException;
+
 /**
  * MockFileSessionStorage is used to mock sessions for
  * functional testing where you may need to persist session data
@@ -35,7 +37,7 @@ class MockFileSessionStorage extends MockArraySessionStorage
         $savePath ??= sys_get_temp_dir();
 
         if (!is_dir($savePath) && !@mkdir($savePath, 0777, true) && !is_dir($savePath)) {
-            throw new \RuntimeException(sprintf('Session Storage was not able to create directory "%s".', $savePath));
+            throw new RuntimeException(sprintf('Session Storage was not able to create directory "%s".', $savePath));
         }
 
         $this->savePath = $savePath;
@@ -73,13 +75,10 @@ class MockFileSessionStorage extends MockArraySessionStorage
         return parent::regenerate($destroy, $lifetime);
     }
 
-    /**
-     * @return void
-     */
-    public function save()
+    public function save(): void
     {
         if (!$this->started) {
-            throw new \RuntimeException('Trying to save a session that was not started yet or was already closed.');
+            throw new RuntimeException('Trying to save a session that was not started yet or was already closed.');
         }
 
         $data = $this->data;

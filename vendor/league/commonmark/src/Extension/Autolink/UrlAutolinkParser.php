@@ -18,6 +18,14 @@ use League\CommonMark\Parser\Inline\InlineParserInterface;
 use League\CommonMark\Parser\Inline\InlineParserMatch;
 use League\CommonMark\Parser\InlineParserContext;
 
+use function implode;
+use function in_array;
+use function mb_strlen;
+use function preg_match;
+use function preg_match_all;
+use function sprintf;
+use function substr;
+
 final class UrlAutolinkParser implements InlineParserInterface
 {
     private const ALLOWED_AFTER = [null, ' ', "\t", "\n", "\x0b", "\x0c", "\x0d", '*', '_', '~', '('];
@@ -56,7 +64,7 @@ final class UrlAutolinkParser implements InlineParserInterface
      *
      * @psalm-readonly
      */
-    private array $prefixes = ['www'];
+    private array $prefixes = ['www.'];
 
     /**
      * @psalm-var non-empty-string
@@ -65,19 +73,23 @@ final class UrlAutolinkParser implements InlineParserInterface
      */
     private string $finalRegex;
 
+    private string $defaultProtocol;
+
     /**
      * @param array<int, string> $allowedProtocols
      */
-    public function __construct(array $allowedProtocols = ['http', 'https', 'ftp'])
+    public function __construct(array $allowedProtocols = ['http', 'https', 'ftp'], string $defaultProtocol = 'http')
     {
         /**
          * @psalm-suppress PropertyTypeCoercion
          */
-        $this->finalRegex = \sprintf(self::REGEX, \implode('|', $allowedProtocols));
+        $this->finalRegex = sprintf(self::REGEX, implode('|', $allowedProtocols));
 
         foreach ($allowedProtocols as $protocol) {
             $this->prefixes[] = $protocol . '://';
         }
+
+        $this->defaultProtocol = $defaultProtocol;
     }
 
     public function getMatchDefinition(): InlineParserMatch
@@ -91,38 +103,38 @@ final class UrlAutolinkParser implements InlineParserInterface
 
         // Autolinks can only come at the beginning of a line, after whitespace, or certain delimiting characters
         $previousChar = $cursor->peek(-1);
-        if (! \in_array($previousChar, self::ALLOWED_AFTER, true)) {
+        if (! in_array($previousChar, self::ALLOWED_AFTER, true)) {
             return false;
         }
 
         // Check if we have a valid URL
-        if (! \preg_match($this->finalRegex, $cursor->getRemainder(), $matches)) {
+        if (! preg_match($this->finalRegex, $cursor->getRemainder(), $matches)) {
             return false;
         }
 
         $url = $matches[0];
 
         // Does the URL end with punctuation that should be stripped?
-        if (\preg_match('/(.+?)([?!.,:*_~]+)$/', $url, $matches)) {
+        if (preg_match('/(.+?)([?!.,:*_~]+)$/', $url, $matches)) {
             // Add the punctuation later
             $url = $matches[1];
         }
 
         // Does the URL end with something that looks like an entity reference?
-        if (\preg_match('/(.+)(&[A-Za-z0-9]+;)$/', $url, $matches)) {
+        if (preg_match('/(.+)(&[A-Za-z0-9]+;)$/', $url, $matches)) {
             $url = $matches[1];
         }
 
         // Does the URL need unmatched parens chopped off?
-        if (\substr($url, -1) === ')' && ($diff = self::diffParens($url)) > 0) {
-            $url = \substr($url, 0, -$diff);
+        if (substr($url, -1) === ')' && ($diff = self::diffParens($url)) > 0) {
+            $url = substr($url, 0, -$diff);
         }
 
-        $cursor->advanceBy(\mb_strlen($url, 'UTF-8'));
+        $cursor->advanceBy(mb_strlen($url, 'UTF-8'));
 
-        // Auto-prefix 'http://' onto 'www' URLs
-        if (\substr($url, 0, 4) === 'www.') {
-            $inlineContext->getContainer()->appendChild(new Link('http://' . $url, $url));
+        // Auto-prefix 'http(s)://' onto 'www' URLs
+        if (substr($url, 0, 4) === 'www.') {
+            $inlineContext->getContainer()->appendChild(new Link($this->defaultProtocol . '://' . $url, $url));
 
             return true;
         }
@@ -141,7 +153,7 @@ final class UrlAutolinkParser implements InlineParserInterface
         // If there is a greater number of closing parentheses than opening ones,
         // we don’t consider ANY of the last characters as part of the autolink,
         // in order to facilitate including an autolink inside a parenthesis.
-        \preg_match_all('/[()]/', $content, $matches);
+        preg_match_all('/[()]/', $content, $matches);
 
         $charCount = ['(' => 0, ')' => 0];
         foreach ($matches[0] as $char) {

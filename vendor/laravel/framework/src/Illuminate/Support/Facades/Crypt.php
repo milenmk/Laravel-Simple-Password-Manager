@@ -2,6 +2,8 @@
 
 namespace Illuminate\Support\Facades;
 
+use Illuminate\Encryption\Encrypter;
+
 /**
  * @method static bool supported(string $key, string $cipher)
  * @method static string generateKey(string $cipher)
@@ -10,6 +12,9 @@ namespace Illuminate\Support\Facades;
  * @method static mixed decrypt(string $payload, bool $unserialize = true)
  * @method static string decryptString(string $payload)
  * @method static string getKey()
+ * @method static array getAllKeys()
+ * @method static array getPreviousKeys()
+ * @method static Encrypter previousKeys(array $keys)
  *
  * @see \Illuminate\Encryption\Encrypter
  */

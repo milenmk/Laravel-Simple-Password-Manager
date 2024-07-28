@@ -11,8 +11,13 @@
 
 namespace Symfony\Component\Mime\Part;
 
+use BadMethodCallException;
+use ReflectionProperty;
 use Symfony\Component\Mime\Exception\InvalidArgumentException;
 use Symfony\Component\Mime\Header\Headers;
+
+use function is_array;
+use function is_string;
 
 /**
  * @author Fabien Potencier <fabien@symfony.com>
@@ -136,7 +141,7 @@ class DataPart extends TextPart
 
         $this->_parent = [];
         foreach (['body', 'charset', 'subtype', 'disposition', 'name', 'encoding'] as $name) {
-            $r = new \ReflectionProperty(TextPart::class, $name);
+            $r = new ReflectionProperty(TextPart::class, $name);
             $this->_parent[$name] = $r->getValue($this);
         }
         $this->_headers = $this->getHeaders();
@@ -144,23 +149,20 @@ class DataPart extends TextPart
         return ['_headers', '_parent', 'filename', 'mediaType'];
     }
 
-    /**
-     * @return void
-     */
-    public function __wakeup()
+    public function __wakeup(): void
     {
-        $r = new \ReflectionProperty(AbstractPart::class, 'headers');
+        $r = new ReflectionProperty(AbstractPart::class, 'headers');
         $r->setValue($this, $this->_headers);
         unset($this->_headers);
 
-        if (!\is_array($this->_parent)) {
-            throw new \BadMethodCallException('Cannot unserialize '.__CLASS__);
+        if (!is_array($this->_parent)) {
+            throw new BadMethodCallException('Cannot unserialize '.__CLASS__);
         }
         foreach (['body', 'charset', 'subtype', 'disposition', 'name', 'encoding'] as $name) {
-            if (null !== $this->_parent[$name] && !\is_string($this->_parent[$name]) && !$this->_parent[$name] instanceof File) {
-                throw new \BadMethodCallException('Cannot unserialize '.__CLASS__);
+            if (null !== $this->_parent[$name] && !is_string($this->_parent[$name]) && !$this->_parent[$name] instanceof File) {
+                throw new BadMethodCallException('Cannot unserialize '.__CLASS__);
             }
-            $r = new \ReflectionProperty(TextPart::class, $name);
+            $r = new ReflectionProperty(TextPart::class, $name);
             $r->setValue($this, $this->_parent[$name]);
         }
         unset($this->_parent);

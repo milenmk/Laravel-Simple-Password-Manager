@@ -12,6 +12,7 @@
 namespace Symfony\Component\Console\EventListener;
 
 use Psr\Log\LoggerInterface;
+use Stringable;
 use Symfony\Component\Console\ConsoleEvents;
 use Symfony\Component\Console\Event\ConsoleErrorEvent;
 use Symfony\Component\Console\Event\ConsoleEvent;
@@ -24,17 +25,12 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
  */
 class ErrorListener implements EventSubscriberInterface
 {
-    private ?LoggerInterface $logger;
-
-    public function __construct(?LoggerInterface $logger = null)
-    {
-        $this->logger = $logger;
+    public function __construct(
+        private ?LoggerInterface $logger = null,
+    ) {
     }
 
-    /**
-     * @return void
-     */
-    public function onConsoleError(ConsoleErrorEvent $event)
+    public function onConsoleError(ConsoleErrorEvent $event): void
     {
         if (null === $this->logger) {
             return;
@@ -51,10 +47,7 @@ class ErrorListener implements EventSubscriberInterface
         $this->logger->critical('Error thrown while running command "{command}". Message: "{message}"', ['exception' => $error, 'command' => $inputString, 'message' => $error->getMessage()]);
     }
 
-    /**
-     * @return void
-     */
-    public function onConsoleTerminate(ConsoleTerminateEvent $event)
+    public function onConsoleTerminate(ConsoleTerminateEvent $event): void
     {
         if (null === $this->logger) {
             return;
@@ -88,7 +81,7 @@ class ErrorListener implements EventSubscriberInterface
         $commandName = $event->getCommand()?->getName();
         $input = $event->getInput();
 
-        if ($input instanceof \Stringable) {
+        if ($input instanceof Stringable) {
             if ($commandName) {
                 return str_replace(["'$commandName'", "\"$commandName\""], $commandName, (string) $input);
             }

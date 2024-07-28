@@ -11,6 +11,9 @@
 
 namespace Symfony\Component\HttpKernel\EventListener;
 
+use DateTimeImmutable;
+use LogicException;
+use SplObjectStorage;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
 use Symfony\Component\HttpFoundation\Request;
@@ -19,6 +22,9 @@ use Symfony\Component\HttpKernel\Attribute\Cache;
 use Symfony\Component\HttpKernel\Event\ControllerArgumentsEvent;
 use Symfony\Component\HttpKernel\Event\ResponseEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
+
+use function in_array;
+use function is_array;
 
 /**
  * Handles HTTP cache headers configured via the Cache attribute.
@@ -30,30 +36,28 @@ class CacheAttributeListener implements EventSubscriberInterface
     /**
      * @var \SplObjectStorage<Request, \DateTimeInterface>
      */
-    private \SplObjectStorage $lastModified;
+    private SplObjectStorage $lastModified;
 
     /**
      * @var \SplObjectStorage<Request, string>
      */
-    private \SplObjectStorage $etags;
+    private SplObjectStorage $etags;
 
     public function __construct(
         private ?ExpressionLanguage $expressionLanguage = null,
     ) {
-        $this->lastModified = new \SplObjectStorage();
-        $this->etags = new \SplObjectStorage();
+        $this->lastModified = new SplObjectStorage();
+        $this->etags = new SplObjectStorage();
     }
 
     /**
      * Handles HTTP validation headers.
-     *
-     * @return void
      */
-    public function onKernelControllerArguments(ControllerArgumentsEvent $event)
+    public function onKernelControllerArguments(ControllerArgumentsEvent $event): void
     {
         $request = $event->getRequest();
 
-        if (!\is_array($attributes = $request->attributes->get('_cache') ?? $event->getAttributes()[Cache::class] ?? null)) {
+        if (!is_array($attributes = $request->attributes->get('_cache') ?? $event->getAttributes()[Cache::class] ?? null)) {
             return;
         }
 
@@ -92,21 +96,19 @@ class CacheAttributeListener implements EventSubscriberInterface
 
     /**
      * Modifies the response to apply HTTP cache headers when needed.
-     *
-     * @return void
      */
-    public function onKernelResponse(ResponseEvent $event)
+    public function onKernelResponse(ResponseEvent $event): void
     {
         $request = $event->getRequest();
 
         /** @var Cache[] $attributes */
-        if (!\is_array($attributes = $request->attributes->get('_cache'))) {
+        if (!is_array($attributes = $request->attributes->get('_cache'))) {
             return;
         }
         $response = $event->getResponse();
 
         // http://tools.ietf.org/html/draft-ietf-httpbis-p4-conditional-12#section-3.1
-        if (!\in_array($response->getStatusCode(), [200, 203, 300, 301, 302, 304, 404, 410])) {
+        if (!in_array($response->getStatusCode(), [200, 203, 300, 301, 302, 304, 404, 410])) {
             unset($this->lastModified[$request]);
             unset($this->etags[$request]);
 
@@ -151,7 +153,7 @@ class CacheAttributeListener implements EventSubscriberInterface
             }
 
             if (null !== $cache->expires && !$response->headers->has('Expires')) {
-                $response->setExpires(new \DateTimeImmutable('@'.strtotime($cache->expires, time())));
+                $response->setExpires(new DateTimeImmutable('@'.strtotime($cache->expires, time())));
             }
 
             if (!$hasVary && $cache->vary) {
@@ -182,7 +184,7 @@ class CacheAttributeListener implements EventSubscriberInterface
     {
         return $this->expressionLanguage ??= class_exists(ExpressionLanguage::class)
             ? new ExpressionLanguage()
-            : throw new \LogicException('Unable to use expressions as the Symfony ExpressionLanguage component is not installed. Try running "composer require symfony/expression-language".');
+            : throw new LogicException('Unable to use expressions as the Symfony ExpressionLanguage component is not installed. Try running "composer require symfony/expression-language".');
     }
 
     private function toSeconds(int|string $time): int

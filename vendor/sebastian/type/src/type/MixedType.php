@@ -16,11 +16,17 @@ final class MixedType extends Type
         return !$other instanceof VoidType;
     }
 
+    /**
+     * @return 'mixed'
+     */
     public function asString(): string
     {
         return 'mixed';
     }
 
+    /**
+     * @return 'mixed'
+     */
     public function name(): string
     {
         return 'mixed';
@@ -31,9 +37,6 @@ final class MixedType extends Type
         return true;
     }
 
-    /**
-     * @psalm-assert-if-true MixedType $this
-     */
     public function isMixed(): bool
     {
         return true;

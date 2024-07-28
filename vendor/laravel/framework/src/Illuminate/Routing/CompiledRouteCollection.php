@@ -60,7 +60,7 @@ class CompiledRouteCollection extends AbstractRouteCollection
     {
         $this->compiled = $compiled;
         $this->attributes = $attributes;
-        $this->routes = new RouteCollection;
+        $this->routes = new RouteCollection();
     }
 
     /**
@@ -110,7 +110,7 @@ class CompiledRouteCollection extends AbstractRouteCollection
     public function match(Request $request)
     {
         $matcher = new CompiledUrlMatcher(
-            $this->compiled, (new RequestContext)->fromRequest(
+            $this->compiled, (new RequestContext())->fromRequest(
                 $trimmedRequest = $this->requestWithoutTrailingSlash($request)
             )
         );
@@ -121,10 +121,10 @@ class CompiledRouteCollection extends AbstractRouteCollection
             if ($result = $matcher->matchRequest($trimmedRequest)) {
                 $route = $this->getByName($result['_route']);
             }
-        } catch (ResourceNotFoundException|MethodNotAllowedException $e) {
+        } catch (ResourceNotFoundException|MethodNotAllowedException) {
             try {
                 return $this->routes->match($request);
-            } catch (NotFoundHttpException $e) {
+            } catch (NotFoundHttpException) {
                 //
             }
         }
@@ -136,7 +136,7 @@ class CompiledRouteCollection extends AbstractRouteCollection
                 if (! $dynamicRoute->isFallback) {
                     $route = $dynamicRoute;
                 }
-            } catch (NotFoundHttpException|MethodNotAllowedHttpException $e) {
+            } catch (NotFoundHttpException|MethodNotAllowedHttpException) {
                 //
             }
         }

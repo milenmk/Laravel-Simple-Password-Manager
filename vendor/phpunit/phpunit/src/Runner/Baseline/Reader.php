@@ -24,7 +24,7 @@ use PHPUnit\Util\Xml\XmlException;
 /**
  * @internal This class is not covered by the backward compatibility promise for PHPUnit
  */
-final class Reader
+final readonly class Reader
 {
     /**
      * @psalm-param non-empty-string $baselineFile
@@ -43,7 +43,7 @@ final class Reader
         }
 
         try {
-            $document = (new XmlLoader)->loadFile($baselineFile);
+            $document = (new XmlLoader())->loadFile($baselineFile);
         } catch (XmlException $e) {
             throw new CannotLoadBaselineException(
                 sprintf(
@@ -65,7 +65,7 @@ final class Reader
             );
         }
 
-        $baseline          = new Baseline;
+        $baseline          = new Baseline();
         $baselineDirectory = dirname(realpath($baselineFile));
         $xpath             = new DOMXPath($document);
 

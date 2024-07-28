@@ -11,12 +11,21 @@
 
 namespace Symfony\Component\Mime\Part;
 
+use ReflectionProperty;
 use Symfony\Component\Mime\Encoder\Base64ContentEncoder;
 use Symfony\Component\Mime\Encoder\ContentEncoderInterface;
 use Symfony\Component\Mime\Encoder\EightBitContentEncoder;
 use Symfony\Component\Mime\Encoder\QpContentEncoder;
 use Symfony\Component\Mime\Exception\InvalidArgumentException;
 use Symfony\Component\Mime\Header\Headers;
+
+use TypeError;
+
+use function is_resource;
+
+use function is_string;
+
+use const SEEK_CUR;
 
 /**
  * @author Fabien Potencier <fabien@symfony.com>
@@ -44,8 +53,8 @@ class TextPart extends AbstractPart
     {
         parent::__construct();
 
-        if (!\is_string($body) && !\is_resource($body) && !$body instanceof File) {
-            throw new \TypeError(sprintf('The body of "%s" must be a string, a resource, or an instance of "%s" (got "%s").', self::class, File::class, get_debug_type($body)));
+        if (!is_string($body) && !is_resource($body) && !$body instanceof File) {
+            throw new TypeError(sprintf('The body of "%s" must be a string, a resource, or an instance of "%s" (got "%s").', self::class, File::class, get_debug_type($body)));
         }
 
         if ($body instanceof File) {
@@ -58,7 +67,7 @@ class TextPart extends AbstractPart
         $this->body = $body;
         $this->charset = $charset;
         $this->subtype = $subtype;
-        $this->seekable = \is_resource($body) ? stream_get_meta_data($body)['seekable'] && 0 === fseek($body, 0, \SEEK_CUR) : null;
+        $this->seekable = is_resource($body) ? stream_get_meta_data($body)['seekable'] && 0 === fseek($body, 0, SEEK_CUR) : null;
 
         if (null === $encoding) {
             $this->encoding = $this->chooseEncoding();
@@ -236,12 +245,9 @@ class TextPart extends AbstractPart
         return ['_headers', 'body', 'charset', 'subtype', 'disposition', 'name', 'encoding'];
     }
 
-    /**
-     * @return void
-     */
-    public function __wakeup()
+    public function __wakeup(): void
     {
-        $r = new \ReflectionProperty(AbstractPart::class, 'headers');
+        $r = new ReflectionProperty(AbstractPart::class, 'headers');
         $r->setValue($this, $this->_headers);
         unset($this->_headers);
     }

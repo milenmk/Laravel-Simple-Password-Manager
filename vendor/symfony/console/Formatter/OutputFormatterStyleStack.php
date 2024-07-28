@@ -14,6 +14,9 @@ namespace Symfony\Component\Console\Formatter;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Contracts\Service\ResetInterface;
 
+use function array_slice;
+use function count;
+
 /**
  * @author Jean-François Simon <contact@jfsimon.fr>
  */
@@ -34,20 +37,16 @@ class OutputFormatterStyleStack implements ResetInterface
 
     /**
      * Resets stack (ie. empty internal arrays).
-     *
-     * @return void
      */
-    public function reset()
+    public function reset(): void
     {
         $this->styles = [];
     }
 
     /**
      * Pushes a style in the stack.
-     *
-     * @return void
      */
-    public function push(OutputFormatterStyleInterface $style)
+    public function push(OutputFormatterStyleInterface $style): void
     {
         $this->styles[] = $style;
     }
@@ -69,7 +68,7 @@ class OutputFormatterStyleStack implements ResetInterface
 
         foreach (array_reverse($this->styles, true) as $index => $stackedStyle) {
             if ($style->apply('') === $stackedStyle->apply('')) {
-                $this->styles = \array_slice($this->styles, 0, $index);
+                $this->styles = array_slice($this->styles, 0, $index);
 
                 return $stackedStyle;
             }
@@ -87,7 +86,7 @@ class OutputFormatterStyleStack implements ResetInterface
             return $this->emptyStyle;
         }
 
-        return $this->styles[\count($this->styles) - 1];
+        return $this->styles[count($this->styles) - 1];
     }
 
     /**

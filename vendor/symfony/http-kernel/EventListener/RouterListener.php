@@ -11,6 +11,7 @@
 
 namespace Symfony\Component\HttpKernel\EventListener;
 
+use InvalidArgumentException;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\Request;
@@ -31,6 +32,12 @@ use Symfony\Component\Routing\Matcher\UrlMatcherInterface;
 use Symfony\Component\Routing\RequestContext;
 use Symfony\Component\Routing\RequestContextAwareInterface;
 
+use UnexpectedValueException;
+
+use function dirname;
+
+use const DIRECTORY_SEPARATOR;
+
 /**
  * Initializes the context from the request and sets request attributes based on a matching route.
  *
@@ -41,30 +48,26 @@ use Symfony\Component\Routing\RequestContextAwareInterface;
  */
 class RouterListener implements EventSubscriberInterface
 {
-    private RequestMatcherInterface|UrlMatcherInterface $matcher;
     private RequestContext $context;
-    private ?LoggerInterface $logger;
-    private RequestStack $requestStack;
-    private ?string $projectDir;
-    private bool $debug;
 
     /**
      * @param RequestContext|null $context The RequestContext (can be null when $matcher implements RequestContextAwareInterface)
      *
      * @throws \InvalidArgumentException
      */
-    public function __construct(UrlMatcherInterface|RequestMatcherInterface $matcher, RequestStack $requestStack, ?RequestContext $context = null, ?LoggerInterface $logger = null, ?string $projectDir = null, bool $debug = true)
-    {
+    public function __construct(
+        private UrlMatcherInterface|RequestMatcherInterface $matcher,
+        private RequestStack $requestStack,
+        ?RequestContext $context = null,
+        private ?LoggerInterface $logger = null,
+        private ?string $projectDir = null,
+        private bool $debug = true,
+    ) {
         if (null === $context && !$matcher instanceof RequestContextAwareInterface) {
-            throw new \InvalidArgumentException('You must either pass a RequestContext or the matcher must implement RequestContextAwareInterface.');
+            throw new InvalidArgumentException('You must either pass a RequestContext or the matcher must implement RequestContextAwareInterface.');
         }
 
-        $this->matcher = $matcher;
         $this->context = $context ?? $matcher->getContext();
-        $this->requestStack = $requestStack;
-        $this->logger = $logger;
-        $this->projectDir = $projectDir;
-        $this->debug = $debug;
     }
 
     private function setCurrentRequest(?Request $request): void
@@ -72,7 +75,7 @@ class RouterListener implements EventSubscriberInterface
         if (null !== $request) {
             try {
                 $this->context->fromRequest($request);
-            } catch (\UnexpectedValueException $e) {
+            } catch (UnexpectedValueException $e) {
                 throw new BadRequestHttpException($e->getMessage(), $e, $e->getCode());
             }
         }
@@ -114,7 +117,33 @@ class RouterListener implements EventSubscriberInterface
                 'method' => $request->getMethod(),
             ]);
 
-            $request->attributes->add($parameters);
+            $attributes = $parameters;
+            if ($mapping = $parameters['_route_mapping'] ?? false) {
+                unset($parameters['_route_mapping']);
+                $mappedAttributes = [];
+                $attributes = [];
+
+                foreach ($parameters as $parameter => $value) {
+                    $attribute = $mapping[$parameter] ?? $parameter;
+
+                    if (!isset($mappedAttributes[$attribute])) {
+                        $attributes[$attribute] = $value;
+                        $mappedAttributes[$attribute] = $parameter;
+                    } elseif ('' !== $mappedAttributes[$attribute]) {
+                        $attributes[$attribute] = [
+                            $mappedAttributes[$attribute] => $attributes[$attribute],
+                            $parameter => $value,
+                        ];
+                        $mappedAttributes[$attribute] = '';
+                    } else {
+                        $attributes[$attribute][$parameter] = $value;
+                    }
+                }
+
+                $attributes['_route_mapping'] = $mapping;
+            }
+
+            $request->attributes->add($attributes);
             unset($parameters['_route'], $parameters['_controller']);
             $request->attributes->set('_route_params', $parameters);
         } catch (ResourceNotFoundException $e) {
@@ -155,11 +184,11 @@ class RouterListener implements EventSubscriberInterface
     private function createWelcomeResponse(): Response
     {
         $version = Kernel::VERSION;
-        $projectDir = realpath((string) $this->projectDir).\DIRECTORY_SEPARATOR;
+        $projectDir = realpath((string) $this->projectDir) . DIRECTORY_SEPARATOR;
         $docVersion = substr(Kernel::VERSION, 0, 3);
 
         ob_start();
-        include \dirname(__DIR__).'/Resources/welcome.html.php';
+        include dirname(__DIR__).'/Resources/welcome.html.php';
 
         return new Response(ob_get_clean(), Response::HTTP_NOT_FOUND);
     }

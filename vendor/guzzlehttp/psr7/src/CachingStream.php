@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace GuzzleHttp\Psr7;
 
+use InvalidArgumentException;
 use Psr\Http\Message\StreamInterface;
 
 /**
@@ -33,7 +34,7 @@ final class CachingStream implements StreamInterface
      */
     public function __construct(
         StreamInterface $stream,
-        StreamInterface $target = null
+        ?StreamInterface $target = null
     ) {
         $this->remoteStream = $stream;
         $this->stream = $target ?: new Stream(Utils::tryFopen('php://temp', 'r+'));
@@ -68,7 +69,7 @@ final class CachingStream implements StreamInterface
             }
             $byte = $size + $offset;
         } else {
-            throw new \InvalidArgumentException('Invalid whence');
+            throw new InvalidArgumentException('Invalid whence');
         }
 
         $diff = $byte - $this->stream->getSize();

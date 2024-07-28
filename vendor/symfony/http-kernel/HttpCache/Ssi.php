@@ -11,8 +11,14 @@
 
 namespace Symfony\Component\HttpKernel\HttpCache;
 
+use RuntimeException;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+
+use function in_array;
+
+use const PREG_SET_ORDER;
+use const PREG_SPLIT_DELIM_CAPTURE;
 
 /**
  * Ssi implements the SSI capabilities to Request and Response instances.
@@ -26,10 +32,7 @@ class Ssi extends AbstractSurrogate
         return 'ssi';
     }
 
-    /**
-     * @return void
-     */
-    public function addSurrogateControl(Response $response)
+    public function addSurrogateControl(Response $response): void
     {
         if (str_contains($response->getContent(), '<!--#include')) {
             $response->headers->set('Surrogate-Control', 'content="SSI/1.0"');
@@ -44,30 +47,30 @@ class Ssi extends AbstractSurrogate
     public function process(Request $request, Response $response): Response
     {
         $type = $response->headers->get('Content-Type');
-        if (empty($type)) {
+        if (!$type) {
             $type = 'text/html';
         }
 
         $parts = explode(';', $type);
-        if (!\in_array($parts[0], $this->contentTypes)) {
+        if (!in_array($parts[0], $this->contentTypes, true)) {
             return $response;
         }
 
         // we don't use a proper XML parser here as we can have SSI tags in a plain text response
         $content = $response->getContent();
         $boundary = self::generateBodyEvalBoundary();
-        $chunks = preg_split('#<!--\#include\s+(.*?)\s*-->#', $content, -1, \PREG_SPLIT_DELIM_CAPTURE);
+        $chunks = preg_split('#<!--\#include\s+(.*?)\s*-->#', $content, -1, PREG_SPLIT_DELIM_CAPTURE);
 
         $i = 1;
         while (isset($chunks[$i])) {
             $options = [];
-            preg_match_all('/(virtual)="([^"]*?)"/', $chunks[$i], $matches, \PREG_SET_ORDER);
+            preg_match_all('/(virtual)="([^"]*?)"/', $chunks[$i], $matches, PREG_SET_ORDER);
             foreach ($matches as $set) {
                 $options[$set[1]] = $set[2];
             }
 
             if (!isset($options['virtual'])) {
-                throw new \RuntimeException('Unable to process an SSI tag without a "virtual" attribute.');
+                throw new RuntimeException('Unable to process an SSI tag without a "virtual" attribute.');
             }
 
             $chunks[$i] = $boundary.$options['virtual']."\n\n\n";

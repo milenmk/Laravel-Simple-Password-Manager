@@ -2,12 +2,19 @@
 
 namespace Illuminate\Queue;
 
+use DateTimeInterface;
 use Illuminate\Contracts\Queue\Job as JobContract;
+use Illuminate\Queue\Jobs\FakeJob;
+use Illuminate\Support\InteractsWithTime;
 use InvalidArgumentException;
+use PHPUnit\Framework\Assert as PHPUnit;
+use RuntimeException;
 use Throwable;
 
 trait InteractsWithQueue
 {
+    use InteractsWithTime;
+
     /**
      * The underlying queue job instance.
      *
@@ -61,13 +68,105 @@ trait InteractsWithQueue
     /**
      * Release the job back into the queue after (n) seconds.
      *
-     * @param  int  $delay
+     * @param  \DateTimeInterface|\DateInterval|int  $delay
      * @return void
      */
     public function release($delay = 0)
     {
+        $delay = $delay instanceof DateTimeInterface
+            ? $this->secondsUntil($delay)
+            : $delay;
+
         if ($this->job) {
             return $this->job->release($delay);
+        }
+    }
+
+    /**
+     * Indicate that queue interactions like fail, delete, and release should be faked.
+     *
+     * @return $this
+     */
+    public function withFakeQueueInteractions()
+    {
+        $this->job = new FakeJob();
+
+        return $this;
+    }
+
+    /**
+     * Assert that the job was deleted from the queue.
+     *
+     * @return $this
+     */
+    public function assertDeleted()
+    {
+        $this->ensureQueueInteractionsHaveBeenFaked();
+
+        PHPUnit::assertTrue(
+            $this->job->isDeleted(),
+            'Job was expected to be deleted, but was not.'
+        );
+
+        return $this;
+    }
+
+    /**
+     * Assert that the job was manually failed.
+     *
+     * @return $this
+     */
+    public function assertFailed()
+    {
+        $this->ensureQueueInteractionsHaveBeenFaked();
+
+        PHPUnit::assertTrue(
+            $this->job->hasFailed(),
+            'Job was expected to be manually failed, but was not.'
+        );
+
+        return $this;
+    }
+
+    /**
+     * Assert that the job was released back onto the queue.
+     *
+     * @param  \DateTimeInterface|\DateInterval|int  $delay
+     * @return $this
+     */
+    public function assertReleased($delay = null)
+    {
+        $this->ensureQueueInteractionsHaveBeenFaked();
+
+        $delay = $delay instanceof DateTimeInterface
+            ? $this->secondsUntil($delay)
+            : $delay;
+
+        PHPUnit::assertTrue(
+            $this->job->isReleased(),
+            'Job was expected to be released, but was not.'
+        );
+
+        if (! is_null($delay)) {
+            PHPUnit::assertSame(
+                $delay,
+                $this->job->releaseDelay,
+                "Expected job to be released with delay of [{$delay}] seconds, but was released with delay of [{$this->job->releaseDelay}] seconds."
+            );
+        }
+
+        return $this;
+    }
+
+    /**
+     * Ensure that queue interactions have been faked.
+     *
+     * @return void
+     */
+    private function ensureQueueInteractionsHaveBeenFaked()
+    {
+        if (! $this->job instanceof FakeJob) {
+            throw new RuntimeException('Queue interactions have not been faked.');
         }
     }
 

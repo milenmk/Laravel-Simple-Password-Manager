@@ -9,6 +9,8 @@
  */
 namespace PHPUnit\Framework;
 
+use function array_combine;
+use function array_intersect_key;
 use function class_exists;
 use function count;
 use function file_get_contents;
@@ -73,6 +75,86 @@ abstract class Assert
     private static int $count = 0;
 
     /**
+     * Asserts that two arrays are equal while only considering a list of keys.
+     *
+     * @psalm-param non-empty-list<array-key> $keysToBeConsidered
+     *
+     * @throws Exception
+     * @throws ExpectationFailedException
+     */
+    final public static function assertArrayIsEqualToArrayOnlyConsideringListOfKeys(array $expected, array $actual, array $keysToBeConsidered, string $message = ''): void
+    {
+        $filteredExpected = [];
+
+        foreach ($keysToBeConsidered as $key) {
+            if (isset($expected[$key])) {
+                $filteredExpected[$key] = $expected[$key];
+            }
+        }
+
+        $filteredActual = [];
+
+        foreach ($keysToBeConsidered as $key) {
+            if (isset($actual[$key])) {
+                $filteredActual[$key] = $actual[$key];
+            }
+        }
+
+        static::assertEquals($filteredExpected, $filteredActual, $message);
+    }
+
+    /**
+     * Asserts that two arrays are equal while ignoring a list of keys.
+     *
+     * @psalm-param non-empty-list<array-key> $keysToBeIgnored
+     *
+     * @throws Exception
+     * @throws ExpectationFailedException
+     */
+    final public static function assertArrayIsEqualToArrayIgnoringListOfKeys(array $expected, array $actual, array $keysToBeIgnored, string $message = ''): void
+    {
+        foreach ($keysToBeIgnored as $key) {
+            unset($expected[$key], $actual[$key]);
+        }
+
+        static::assertEquals($expected, $actual, $message);
+    }
+
+    /**
+     * Asserts that two arrays are identical while only considering a list of keys.
+     *
+     * @psalm-param non-empty-list<array-key> $keysToBeConsidered
+     *
+     * @throws Exception
+     * @throws ExpectationFailedException
+     */
+    final public static function assertArrayIsIdenticalToArrayOnlyConsideringListOfKeys(array $expected, array $actual, array $keysToBeConsidered, string $message = ''): void
+    {
+        $keysToBeConsidered = array_combine($keysToBeConsidered, $keysToBeConsidered);
+        $expected           = array_intersect_key($expected, $keysToBeConsidered);
+        $actual             = array_intersect_key($actual, $keysToBeConsidered);
+
+        static::assertSame($expected, $actual, $message);
+    }
+
+    /**
+     * Asserts that two arrays are equal while ignoring a list of keys.
+     *
+     * @psalm-param non-empty-list<array-key> $keysToBeIgnored
+     *
+     * @throws Exception
+     * @throws ExpectationFailedException
+     */
+    final public static function assertArrayIsIdenticalToArrayIgnoringListOfKeys(array $expected, array $actual, array $keysToBeIgnored, string $message = ''): void
+    {
+        foreach ($keysToBeIgnored as $key) {
+            unset($expected[$key], $actual[$key]);
+        }
+
+        static::assertSame($expected, $actual, $message);
+    }
+
+    /**
      * Asserts that an array has a specified key.
      *
      * @throws Exception
@@ -107,7 +189,7 @@ abstract class Assert
     {
         static::assertThat(
             $array,
-            new IsList,
+            new IsList(),
             $message,
         );
     }
@@ -382,6 +464,20 @@ abstract class Assert
         static::assertThat(
             $actual,
             static::objectEquals($expected, $method),
+            $message,
+        );
+    }
+
+    /**
+     * @throws ExpectationFailedException
+     */
+    final public static function assertObjectNotEquals(object $expected, object $actual, string $method = 'equals', string $message = ''): void
+    {
+        static::assertThat(
+            $actual,
+            static::logicalNot(
+                static::objectEquals($expected, $method),
+            ),
             $message,
         );
     }
@@ -671,7 +767,7 @@ abstract class Assert
      */
     final public static function assertIsReadable(string $filename, string $message = ''): void
     {
-        static::assertThat($filename, new IsReadable, $message);
+        static::assertThat($filename, new IsReadable(), $message);
     }
 
     /**
@@ -681,7 +777,7 @@ abstract class Assert
      */
     final public static function assertIsNotReadable(string $filename, string $message = ''): void
     {
-        static::assertThat($filename, new LogicalNot(new IsReadable), $message);
+        static::assertThat($filename, new LogicalNot(new IsReadable()), $message);
     }
 
     /**
@@ -691,7 +787,7 @@ abstract class Assert
      */
     final public static function assertIsWritable(string $filename, string $message = ''): void
     {
-        static::assertThat($filename, new IsWritable, $message);
+        static::assertThat($filename, new IsWritable(), $message);
     }
 
     /**
@@ -701,7 +797,7 @@ abstract class Assert
      */
     final public static function assertIsNotWritable(string $filename, string $message = ''): void
     {
-        static::assertThat($filename, new LogicalNot(new IsWritable), $message);
+        static::assertThat($filename, new LogicalNot(new IsWritable()), $message);
     }
 
     /**
@@ -711,7 +807,7 @@ abstract class Assert
      */
     final public static function assertDirectoryExists(string $directory, string $message = ''): void
     {
-        static::assertThat($directory, new DirectoryExists, $message);
+        static::assertThat($directory, new DirectoryExists(), $message);
     }
 
     /**
@@ -721,7 +817,7 @@ abstract class Assert
      */
     final public static function assertDirectoryDoesNotExist(string $directory, string $message = ''): void
     {
-        static::assertThat($directory, new LogicalNot(new DirectoryExists), $message);
+        static::assertThat($directory, new LogicalNot(new DirectoryExists()), $message);
     }
 
     /**
@@ -775,7 +871,7 @@ abstract class Assert
      */
     final public static function assertFileExists(string $filename, string $message = ''): void
     {
-        static::assertThat($filename, new FileExists, $message);
+        static::assertThat($filename, new FileExists(), $message);
     }
 
     /**
@@ -785,7 +881,7 @@ abstract class Assert
      */
     final public static function assertFileDoesNotExist(string $filename, string $message = ''): void
     {
-        static::assertThat($filename, new LogicalNot(new FileExists), $message);
+        static::assertThat($filename, new LogicalNot(new FileExists()), $message);
     }
 
     /**
@@ -1617,6 +1713,11 @@ abstract class Assert
      */
     final public static function assertStringNotMatchesFormat(string $format, string $string, string $message = ''): void
     {
+        Event\Facade::emitter()->testTriggeredPhpunitDeprecation(
+            null,
+            'assertStringNotMatchesFormat() is deprecated and will be removed in PHPUnit 12 without replacement.',
+        );
+
         static::assertThat(
             $string,
             new LogicalNot(
@@ -1653,6 +1754,11 @@ abstract class Assert
      */
     final public static function assertStringNotMatchesFormatFile(string $formatFile, string $string, string $message = ''): void
     {
+        Event\Facade::emitter()->testTriggeredPhpunitDeprecation(
+            null,
+            'assertStringNotMatchesFormatFile() is deprecated and will be removed in PHPUnit 12 without replacement.',
+        );
+
         static::assertFileExists($formatFile, $message);
 
         static::assertThat(
@@ -1779,8 +1885,8 @@ abstract class Assert
      */
     final public static function assertXmlFileEqualsXmlFile(string $expectedFile, string $actualFile, string $message = ''): void
     {
-        $expected = (new XmlLoader)->loadFile($expectedFile);
-        $actual   = (new XmlLoader)->loadFile($actualFile);
+        $expected = (new XmlLoader())->loadFile($expectedFile);
+        $actual   = (new XmlLoader())->loadFile($actualFile);
 
         static::assertEquals($expected, $actual, $message);
     }
@@ -1793,8 +1899,8 @@ abstract class Assert
      */
     final public static function assertXmlFileNotEqualsXmlFile(string $expectedFile, string $actualFile, string $message = ''): void
     {
-        $expected = (new XmlLoader)->loadFile($expectedFile);
-        $actual   = (new XmlLoader)->loadFile($actualFile);
+        $expected = (new XmlLoader())->loadFile($expectedFile);
+        $actual   = (new XmlLoader())->loadFile($actualFile);
 
         static::assertNotEquals($expected, $actual, $message);
     }
@@ -1807,8 +1913,8 @@ abstract class Assert
      */
     final public static function assertXmlStringEqualsXmlFile(string $expectedFile, string $actualXml, string $message = ''): void
     {
-        $expected = (new XmlLoader)->loadFile($expectedFile);
-        $actual   = (new XmlLoader)->load($actualXml);
+        $expected = (new XmlLoader())->loadFile($expectedFile);
+        $actual   = (new XmlLoader())->load($actualXml);
 
         static::assertEquals($expected, $actual, $message);
     }
@@ -1821,8 +1927,8 @@ abstract class Assert
      */
     final public static function assertXmlStringNotEqualsXmlFile(string $expectedFile, string $actualXml, string $message = ''): void
     {
-        $expected = (new XmlLoader)->loadFile($expectedFile);
-        $actual   = (new XmlLoader)->load($actualXml);
+        $expected = (new XmlLoader())->loadFile($expectedFile);
+        $actual   = (new XmlLoader())->load($actualXml);
 
         static::assertNotEquals($expected, $actual, $message);
     }
@@ -1835,8 +1941,8 @@ abstract class Assert
      */
     final public static function assertXmlStringEqualsXmlString(string $expectedXml, string $actualXml, string $message = ''): void
     {
-        $expected = (new XmlLoader)->load($expectedXml);
-        $actual   = (new XmlLoader)->load($actualXml);
+        $expected = (new XmlLoader())->load($expectedXml);
+        $actual   = (new XmlLoader())->load($actualXml);
 
         static::assertEquals($expected, $actual, $message);
     }
@@ -1849,8 +1955,8 @@ abstract class Assert
      */
     final public static function assertXmlStringNotEqualsXmlString(string $expectedXml, string $actualXml, string $message = ''): void
     {
-        $expected = (new XmlLoader)->load($expectedXml);
-        $actual   = (new XmlLoader)->load($actualXml);
+        $expected = (new XmlLoader())->load($expectedXml);
+        $actual   = (new XmlLoader())->load($actualXml);
 
         static::assertNotEquals($expected, $actual, $message);
     }
@@ -1864,27 +1970,7 @@ abstract class Assert
     {
         self::$count += count($constraint);
 
-        $hasFailed = true;
-
-        try {
-            $constraint->evaluate($value, $message);
-
-            $hasFailed = false;
-        } finally {
-            if ($hasFailed) {
-                Event\Facade::emitter()->testAssertionFailed(
-                    $value,
-                    $constraint,
-                    $message,
-                );
-            } else {
-                Event\Facade::emitter()->testAssertionSucceeded(
-                    $value,
-                    $constraint,
-                    $message,
-                );
-            }
-        }
+        $constraint->evaluate($value, $message);
     }
 
     /**
@@ -2044,12 +2130,12 @@ abstract class Assert
 
     final public static function anything(): IsAnything
     {
-        return new IsAnything;
+        return new IsAnything();
     }
 
     final public static function isTrue(): IsTrue
     {
-        return new IsTrue;
+        return new IsTrue();
     }
 
     /**
@@ -2066,32 +2152,32 @@ abstract class Assert
 
     final public static function isFalse(): IsFalse
     {
-        return new IsFalse;
+        return new IsFalse();
     }
 
     final public static function isJson(): IsJson
     {
-        return new IsJson;
+        return new IsJson();
     }
 
     final public static function isNull(): IsNull
     {
-        return new IsNull;
+        return new IsNull();
     }
 
     final public static function isFinite(): IsFinite
     {
-        return new IsFinite;
+        return new IsFinite();
     }
 
     final public static function isInfinite(): IsInfinite
     {
-        return new IsInfinite;
+        return new IsInfinite();
     }
 
     final public static function isNan(): IsNan
     {
-        return new IsNan;
+        return new IsNan();
     }
 
     final public static function containsEqual(mixed $value): TraversableContainsEqual
@@ -2127,12 +2213,12 @@ abstract class Assert
 
     final public static function isList(): IsList
     {
-        return new IsList;
+        return new IsList();
     }
 
     final public static function equalTo(mixed $value): IsEqual
     {
-        return new IsEqual($value, 0.0, false, false);
+        return new IsEqual($value);
     }
 
     final public static function equalToCanonicalizing(mixed $value): IsEqualCanonicalizing
@@ -2152,27 +2238,27 @@ abstract class Assert
 
     final public static function isEmpty(): IsEmpty
     {
-        return new IsEmpty;
+        return new IsEmpty();
     }
 
     final public static function isWritable(): IsWritable
     {
-        return new IsWritable;
+        return new IsWritable();
     }
 
     final public static function isReadable(): IsReadable
     {
-        return new IsReadable;
+        return new IsReadable();
     }
 
     final public static function directoryExists(): DirectoryExists
     {
-        return new DirectoryExists;
+        return new DirectoryExists();
     }
 
     final public static function fileExists(): FileExists
     {
-        return new FileExists;
+        return new FileExists();
     }
 
     final public static function greaterThan(mixed $value): GreaterThan

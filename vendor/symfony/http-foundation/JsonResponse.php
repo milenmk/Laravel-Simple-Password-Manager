@@ -11,6 +11,21 @@
 
 namespace Symfony\Component\HttpFoundation;
 
+use ArrayObject;
+use Exception;
+use InvalidArgumentException;
+
+use TypeError;
+
+use function in_array;
+
+use function is_callable;
+
+use function is_string;
+
+use const JSON_ERROR_NONE;
+use const JSON_THROW_ON_ERROR;
+
 /**
  * Response represents an HTTP response in JSON format.
  *
@@ -24,14 +39,14 @@ namespace Symfony\Component\HttpFoundation;
  */
 class JsonResponse extends Response
 {
-    protected $data;
-    protected $callback;
+    protected mixed $data;
+    protected ?string $callback = null;
 
     // Encode <, >, ', &, and " characters in the JSON, making it also safe to be embedded into HTML.
     // 15 === JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT
     public const DEFAULT_ENCODING_OPTIONS = 15;
 
-    protected $encodingOptions = self::DEFAULT_ENCODING_OPTIONS;
+    protected int $encodingOptions = self::DEFAULT_ENCODING_OPTIONS;
 
     /**
      * @param bool $json If the data is already a JSON string
@@ -40,11 +55,11 @@ class JsonResponse extends Response
     {
         parent::__construct('', $status, $headers);
 
-        if ($json && !\is_string($data) && !is_numeric($data) && !\is_callable([$data, '__toString'])) {
-            throw new \TypeError(sprintf('"%s": If $json is set to true, argument $data must be a string or object implementing __toString(), "%s" given.', __METHOD__, get_debug_type($data)));
+        if ($json && !is_string($data) && !is_numeric($data) && !is_callable([$data, '__toString'])) {
+            throw new TypeError(sprintf('"%s": If $json is set to true, argument $data must be a string or object implementing __toString(), "%s" given.', __METHOD__, get_debug_type($data)));
         }
 
-        $data ??= new \ArrayObject();
+        $data ??= new ArrayObject();
 
         $json ? $this->setJson($data) : $this->setData($data);
     }
@@ -75,11 +90,8 @@ class JsonResponse extends Response
      *
      * @throws \InvalidArgumentException When the callback name is not valid
      */
-    public function setCallback(?string $callback = null): static
+    public function setCallback(?string $callback): static
     {
-        if (1 > \func_num_args()) {
-            trigger_deprecation('symfony/http-foundation', '6.2', 'Calling "%s()" without any arguments is deprecated, pass null explicitly instead.', __METHOD__);
-        }
         if (null !== $callback) {
             // partially taken from https://geekality.net/2011/08/03/valid-javascript-identifier/
             // partially taken from https://github.com/willdurand/JsonpCallbackValidator
@@ -93,8 +105,8 @@ class JsonResponse extends Response
             ];
             $parts = explode('.', $callback);
             foreach ($parts as $part) {
-                if (!preg_match($pattern, $part) || \in_array($part, $reserved, true)) {
-                    throw new \InvalidArgumentException('The callback name is not valid.');
+                if (!preg_match($pattern, $part) || in_array($part, $reserved, true)) {
+                    throw new InvalidArgumentException('The callback name is not valid.');
                 }
             }
         }
@@ -127,19 +139,19 @@ class JsonResponse extends Response
     {
         try {
             $data = json_encode($data, $this->encodingOptions);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             if ('Exception' === $e::class && str_starts_with($e->getMessage(), 'Failed calling ')) {
                 throw $e->getPrevious() ?: $e;
             }
             throw $e;
         }
 
-        if (\JSON_THROW_ON_ERROR & $this->encodingOptions) {
+        if (JSON_THROW_ON_ERROR & $this->encodingOptions) {
             return $this->setJson($data);
         }
 
-        if (\JSON_ERROR_NONE !== json_last_error()) {
-            throw new \InvalidArgumentException(json_last_error_msg());
+        if (JSON_ERROR_NONE !== json_last_error()) {
+            throw new InvalidArgumentException(json_last_error_msg());
         }
 
         return $this->setJson($data);

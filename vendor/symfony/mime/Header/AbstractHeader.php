@@ -13,6 +13,10 @@ namespace Symfony\Component\Mime\Header;
 
 use Symfony\Component\Mime\Encoder\QpMimeHeaderEncoder;
 
+use function strlen;
+
+use const PREG_SPLIT_DELIM_CAPTURE;
+
 /**
  * An abstract base MIME Header.
  *
@@ -34,10 +38,7 @@ abstract class AbstractHeader implements HeaderInterface
         $this->name = $name;
     }
 
-    /**
-     * @return void
-     */
-    public function setCharset(string $charset)
+    public function setCharset(string $charset): void
     {
         $this->charset = $charset;
     }
@@ -51,10 +52,8 @@ abstract class AbstractHeader implements HeaderInterface
      * Set the language used in this Header.
      *
      * For example, for US English, 'en-us'.
-     *
-     * @return void
      */
-    public function setLanguage(string $lang)
+    public function setLanguage(string $lang): void
     {
         $this->lang = $lang;
     }
@@ -69,10 +68,7 @@ abstract class AbstractHeader implements HeaderInterface
         return $this->name;
     }
 
-    /**
-     * @return void
-     */
-    public function setMaxLineLength(int $lineLength)
+    public function setMaxLineLength(int $lineLength): void
     {
         $this->lineLength = $lineLength;
     }
@@ -111,7 +107,7 @@ abstract class AbstractHeader implements HeaderInterface
                 // ... otherwise it needs encoding
                 // Determine space remaining on line if first line
                 if ($shorten) {
-                    $usedLength = \strlen($header->getName().': ');
+                    $usedLength = strlen($header->getName().': ');
                 } else {
                     $usedLength = 0;
                 }
@@ -147,7 +143,7 @@ abstract class AbstractHeader implements HeaderInterface
                 }
 
                 if (-1 == $usedLength) {
-                    $usedLength = \strlen($header->getName().': ') + \strlen($value);
+                    $usedLength = strlen($header->getName().': ') + strlen($value);
                 }
                 $value .= $this->getTokenAsEncodedWord($token, $usedLength);
             } else {
@@ -203,7 +199,7 @@ abstract class AbstractHeader implements HeaderInterface
         if (null !== $this->lang) {
             $charsetDecl .= '*'.$this->lang;
         }
-        $encodingWrapperLength = \strlen('=?'.$charsetDecl.'?'.self::$encoder->getName().'??=');
+        $encodingWrapperLength = strlen('=?'.$charsetDecl.'?'.self::$encoder->getName().'??=');
 
         if ($firstLineOffset >= 75) {
             // Does this logic need to be here?
@@ -231,7 +227,7 @@ abstract class AbstractHeader implements HeaderInterface
      */
     protected function generateTokenLines(string $token): array
     {
-        return preg_split('~(\r\n)~', $token, -1, \PREG_SPLIT_DELIM_CAPTURE);
+        return preg_split('~(\r\n)~', $token, -1, PREG_SPLIT_DELIM_CAPTURE);
     }
 
     /**
@@ -270,7 +266,7 @@ abstract class AbstractHeader implements HeaderInterface
         foreach ($tokens as $i => $token) {
             // Line longer than specified maximum or token was just a new line
             if (("\r\n" === $token)
-                || ($i > 0 && \strlen($currentLine.$token) > $this->lineLength)
+                || ($i > 0 && strlen($currentLine.$token) > $this->lineLength)
                 && '' !== $currentLine) {
                 $headerLines[] = '';
                 $currentLine = &$headerLines[$lineCount++];

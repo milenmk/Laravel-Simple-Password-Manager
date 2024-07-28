@@ -11,6 +11,8 @@
 
 namespace Symfony\Component\Console\Output;
 
+use const PHP_EOL;
+
 /**
  * @author Jean-François Simon <contact@jfsimon.fr>
  */
@@ -29,15 +31,12 @@ class BufferedOutput extends Output
         return $content;
     }
 
-    /**
-     * @return void
-     */
-    protected function doWrite(string $message, bool $newline)
+    protected function doWrite(string $message, bool $newline): void
     {
         $this->buffer .= $message;
 
         if ($newline) {
-            $this->buffer .= \PHP_EOL;
+            $this->buffer .= PHP_EOL;
         }
     }
 }

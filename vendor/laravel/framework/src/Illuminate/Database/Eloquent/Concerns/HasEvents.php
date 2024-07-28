@@ -3,9 +3,11 @@
 namespace Illuminate\Database\Eloquent\Concerns;
 
 use Illuminate\Contracts\Events\Dispatcher;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Events\NullDispatcher;
 use Illuminate\Support\Arr;
 use InvalidArgumentException;
+use ReflectionClass;
 
 trait HasEvents
 {
@@ -28,6 +30,31 @@ trait HasEvents
     protected $observables = [];
 
     /**
+     * Boot the has event trait for a model.
+     *
+     * @return void
+     */
+    public static function bootHasEvents()
+    {
+        static::observe(static::resolveObserveAttributes());
+    }
+
+    /**
+     * Resolve the observe class names from the attributes.
+     *
+     * @return array
+     */
+    public static function resolveObserveAttributes()
+    {
+        $reflectionClass = new ReflectionClass(static::class);
+
+        return collect($reflectionClass->getAttributes(ObservedBy::class))
+            ->map(fn ($attribute) => $attribute->getArguments())
+            ->flatten()
+            ->all();
+    }
+
+    /**
      * Register observers with the model.
      *
      * @param  object|array|string  $classes
@@ -37,7 +64,7 @@ trait HasEvents
      */
     public static function observe($classes)
     {
-        $instance = new static;
+        $instance = new static();
 
         foreach (Arr::wrap($classes) as $class) {
             $instance->registerObserver($class);
@@ -348,7 +375,7 @@ trait HasEvents
             return;
         }
 
-        $instance = new static;
+        $instance = new static();
 
         foreach ($instance->getObservableEvents() as $event) {
             static::$dispatcher->forget("eloquent.{$event}: ".static::class);
@@ -357,6 +384,16 @@ trait HasEvents
         foreach (array_values($instance->dispatchesEvents) as $event) {
             static::$dispatcher->forget($event);
         }
+    }
+
+    /**
+     * Get the event map for the model.
+     *
+     * @return array
+     */
+    public function dispatchesEvents()
+    {
+        return $this->dispatchesEvents;
     }
 
     /**

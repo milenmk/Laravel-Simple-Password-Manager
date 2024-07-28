@@ -9,7 +9,6 @@ use Illuminate\Console\ConfirmableTrait;
 
 class LocalizeCommand extends Command
 {
-
     use ConfirmableTrait;
 
     /**
@@ -17,7 +16,7 @@ class LocalizeCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'localize {lang?} {--remove-missing}';
+    protected $signature = 'localize {lang?} {--remove-missing} {--force}';
 
     /**
      * The console command description.
@@ -30,21 +29,19 @@ class LocalizeCommand extends Command
      * Execute the localize command.
      *
      * @param Localizator $localizator
-     * @param Parser      $parser
-     *
+     * @param Parser $parser
      * @return int
      */
     public function handle(Localizator $localizator, Parser $parser): int
     {
-
-        if (!$this->confirmToProceed()) {
+        if (! $this->confirmToProceed()) {
             return 1;
         }
 
         $locales = $this->getLocales();
         $progressBar = $this->output->createProgressBar(count($locales));
 
-        $this->info('Localizing: ' . implode(', ', $locales));
+        $this->info('Localizing: '.implode(', ', $locales));
 
         $parser->parseKeys();
 
@@ -70,7 +67,7 @@ class LocalizeCommand extends Command
         $progressBar->finish();
 
         $this->info(
-            "\nTranslatable strings have been generated for locale(s): " . implode(', ', $locales)
+            "\nTranslatable strings have been generated for locale(s): ".implode(', ', $locales)
         );
 
         return 0;
@@ -81,7 +78,6 @@ class LocalizeCommand extends Command
      */
     protected function getLocales(): array
     {
-
         return $this->argument('lang')
             ? explode(',', $this->argument('lang'))
             : [config('app.locale')];
@@ -92,8 +88,6 @@ class LocalizeCommand extends Command
      */
     protected function getTypes(): array
     {
-
         return array_keys(array_filter(config('localizator.localize')));
     }
-
 }

@@ -30,6 +30,12 @@ use ReflectionType;
 use stdClass;
 use Throwable;
 
+use function assert;
+use function count;
+use function is_array;
+use function is_object;
+use function is_string;
+
 abstract class AbstractMacro implements BuiltinMethodReflection
 {
     /**
@@ -78,7 +84,7 @@ abstract class AbstractMacro implements BuiltinMethodReflection
     {
         $this->className = $className;
         $this->methodName = $methodName;
-        $rawReflectionFunction = \is_array($macro)
+        $rawReflectionFunction = is_array($macro)
             ? new ReflectionMethod($macro[0], $macro[1])
             : new ReflectionFunction($macro);
         $this->reflectionFunction = self::hasModernParser()
@@ -100,7 +106,7 @@ abstract class AbstractMacro implements BuiltinMethodReflection
                 $closure = $rawReflectionFunction->getClosure();
                 $boundClosure = Closure::bind($closure, new stdClass());
                 $this->static = (!$boundClosure || (new ReflectionFunction($boundClosure))->getClosureThis() === null);
-            } catch (Throwable $e) {
+            } catch (Throwable) {
                 $this->static = true;
             }
         }
@@ -108,10 +114,10 @@ abstract class AbstractMacro implements BuiltinMethodReflection
 
     private function getReflectionFunction($spec)
     {
-        if (\is_array($spec) && \count($spec) === 2 && \is_string($spec[1])) {
-            \assert($spec[1] !== '');
+        if (is_array($spec) && count($spec) === 2 && is_string($spec[1])) {
+            assert($spec[1] !== '');
 
-            if (\is_object($spec[0])) {
+            if (is_object($spec[0])) {
                 return BetterReflectionClass::createFromInstance($spec[0])
                     ->getMethod($spec[1]);
             }
@@ -120,7 +126,7 @@ abstract class AbstractMacro implements BuiltinMethodReflection
                 ->getMethod($spec[1]);
         }
 
-        if (\is_string($spec)) {
+        if (is_string($spec)) {
             return BetterReflectionFunction::createFromName($spec);
         }
 

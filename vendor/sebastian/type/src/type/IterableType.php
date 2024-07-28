@@ -51,6 +51,9 @@ final class IterableType extends Type
         return false;
     }
 
+    /**
+     * @return 'iterable'
+     */
     public function name(): string
     {
         return 'iterable';
@@ -61,9 +64,6 @@ final class IterableType extends Type
         return $this->allowsNull;
     }
 
-    /**
-     * @psalm-assert-if-true IterableType $this
-     */
     public function isIterable(): bool
     {
         return true;

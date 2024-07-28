@@ -12,7 +12,6 @@ namespace PHPUnit\Runner;
 use function file_put_contents;
 use function sprintf;
 use PHPUnit\Event\Facade as EventFacade;
-use PHPUnit\Event\TestData\MoreThanOneDataSetFromDataProviderException;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\TextUI\Configuration\CodeCoverageFilterRegistry;
 use PHPUnit\TextUI\Configuration\Configuration;
@@ -39,6 +38,8 @@ use SebastianBergmann\Timer\Timer;
 
 /**
  * @internal This class is not covered by the backward compatibility promise for PHPUnit
+ *
+ * @codeCoverageIgnore
  */
 final class CodeCoverage
 {
@@ -57,7 +58,7 @@ final class CodeCoverage
     public static function instance(): self
     {
         if (self::$instance === null) {
-            self::$instance = new self;
+            self::$instance = new self();
         }
 
         return self::$instance;
@@ -138,9 +139,6 @@ final class CodeCoverage
         return $this->driver;
     }
 
-    /**
-     * @throws MoreThanOneDataSetFromDataProviderException
-     */
     public function start(TestCase $test): void
     {
         if ($this->collecting) {
@@ -207,7 +205,7 @@ final class CodeCoverage
             $this->codeCoverageGenerationStart($printer, 'PHP');
 
             try {
-                $writer = new PhpReport;
+                $writer = new PhpReport();
                 $writer->process($this->codeCoverage(), $configuration->coveragePhp());
 
                 $this->codeCoverageGenerationSucceeded($printer);
@@ -222,7 +220,7 @@ final class CodeCoverage
             $this->codeCoverageGenerationStart($printer, 'Clover XML');
 
             try {
-                $writer = new CloverReport;
+                $writer = new CloverReport();
                 $writer->process($this->codeCoverage(), $configuration->coverageClover());
 
                 $this->codeCoverageGenerationSucceeded($printer);
@@ -237,7 +235,7 @@ final class CodeCoverage
             $this->codeCoverageGenerationStart($printer, 'Cobertura XML');
 
             try {
-                $writer = new CoberturaReport;
+                $writer = new CoberturaReport();
                 $writer->process($this->codeCoverage(), $configuration->coverageCobertura());
 
                 $this->codeCoverageGenerationSucceeded($printer);
@@ -354,9 +352,9 @@ final class CodeCoverage
     {
         try {
             if ($pathCoverage) {
-                $this->driver = (new Selector)->forLineAndPathCoverage($filter);
+                $this->driver = (new Selector())->forLineAndPathCoverage($filter);
             } else {
-                $this->driver = (new Selector)->forLineCoverage($filter);
+                $this->driver = (new Selector())->forLineCoverage($filter);
             }
 
             $this->codeCoverage = new \SebastianBergmann\CodeCoverage\CodeCoverage(
@@ -412,7 +410,7 @@ final class CodeCoverage
     private function timer(): Timer
     {
         if ($this->timer === null) {
-            $this->timer = new Timer;
+            $this->timer = new Timer();
         }
 
         return $this->timer;

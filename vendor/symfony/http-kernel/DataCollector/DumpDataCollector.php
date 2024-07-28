@@ -11,6 +11,8 @@
 
 namespace Symfony\Component\HttpKernel\DataCollector;
 
+use BadMethodCallException;
+use InvalidArgumentException;
 use Symfony\Component\ErrorHandler\ErrorRenderer\FileLinkFormatter;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -24,6 +26,16 @@ use Symfony\Component\VarDumper\Dumper\DataDumperInterface;
 use Symfony\Component\VarDumper\Dumper\HtmlDumper;
 use Symfony\Component\VarDumper\Server\Connection;
 
+use Throwable;
+
+use function count;
+use function in_array;
+use function ini_get;
+use function is_int;
+use function is_string;
+
+use const PHP_SAPI;
+
 /**
  * @author Nicolas Grekas <p@tchwork.com>
  *
@@ -31,7 +43,6 @@ use Symfony\Component\VarDumper\Server\Connection;
  */
 class DumpDataCollector extends DataCollector implements DataDumperInterface
 {
-    private ?Stopwatch $stopwatch = null;
     private string|FileLinkFormatter|false $fileLinkFormat;
     private int $dataCount = 0;
     private bool $isCollected = true;
@@ -39,20 +50,21 @@ class DumpDataCollector extends DataCollector implements DataDumperInterface
     private int $clonesIndex = 0;
     private array $rootRefs;
     private string $charset;
-    private ?RequestStack $requestStack;
-    private DataDumperInterface|Connection|null $dumper;
     private mixed $sourceContextProvider;
     private bool $webMode;
 
-    public function __construct(?Stopwatch $stopwatch = null, string|FileLinkFormatter|null $fileLinkFormat = null, ?string $charset = null, ?RequestStack $requestStack = null, DataDumperInterface|Connection|null $dumper = null, ?bool $webMode = null)
-    {
-        $fileLinkFormat = $fileLinkFormat ?: \ini_get('xdebug.file_link_format') ?: get_cfg_var('xdebug.file_link_format');
-        $this->stopwatch = $stopwatch;
+    public function __construct(
+        private ?Stopwatch $stopwatch = null,
+        string|FileLinkFormatter|null $fileLinkFormat = null,
+        ?string $charset = null,
+        private ?RequestStack $requestStack = null,
+        private DataDumperInterface|Connection|null $dumper = null,
+        ?bool $webMode = null,
+    ) {
+        $fileLinkFormat = $fileLinkFormat ?: ini_get('xdebug.file_link_format') ?: get_cfg_var('xdebug.file_link_format');
         $this->fileLinkFormat = $fileLinkFormat instanceof FileLinkFormatter && false === $fileLinkFormat->format('', 0) ? false : $fileLinkFormat;
-        $this->charset = $charset ?: \ini_get('php.output_encoding') ?: \ini_get('default_charset') ?: 'UTF-8';
-        $this->requestStack = $requestStack;
-        $this->dumper = $dumper;
-        $this->webMode = $webMode ?? !\in_array(\PHP_SAPI, ['cli', 'phpdbg', 'embed'], true);
+        $this->charset = $charset ?: ini_get('php.output_encoding') ?: ini_get('default_charset') ?: 'UTF-8';
+        $this->webMode = $webMode ?? !in_array(PHP_SAPI, ['cli', 'phpdbg', 'embed'], true);
 
         // All clones share these properties by reference:
         $this->rootRefs = [
@@ -100,7 +112,7 @@ class DumpDataCollector extends DataCollector implements DataDumperInterface
         return null;
     }
 
-    public function collect(Request $request, Response $response, ?\Throwable $exception = null): void
+    public function collect(Request $request, Response $response, ?Throwable $exception = null): void
     {
         if (!$this->dataCount) {
             $this->data = [];
@@ -173,14 +185,14 @@ class DumpDataCollector extends DataCollector implements DataDumperInterface
 
         $charset = array_pop($this->data);
         $fileLinkFormat = array_pop($this->data);
-        $this->dataCount = \count($this->data);
+        $this->dataCount = count($this->data);
         foreach ($this->data as $dump) {
-            if (!\is_string($dump['name']) || !\is_string($dump['file']) || !\is_int($dump['line'])) {
-                throw new \BadMethodCallException('Cannot unserialize '.__CLASS__);
+            if (!is_string($dump['name']) || !is_string($dump['file']) || !is_int($dump['line'])) {
+                throw new BadMethodCallException('Cannot unserialize '.__CLASS__);
             }
         }
 
-        self::__construct($this->stopwatch, \is_string($fileLinkFormat) || $fileLinkFormat instanceof FileLinkFormatter ? $fileLinkFormat : null, \is_string($charset) ? $charset : null);
+        self::__construct($this->stopwatch ?? null, is_string($fileLinkFormat) || $fileLinkFormat instanceof FileLinkFormatter ? $fileLinkFormat : null, is_string($charset) ? $charset : null);
     }
 
     public function getDumpsCount(): int
@@ -196,7 +208,7 @@ class DumpDataCollector extends DataCollector implements DataDumperInterface
             $dumper = new HtmlDumper($data, $this->charset);
             $dumper->setDisplayOptions(['fileLinkFormat' => $this->fileLinkFormat]);
         } else {
-            throw new \InvalidArgumentException(sprintf('Invalid dump format: "%s".', $format));
+            throw new InvalidArgumentException(sprintf('Invalid dump format: "%s".', $format));
         }
         $dumps = [];
 
@@ -227,8 +239,8 @@ class DumpDataCollector extends DataCollector implements DataDumperInterface
             $this->isCollected = true;
 
             $h = headers_list();
-            $i = \count($h);
-            array_unshift($h, 'Content-Type: '.\ini_get('default_mimetype'));
+            $i = count($h);
+            array_unshift($h, 'Content-Type: ' . ini_get('default_mimetype'));
             while (0 !== stripos($h[$i], 'Content-Type:')) {
                 --$i;
             }
@@ -262,7 +274,7 @@ class DumpDataCollector extends DataCollector implements DataDumperInterface
                         $s = $this->style('meta', '%s');
                         $f = strip_tags($this->style('', $file));
                         $name = strip_tags($this->style('', $name));
-                        if ($fmt && $link = \is_string($fmt) ? strtr($fmt, ['%f' => $file, '%l' => $line]) : $fmt->format($file, $line)) {
+                        if ($fmt && $link = is_string($fmt) ? strtr($fmt, ['%f' => $file, '%l' => $line]) : $fmt->format($file, $line)) {
                             $name = sprintf('<a href="%s" title="%s">'.$s.'</a>', strip_tags($this->style('', $link)), $f, $name);
                         } else {
                             $name = sprintf('<abbr title="%s">'.$s.'</abbr>', $f, $name);

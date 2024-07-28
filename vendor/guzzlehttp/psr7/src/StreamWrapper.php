@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace GuzzleHttp\Psr7;
 
+use InvalidArgumentException;
 use Psr\Http\Message\StreamInterface;
 
 /**
@@ -40,7 +41,7 @@ final class StreamWrapper
         } elseif ($stream->isWritable()) {
             $mode = 'w';
         } else {
-            throw new \InvalidArgumentException('The stream must be readable, '
+            throw new InvalidArgumentException('The stream must be readable, '
                 .'writable, or both.');
         }
 
@@ -69,7 +70,7 @@ final class StreamWrapper
         }
     }
 
-    public function stream_open(string $path, string $mode, int $options, string &$opened_path = null): bool
+    public function stream_open(string $path, string $mode, int $options, ?string &$opened_path = null): bool
     {
         $options = stream_context_get_options($this->context);
 
@@ -136,10 +137,14 @@ final class StreamWrapper
      *   ctime: int,
      *   blksize: int,
      *   blocks: int
-     * }
+     * }|false
      */
-    public function stream_stat(): array
+    public function stream_stat()
     {
+        if ($this->stream->getSize() === null) {
+            return false;
+        }
+
         static $modeMap = [
             'r' => 33060,
             'rb' => 33060,

@@ -80,7 +80,7 @@ class CacheManager implements FactoryContract
      *
      * @throws \InvalidArgumentException
      */
-    protected function resolve($name)
+    public function resolve($name)
     {
         $config = $this->getConfig($name);
 
@@ -88,17 +88,19 @@ class CacheManager implements FactoryContract
             throw new InvalidArgumentException("Cache store [{$name}] is not defined.");
         }
 
+        $config = Arr::add($config, 'store', $name);
+
         if (isset($this->customCreators[$config['driver']])) {
             return $this->callCustomCreator($config);
-        } else {
-            $driverMethod = 'create'.ucfirst($config['driver']).'Driver';
-
-            if (method_exists($this, $driverMethod)) {
-                return $this->{$driverMethod}($config);
-            } else {
-                throw new InvalidArgumentException("Driver [{$config['driver']}] is not supported.");
-            }
         }
+
+        $driverMethod = 'create'.ucfirst($config['driver']).'Driver';
+
+        if (method_exists($this, $driverMethod)) {
+            return $this->{$driverMethod}($config);
+        }
+
+        throw new InvalidArgumentException("Driver [{$config['driver']}] is not supported.");
     }
 
     /**
@@ -122,7 +124,7 @@ class CacheManager implements FactoryContract
     {
         $prefix = $this->getPrefix($config);
 
-        return $this->repository(new ApcStore(new ApcWrapper, $prefix));
+        return $this->repository(new ApcStore(new ApcWrapper(), $prefix), $config);
     }
 
     /**
@@ -133,7 +135,7 @@ class CacheManager implements FactoryContract
      */
     protected function createArrayDriver(array $config)
     {
-        return $this->repository(new ArrayStore($config['serialize'] ?? false));
+        return $this->repository(new ArrayStore($config['serialize'] ?? false), $config);
     }
 
     /**
@@ -144,7 +146,11 @@ class CacheManager implements FactoryContract
      */
     protected function createFileDriver(array $config)
     {
-        return $this->repository(new FileStore($this->app['files'], $config['path'], $config['permission'] ?? null));
+        return $this->repository(
+            (new FileStore($this->app['files'], $config['path'], $config['permission'] ?? null))
+                ->setLockDirectory($config['lock_path'] ?? null),
+            $config
+        );
     }
 
     /**
@@ -164,7 +170,7 @@ class CacheManager implements FactoryContract
             array_filter($config['sasl'] ?? [])
         );
 
-        return $this->repository(new MemcachedStore($memcached, $prefix));
+        return $this->repository(new MemcachedStore($memcached, $prefix), $config);
     }
 
     /**
@@ -174,7 +180,7 @@ class CacheManager implements FactoryContract
      */
     protected function createNullDriver()
     {
-        return $this->repository(new NullStore);
+        return $this->repository(new NullStore(), []);
     }
 
     /**
@@ -192,7 +198,8 @@ class CacheManager implements FactoryContract
         $store = new RedisStore($redis, $this->getPrefix($config), $connection);
 
         return $this->repository(
-            $store->setLockConnection($config['lock_connection'] ?? $connection)
+            $store->setLockConnection($config['lock_connection'] ?? $connection),
+            $config
         );
     }
 
@@ -211,12 +218,16 @@ class CacheManager implements FactoryContract
             $config['table'],
             $this->getPrefix($config),
             $config['lock_table'] ?? 'cache_locks',
-            $config['lock_lottery'] ?? [2, 100]
+            $config['lock_lottery'] ?? [2, 100],
+            $config['lock_timeout'] ?? 86400,
         );
 
-        return $this->repository($store->setLockConnection(
-            $this->app['db']->connection($config['lock_connection'] ?? $config['connection'] ?? null)
-        ));
+        return $this->repository(
+            $store->setLockConnection(
+                $this->app['db']->connection($config['lock_connection'] ?? $config['connection'] ?? null)
+            ),
+            $config
+        );
     }
 
     /**
@@ -237,7 +248,8 @@ class CacheManager implements FactoryContract
                 $config['attributes']['value'] ?? 'value',
                 $config['attributes']['expiration'] ?? 'expires_at',
                 $this->getPrefix($config)
-            )
+            ),
+            $config
         );
     }
 
@@ -254,10 +266,14 @@ class CacheManager implements FactoryContract
             'endpoint' => $config['endpoint'] ?? null,
         ];
 
-        if (isset($config['key'], $config['secret'])) {
+        if (! empty($config['key']) && ! empty($config['secret'])) {
             $dynamoConfig['credentials'] = Arr::only(
-                $config, ['key', 'secret', 'token']
+                $config, ['key', 'secret']
             );
+        }
+
+        if (! empty($config['token'])) {
+            $dynamoConfig['credentials']['token'] = $config['token'];
         }
 
         return new DynamoDbClient($dynamoConfig);
@@ -267,12 +283,15 @@ class CacheManager implements FactoryContract
      * Create a new cache repository with the given implementation.
      *
      * @param  \Illuminate\Contracts\Cache\Store  $store
+     * @param  array  $config
      * @return \Illuminate\Cache\Repository
      */
-    public function repository(Store $store)
+    public function repository(Store $store, array $config = [])
     {
-        return tap(new Repository($store), function ($repository) {
-            $this->setEventDispatcher($repository);
+        return tap(new Repository($store, Arr::only($config, ['store'])), function ($repository) use ($config) {
+            if ($config['events'] ?? true) {
+                $this->setEventDispatcher($repository);
+            }
         });
     }
 
@@ -392,6 +411,19 @@ class CacheManager implements FactoryContract
     public function extend($driver, Closure $callback)
     {
         $this->customCreators[$driver] = $callback->bindTo($this, $this);
+
+        return $this;
+    }
+
+    /**
+     * Set the application instance used by the manager.
+     *
+     * @param  \Illuminate\Contracts\Foundation\Application  $app
+     * @return $this
+     */
+    public function setApplication($app)
+    {
+        $this->app = $app;
 
         return $this;
     }

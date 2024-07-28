@@ -22,6 +22,9 @@ final class TrueType extends Type
               $other->value() === true;
     }
 
+    /**
+     * @return 'true'
+     */
     public function name(): string
     {
         return 'true';
@@ -32,9 +35,6 @@ final class TrueType extends Type
         return false;
     }
 
-    /**
-     * @psalm-assert-if-true TrueType $this
-     */
     public function isTrue(): bool
     {
         return true;
